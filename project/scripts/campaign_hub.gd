@@ -72,7 +72,8 @@ func _build_interface() -> void:
 	root_box.add_child(buttons)
 	_add_button(buttons, "Сохранить достижение", _save_progress)
 	store_button = _add_button(buttons, "Общий магазин", _open_shop)
-	mode_button = _add_button(buttons, "3D-арена атак", _toggle_3d_mode)
+	mode_button = _add_button(buttons, "Тактические анимации: ВКЛ", _show_tactical_animation_info)
+	mode_button.disabled = false
 	_add_button(buttons, "Персонажи и ATAC", _open_characters)
 	_add_button(buttons, "Выбор пройденной миссии", _open_mission_select)
 	mission_button = _add_button(buttons, "Начать следующую миссию", _start_next_mission)
@@ -136,7 +137,7 @@ func _refresh_campaign_status() -> void:
 	wallet_label.text = "Общий фонд команды: %d монет" % CampaignState.get_coin_balance()
 	store_button.disabled = not CampaignState.is_shop_available()
 	store_button.text = "Общий магазин — открыт" if CampaignState.is_shop_available() else "Общий магазин — закрыт"
-	mode_button.text = "3D-арена атак: %s" % ("ВКЛ" if CampaignState.arena_battles_enabled else "ВЫКЛ")
+	mode_button.text = "Тактические анимации: ВКЛ"
 	if CampaignState.mission_4_complete:
 		title_label.text = "ИМПЕРСКИЙ ЗАМОК ОСВОБОЖДЁН"
 		subtitle_label.text = "Bastion и Andrew снова в отряде"
@@ -282,14 +283,8 @@ func _open_shop() -> void:
 	get_tree().change_scene_to_file("res://scenes/Shop.tscn")
 
 
-func _toggle_3d_mode() -> void:
-	var enabled: bool = CampaignState.toggle_arena_battles()
-	status_label.text = (
-		"3D-арена включена: атаки игрока показываются отдельной сценой крупным планом."
-		if enabled
-		else "3D-арена отключена: атаки снова показываются прямо на тактическом поле."
-	)
-	_refresh_campaign_status()
+func _show_tactical_animation_info() -> void:
+	_set_status("Отдельная 3D-арена удалена. Все игроки и боты используют индивидуальные анимации прямо на тактическом поле.")
 
 
 func _return_to_main() -> void:

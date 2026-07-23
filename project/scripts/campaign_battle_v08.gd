@@ -54,14 +54,19 @@ var ione_unit: Node3D
 var reyna_unit: Node3D
 var zeira_unit: Node3D
 var battle_arena: BattleArenaDirector
+var target_picker_panel: PanelContainer
+var target_picker_box: VBoxContainer
+var target_picker_index: int = 0
+var target_picker_buttons: Array[Button] = []
+var undo_move_button: Button
+var move_undo_snapshot: Dictionary = {}
 
 
 func _ready() -> void:
 	mission_three_intro_pending = CampaignState.current_mission == 3
 	mission_four_intro_pending = CampaignState.current_mission == 4
 	_build_v08_interface()
-	battle_arena = BattleArenaDirectorScript.new()
-	add_child(battle_arena)
+	battle_arena = null
 	super._ready()
 	ability_button.visible = false
 	defend_button.visible = false
@@ -102,17 +107,24 @@ func _build_v08_interface() -> void:
 	upgrade_button.pressed.connect(_open_current_upgrade)
 	actions.add_child(upgrade_button)
 
-	facing_menu = _new_popup_panel(Vector2(430, 300), Vector2(365, 260), "Выберите сторону, которой ATAC завершит ход")
+	undo_move_button = Button.new()
+	undo_move_button.text = "↶ Отменить перемещение"
+	undo_move_button.custom_minimum_size = Vector2(210, 44)
+	undo_move_button.disabled = true
+	undo_move_button.pressed.connect(_undo_last_move)
+	actions.add_child(undo_move_button)
+
+	facing_menu = _new_popup_panel(Vector2(430, 300), Vector2(440, 285), "Поверните ATAC стрелками клавиатуры")
 	var facing_box: VBoxContainer = facing_menu.get_node("Margin/VBox") as VBoxContainer
 	var directions: GridContainer = GridContainer.new()
 	directions.columns = 2
 	directions.add_theme_constant_override("h_separation", 8)
 	directions.add_theme_constant_override("v_separation", 8)
 	facing_box.add_child(directions)
-	_add_popup_button(directions, "Север ↑", func(): _choose_facing(Vector2i(0, -1)))
-	_add_popup_button(directions, "Восток →", func(): _choose_facing(Vector2i(1, 0)))
-	_add_popup_button(directions, "Юг ↓", func(): _choose_facing(Vector2i(0, 1)))
-	_add_popup_button(directions, "Запад ←", func(): _choose_facing(Vector2i(-1, 0)))
+	_add_popup_button(directions, "↑ Верх карты", func(): _choose_facing(Vector2i(0, -1)))
+	_add_popup_button(directions, "→ Право карты", func(): _choose_facing(Vector2i(1, 0)))
+	_add_popup_button(directions, "↓ Низ карты", func(): _choose_facing(Vector2i(0, 1)))
+	_add_popup_button(directions, "← Лево карты", func(): _choose_facing(Vector2i(-1, 0)))
 
 	counter_menu = _new_popup_panel(Vector2(860, 335), Vector2(390, 240), "Ответный удар — расход усталости ×2")
 	var counter_box: VBoxContainer = counter_menu.get_node("Margin/VBox") as VBoxContainer
@@ -153,6 +165,13 @@ func _build_v08_interface() -> void:
 	_add_popup_button(choice_box, "Остаться и сражаться рядом с отцом", func(): _finish_story_choice("stay_and_fight"))
 
 	reaction_ability_button.text = "Ответный удар..."
+	target_picker_panel = _new_popup_panel(Vector2(470, 155), Vector2(620, 600), "Выберите противника")
+	target_picker_box = target_picker_panel.get_node("Margin/VBox") as VBoxContainer
+	var target_help: Label = Label.new()
+	target_help.text = "↑/↓ или A/D — сменить цель • Enter — подтвердить • Esc — отменить"
+	target_help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	target_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	target_picker_box.add_child(target_help)
 	target_highlight_root = Node3D.new()
 	target_highlight_root.name = "TargetHighlights"
 	add_child(target_highlight_root)
@@ -426,6 +445,9 @@ func _activate_player_member(member: Node3D) -> void:
 	var character_name: String = str(member.get_meta("label"))
 	status_label.text = "%s: выберите зелёную клетку или действие." % character_name
 	turn_info.text = "Раунд %d • герой %d/%d" % [round_number, player_turn_index + 1, player_party.size()]
+	move_undo_snapshot = {}
+	if undo_move_button != null:
+		undo_move_button.disabled = true
 	_refresh_ui()
 
 
@@ -457,6 +479,15 @@ func _move_player_to(cell: Vector2i) -> void:
 	var moves_taken: int = int(player_unit.get_meta("moves_taken", 0))
 	if moves_taken >= max_moves:
 		return
+	move_undo_snapshot = {
+		"unit": player_unit,
+		"cell": player_unit.get_meta("cell"),
+		"position": player_unit.position,
+		"stats": (_stats(player_unit) as Dictionary).duplicate(true),
+		"moves_taken": int(player_unit.get_meta("moves_taken", 0)),
+		"moved": bool(player_unit.get_meta("moved", false)),
+		"facing": player_unit.get_meta("facing", Vector2i(0, 1))
+	}
 	action_in_progress = true
 	_cancel_target_selection()
 	_close_attack_menu()
@@ -490,6 +521,8 @@ func _move_player_to(cell: Vector2i) -> void:
 		_show_reachable_cells(player_unit, _available_move_range(player_unit))
 	action_in_progress = false
 	_select_unit(player_unit)
+	if undo_move_button != null:
+		undo_move_button.disabled = false
 	phase_label.text = "ДЕЙСТВИЕ" if phase == Phase.PLAYER_ACTION else "ВТОРОЕ ПЕРЕМЕЩЕНИЕ"
 	_refresh_ui()
 
@@ -499,7 +532,7 @@ func _request_facing_choice(unit: Node3D) -> void:
 		return
 	facing_choice_pending = true
 	facing_menu.visible = true
-	status_label.text = "Выберите направление корпуса: спина к зданию может защитить от обхода."
+	status_label.text = "Поверните ATAC стрелками: ↑ верх карты, ↓ низ, ← лево, → право. Это определит перед и спину."
 	await facing_selected
 	facing_choice_pending = false
 	facing_menu.visible = false
@@ -584,6 +617,100 @@ func _rebuild_dynamic_attack_menu() -> void:
 		dynamic_attack_buttons.append(magic_button)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_pressed() or event.is_echo():
+		return
+	if facing_choice_pending:
+		if event.is_action_pressed("ui_up"):
+			_choose_facing(Vector2i(0, -1)); get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("ui_down"):
+			_choose_facing(Vector2i(0, 1)); get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("ui_left"):
+			_choose_facing(Vector2i(-1, 0)); get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("ui_right"):
+			_choose_facing(Vector2i(1, 0)); get_viewport().set_input_as_handled()
+		return
+	if target_selection_active and not eligible_attack_targets.is_empty():
+		var key_event: InputEventKey = event as InputEventKey
+		var keycode: Key = key_event.keycode if key_event != null else KEY_NONE
+		if event.is_action_pressed("ui_down") or keycode == KEY_D:
+			target_picker_index = (target_picker_index + 1) % eligible_attack_targets.size()
+			_refresh_target_picker_selection(); get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("ui_up") or keycode == KEY_A:
+			target_picker_index = (target_picker_index - 1 + eligible_attack_targets.size()) % eligible_attack_targets.size()
+			_refresh_target_picker_selection(); get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("ui_accept"):
+			_confirm_target_picker(target_picker_index); get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("ui_cancel"):
+			_cancel_target_selection(); get_viewport().set_input_as_handled()
+
+
+func _open_target_picker() -> void:
+	if target_picker_panel == null or target_picker_box == null:
+		return
+	for button: Button in target_picker_buttons:
+		if is_instance_valid(button): button.queue_free()
+	target_picker_buttons.clear()
+	for index: int in range(eligible_attack_targets.size()):
+		var target: Node3D = eligible_attack_targets[index]
+		var stats: Dictionary = _stats(target)
+		var button: Button = Button.new()
+		button.custom_minimum_size = Vector2(0, 54)
+		button.text = "%d. %s   HP %d/%d   • %d клеток" % [index + 1, str(target.get_meta("label")), int(stats.get("hp", 0)), int(stats.get("max_hp", 0)), _grid_distance(player_unit, target)]
+		button.pressed.connect(_confirm_target_picker.bind(index))
+		target_picker_box.add_child(button)
+		target_picker_buttons.append(button)
+	target_picker_panel.visible = true
+	_refresh_target_picker_selection()
+
+
+func _refresh_target_picker_selection() -> void:
+	for index: int in range(target_picker_buttons.size()):
+		var selected_now: bool = index == target_picker_index
+		target_picker_buttons[index].modulate = Color(1.0, 0.88, 0.42) if selected_now else Color.WHITE
+	if target_picker_index >= 0 and target_picker_index < eligible_attack_targets.size():
+		_select_unit(eligible_attack_targets[target_picker_index])
+
+
+func _confirm_target_picker(index: int) -> void:
+	if not target_selection_active or index < 0 or index >= eligible_attack_targets.size():
+		return
+	var target: Node3D = eligible_attack_targets[index]
+	_select_unit(target)
+	target_selection_active = false
+	if target_picker_panel != null: target_picker_panel.visible = false
+	_clear_target_highlights()
+	await _request_player_attack(pending_attack_mode)
+
+
+func _undo_last_move() -> void:
+	if move_undo_snapshot.is_empty() or action_in_progress or target_selection_active:
+		return
+	var unit: Node3D = move_undo_snapshot.get("unit") as Node3D
+	if unit == null or unit != player_unit or bool(unit.get_meta("acted", false)):
+		return
+	action_in_progress = true
+	_close_attack_menu()
+	_clear_highlights()
+	unit.set_meta("cell", move_undo_snapshot.get("cell"))
+	unit.position = move_undo_snapshot.get("position")
+	unit.set_meta("stats", (move_undo_snapshot.get("stats") as Dictionary).duplicate(true))
+	unit.set_meta("moves_taken", int(move_undo_snapshot.get("moves_taken", 0)))
+	unit.set_meta("moved", bool(move_undo_snapshot.get("moved", false)))
+	unit.set_meta("facing", move_undo_snapshot.get("facing", Vector2i(0, 1)))
+	unit.set_meta("facing_chosen", false)
+	var facing: Vector2i = unit.get_meta("facing")
+	unit.rotation.y = atan2(float(facing.x), float(facing.y))
+	move_undo_snapshot = {}
+	if undo_move_button != null: undo_move_button.disabled = true
+	phase = Phase.PLAYER_MOVE
+	action_in_progress = false
+	_select_unit(unit)
+	_show_reachable_cells(unit, _available_move_range(unit))
+	status_label.text = "Перемещение отменено. Выберите другую клетку."
+	_refresh_ui()
+
+
 func _use_toreadore_energy_magic() -> void:
 	if player_unit == null or action_in_progress:
 		return
@@ -614,11 +741,15 @@ func _choose_attack_v08(mode: String) -> void:
 		status_label.text = "Для «%s» нет доступной цели." % str(CombatCatalog.attack(mode).get("label", mode))
 		return
 	target_selection_active = true
+	target_picker_index = 0
 	_show_attack_targets(eligible_attack_targets)
-	status_label.text = "Выберите цель для «%s»." % str(CombatCatalog.attack(mode).get("label", mode))
+	_open_target_picker()
+	status_label.text = "Выберите цель для «%s»: используйте список или ↑/↓ и Enter." % str(CombatCatalog.attack(mode).get("label", mode))
 
 
 func _cancel_target_selection() -> void:
+	if target_picker_panel != null:
+		target_picker_panel.visible = false
 	target_selection_active = false
 	pending_attack_mode = ""
 	eligible_attack_targets.clear()

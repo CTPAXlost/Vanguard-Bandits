@@ -1,7 +1,7 @@
 extends Node
 
 const SAVE_PATH: String = "user://vanguard_campaign_save.json"
-const SAVE_VERSION: int = 14
+const SAVE_VERSION: int = 16
 const MISSION_COMPLETION_REWARDS: Dictionary = {
 	1: 200,
 	2: 300,
@@ -176,7 +176,7 @@ var shop_unlocked: bool = false
 var inventory: Dictionary = {}
 var equipped_items: Dictionary = {}
 var experimental_3d_enabled: bool = false
-var arena_battles_enabled: bool = true
+var arena_battles_enabled: bool = false
 # Runtime-only test helpers. They are intentionally not written into the save file.
 var test_forced_branch: String = ""
 var mission_selector_return_scene: String = "res://scenes/Main.tscn"
@@ -247,7 +247,7 @@ func reset_campaign() -> void:
 	inventory = {"steel_sword_i": 1, "copper_amulet": 1}
 	equipped_items = {}
 	experimental_3d_enabled = false
-	arena_battles_enabled = true
+	arena_battles_enabled = false
 	test_forced_branch = ""
 	characters = _default_characters()
 
@@ -317,7 +317,7 @@ func load_game() -> bool:
 	if loaded_equipped is Dictionary:
 		equipped_items = (loaded_equipped as Dictionary).duplicate(true)
 	experimental_3d_enabled = bool(data.get("experimental_3d_enabled", false))
-	arena_battles_enabled = bool(data.get("arena_battles_enabled", true))
+	arena_battles_enabled = false
 
 	characters = _default_characters()
 	var loaded_characters: Variant = data.get("characters", {})

@@ -364,17 +364,13 @@ func _tick_status_effects(unit: Node3D) -> void:
 
 
 func _play_attack_animation(attacker: Node3D, target: Node3D, mode: String) -> void:
-	# Version 1.5 uses one arena pipeline for the whole battle: player heroes,
-	# allied AI, enemies and counterattacks all receive the same presentation.
-	if (
-		battle_arena != null
-		and CampaignState.arena_battles_enabled
-		and attacker != null
-		and target != null
-	):
-		var attack_name: String = str(CombatCatalog.attack(mode).get("label", mode.capitalize()))
-		await battle_arena.play_attack(attacker, target, mode, attack_name)
+	# Version 1.6 removes the separate 3D arena. Every action is presented directly
+	# on the tactical battlefield, keeping positioning readable and uninterrupted.
+	if attacker == null or target == null:
 		return
+	var attack_data: Dictionary = CombatCatalog.attack(mode)
+	var attack_name: String = str(attack_data.get("label", mode.capitalize()))
+	await _begin_tactical_attack_presentation(attacker, target, attack_name, mode)
 	match mode:
 		"desert_storm":
 			await _animate_desert_storm_v12(attacker, target)
@@ -384,6 +380,84 @@ func _play_attack_animation(attacker: Node3D, target: Node3D, mode: String) -> v
 			await _animate_healing_ban(attacker, target)
 		_:
 			await super._play_attack_animation(attacker, target, mode)
+	await _finish_tactical_attack_presentation(attacker, target, mode)
+
+
+func _begin_tactical_attack_presentation(attacker: Node3D, target: Node3D, attack_name: String, mode: String) -> void:
+	_face_target(attacker, target)
+	_face_target(target, attacker)
+	status_label.text = "%s применяет «%s»" % [str(attacker.get_meta("label")), attack_name]
+	_spawn_focus_ring(attacker.global_position, _attack_color(mode), 0.78)
+	_spawn_focus_ring(target.global_position, Color(1.0, 0.25, 0.22, 0.92), 0.62)
+	var attacker_visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	var target_visual: Node3D = target.get_node_or_null("ATACVisual") as Node3D
+	var prep: Tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if attacker_visual != null:
+		prep.tween_property(attacker_visual, "scale", Vector3.ONE * 1.10, 0.12)
+	if target_visual != null:
+		prep.tween_property(target_visual, "scale", Vector3.ONE * 1.04, 0.12)
+	await prep.finished
+	await get_tree().create_timer(0.055).timeout
+
+
+func _finish_tactical_attack_presentation(attacker: Node3D, target: Node3D, mode: String) -> void:
+	var color: Color = _attack_color(mode)
+	_spawn_impact_sparks(target.global_position + Vector3(0, 1.0, 0), color, 10 if mode in ["slash", "lunge"] else 18)
+	var attacker_visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	var target_visual: Node3D = target.get_node_or_null("ATACVisual") as Node3D
+	var finish: Tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if attacker_visual != null:
+		finish.tween_property(attacker_visual, "scale", Vector3.ONE, 0.18)
+	if target_visual != null:
+		finish.tween_property(target_visual, "scale", Vector3.ONE, 0.22)
+	await finish.finished
+
+
+func _attack_color(mode: String) -> Color:
+	match mode:
+		"ice_rain": return Color(0.35, 0.84, 1.0, 0.95)
+		"ball_lightning": return Color(0.45, 0.62, 1.0, 0.95)
+		"bright_bomb": return Color(1.0, 0.82, 0.22, 0.95)
+		"desert_storm", "desert_whirl", "quicksand", "sticky_sandstorm": return Color(0.92, 0.61, 0.20, 0.95)
+		"ultrasound": return Color(0.75, 0.38, 1.0, 0.95)
+		"spear_throw", "slide": return Color(0.86, 0.92, 1.0, 0.95)
+		"strong_slash", "shoulder_bash", "earthquake": return Color(1.0, 0.28, 0.16, 0.95)
+		_: return Color(0.52, 0.92, 1.0, 0.95)
+
+
+func _spawn_focus_ring(position: Vector3, color: Color, scale_value: float) -> void:
+	var ring: MeshInstance3D = MeshInstance3D.new()
+	var mesh: TorusMesh = TorusMesh.new()
+	mesh.inner_radius = 0.46
+	mesh.outer_radius = 0.54
+	ring.mesh = mesh
+	ring.position = position + Vector3(0, 0.08, 0)
+	ring.rotation_degrees.x = 90.0
+	ring.material_override = _effect_material(color)
+	add_child(ring)
+	ring.scale = Vector3.ZERO
+	var tween: Tween = create_tween()
+	tween.tween_property(ring, "scale", Vector3.ONE * scale_value, 0.13)
+	tween.tween_property(ring, "scale", Vector3.ONE * scale_value * 1.35, 0.18)
+	tween.tween_property(ring, "scale", Vector3.ZERO, 0.14)
+	tween.tween_callback(Callable(ring, "queue_free"))
+
+
+func _spawn_impact_sparks(position: Vector3, color: Color, count: int) -> void:
+	for index: int in range(count):
+		var spark: MeshInstance3D = MeshInstance3D.new()
+		var mesh: BoxMesh = BoxMesh.new()
+		mesh.size = Vector3(0.025, 0.025, 0.22 + float(index % 4) * 0.055)
+		spark.mesh = mesh
+		spark.position = position
+		spark.rotation_degrees = Vector3(rng.randf_range(-45.0, 45.0), rng.randf_range(0.0, 360.0), rng.randf_range(-60.0, 60.0))
+		spark.material_override = _effect_material(color)
+		add_child(spark)
+		var direction := Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(0.15, 1.0), rng.randf_range(-1.0, 1.0)).normalized()
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(spark, "position", position + direction * rng.randf_range(0.45, 1.25), 0.24)
+		tween.tween_property(spark, "scale", Vector3.ZERO, 0.28)
+		tween.chain().tween_callback(Callable(spark, "queue_free"))
 
 
 func _animate_desert_storm_v12(attacker: Node3D, target: Node3D) -> void:

@@ -23,12 +23,12 @@ class V15ArenaVisibilityTests(unittest.TestCase):
             self.assertIn(token, script)
         self.assertIn("Vector3(0, 0, -0.018)", script)
 
-    def test_arena_is_shared_by_player_allies_enemies_and_counterattacks(self) -> None:
+    def test_tactical_animation_is_shared_by_player_allies_enemies_and_counterattacks(self) -> None:
         battle = (PROJECT / "scripts/campaign_battle_v12.gd").read_text(encoding="utf-8")
         block = battle.split("func _play_attack_animation", 1)[1].split("func _animate_desert_storm_v12", 1)[0]
-        self.assertIn("await battle_arena.play_attack", block)
+        self.assertIn("_begin_tactical_attack_presentation", block)
+        self.assertIn("_finish_tactical_attack_presentation", block)
         self.assertNotIn('get_meta("player"', block)
-        self.assertNotIn("bool(attacker", block)
 
     def test_combatants_face_each_other_and_arena_has_cinematic_effects(self) -> None:
         arena = (PROJECT / "scripts/battle_arena_director.gd").read_text(encoding="utf-8")
@@ -68,7 +68,7 @@ class V15ArenaVisibilityTests(unittest.TestCase):
 
     def test_project_header_identifies_v15(self) -> None:
         project = (PROJECT / "project.godot").read_text(encoding="utf-8")
-        self.assertIn("prototype v1.5", project)
+        self.assertIn("prototype v1.6", project)
 
 
 if __name__ == "__main__":

@@ -95,3 +95,9 @@
 - Enforced inward combatant facing and mirrored three-quarter artwork for multiview ATACs.
 - Rebuilt melee, projectile, ice, ultrasound and sand effects with hit-stop and camera reaction.
 - Added GitHub runtime smoke tests for AI arena attacks and four-angle tactical visibility.
+
+## 1.6 — Tactical control and individual combat animation
+- Removed the separate 3D battle arena from normal gameplay.
+- Added keyboard-facing controls, a target list, and safe move undo.
+- Unified tactical attack presentation for player, allied AI, enemy AI, and counterattacks.
+- Added per-skill color, focus, impact, and particle presentation while preserving unique skill effects.

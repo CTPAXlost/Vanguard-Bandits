@@ -10,8 +10,8 @@ PROJECT = ROOT / "project"
 class V14ArenaAIShopTests(unittest.TestCase):
     def test_save_and_arena_setting_are_persistent(self) -> None:
         state = (PROJECT / "scripts/campaign_state.gd").read_text(encoding="utf-8")
-        self.assertRegex(state, r"SAVE_VERSION:\s*int\s*=\s*14")
-        self.assertIn("arena_battles_enabled: bool = true", state)
+        self.assertRegex(state, r"SAVE_VERSION:\s*int\s*=\s*16")
+        self.assertIn("arena_battles_enabled: bool = false", state)
         self.assertIn('"arena_battles_enabled": arena_battles_enabled', state)
         self.assertIn("func toggle_arena_battles", state)
 
@@ -22,26 +22,21 @@ class V14ArenaAIShopTests(unittest.TestCase):
         self.assertRegex(mission4, re.compile(r"func _spawn_mission_four_units\(\).*?kamorge_spawned = true", re.S))
         self.assertEqual(mission4.count('player_unit = _spawn_campaign_hero(\n\t\t"kamorge"'), 1)
 
-    def test_tactical_rendering_is_stable_and_arena_is_separate(self) -> None:
+    def test_tactical_rendering_is_stable_and_arena_assets_remain_compatible(self) -> None:
         factory = (PROJECT / "scripts/atac_factory.gd").read_text(encoding="utf-8")
         battle = (PROJECT / "scripts/battle_prototype.gd").read_text(encoding="utf-8")
         arena = (PROJECT / "scripts/battle_arena_director.gd").read_text(encoding="utf-8")
         self.assertIn('render_context == "tactical"', factory)
         self.assertIn('AtacFactory.create_atac(model_slug, "tactical")', battle)
-        self.assertIn('AtacFactory.create_atac(attacker_slug, "arena")', arena)
-        self.assertIn("SubViewport.UPDATE_DISABLED", arena)
-        self.assertIn("SubViewport.UPDATE_ALWAYS", arena)
         self.assertIn("func play_attack", arena)
-        self.assertIn("_animate_melee", arena)
-        self.assertIn("_animate_projectile_or_magic", arena)
+        self.assertIn("battle_arena = null", (PROJECT / "scripts/campaign_battle_v08.gd").read_text(encoding="utf-8"))
 
-    def test_player_attacks_open_arena_and_hub_can_toggle_it(self) -> None:
+    def test_tactical_animations_replace_separate_arena(self) -> None:
         battle = (PROJECT / "scripts/campaign_battle_v12.gd").read_text(encoding="utf-8")
         hub = (PROJECT / "scripts/campaign_hub.gd").read_text(encoding="utf-8")
-        self.assertIn("CampaignState.arena_battles_enabled", battle)
-        self.assertIn("await battle_arena.play_attack", battle)
-        self.assertIn("3D-арена атак", hub)
-        self.assertIn("toggle_arena_battles", hub)
+        self.assertIn("_begin_tactical_attack_presentation", battle)
+        self.assertIn("Тактические анимации: ВКЛ", hub)
+        self.assertNotIn("await battle_arena.play_attack", battle)
 
     def test_allied_ai_is_path_aware_and_rechecks_after_moving(self) -> None:
         battle = (PROJECT / "scripts/campaign_battle_v08.gd").read_text(encoding="utf-8")
