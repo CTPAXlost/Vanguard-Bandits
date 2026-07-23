@@ -283,6 +283,11 @@ func _open_shop() -> void:
 	get_tree().change_scene_to_file("res://scenes/Shop.tscn")
 
 
+func _set_status(message: String) -> void:
+	if is_instance_valid(status_label):
+		status_label.text = message
+
+
 func _show_tactical_animation_info() -> void:
 	_set_status("Отдельная 3D-арена удалена. Все игроки и боты используют индивидуальные анимации прямо на тактическом поле.")
 

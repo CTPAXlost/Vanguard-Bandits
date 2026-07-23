@@ -1,3 +1,10 @@
+## 1.6.1 — Исправление сборки Campaign Hub
+
+- Добавлен отсутствовавший помощник `_set_status()` в `campaign_hub.gd`.
+- Исправлена ошибка компиляции Godot: `Function "_set_status()" not found in base self`.
+- Добавлен регрессионный тест для Campaign Hub и сохранена его headless smoke-проверка в GitHub Actions.
+- Игровая логика, баланс, сохранения и содержимое версии 1.6 не изменялись.
+
 # Changelog
 
 ## 1.4.1 — исправление GitHub smoke-тестов

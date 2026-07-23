@@ -1,0 +1,13 @@
+Vanguard Bandits Remaster 1.6.1 — исправление GitHub-сборки
+
+Причина остановки GitHub Actions:
+project/scripts/campaign_hub.gd вызывал отсутствующую функцию _set_status().
+Godot останавливал загрузку CampaignHub.tscn с Parse Error.
+
+Исправлено:
+- добавлена безопасная функция _set_status(message);
+- текст уведомления записывается в status_label только если Label существует;
+- добавлен регрессионный автоматический тест;
+- игровой процесс версии 1.6 не менялся.
+
+Предупреждения OBJ об Ambient light ignored in PBR не являются ошибкой и не мешают сборке.
