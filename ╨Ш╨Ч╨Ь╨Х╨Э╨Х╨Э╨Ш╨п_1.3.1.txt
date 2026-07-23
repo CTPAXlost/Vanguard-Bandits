@@ -1,0 +1,11 @@
+Vanguard Bandits Remaster 1.3.1
+
+Исправление сборки GitHub Actions:
+- оптимизированные GLB-модели больше не исключаются правилами .gitignore;
+- в репозиторий должны попасть:
+  project/assets/imported/models/optimized/alba_optimized.glb
+  project/assets/imported/models/optimized/serata_optimized.glb
+  project/assets/imported/models/optimized/glaive_optimized.glb
+- добавлен автоматический тест правил .gitignore.
+
+Это исправление не меняет баланс, сюжет, сохранения или настройки производительности версии 1.3.

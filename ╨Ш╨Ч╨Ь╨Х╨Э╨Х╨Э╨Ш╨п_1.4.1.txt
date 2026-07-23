@@ -1,0 +1,15 @@
+Vanguard Bandits Remaster 1.4.1
+
+Исправлено падение GitHub Actions на тесте 3D-арены.
+
+Причина:
+--quit-after 8 в Godot означает 8 кадров, а не 8 секунд. Тест завершал игру раньше,
+чем успевала закончиться анимация и появиться строка ARENA_SMOKE_OK.
+
+Дополнительно исправлено:
+- безопасная загрузка миссий 3 и 4 без change_scene_to_file() внутри _ready();
+- устранена ошибка Parent node is busy adding/removing children;
+- добавлены MISSION3_SMOKE_OK и MISSION4_SMOKE_OK;
+- временные модели и эффекты арены удаляются через queue_free() без remove_child().
+
+Игровой контент и сохранения версии 1.4 совместимы и не изменялись.

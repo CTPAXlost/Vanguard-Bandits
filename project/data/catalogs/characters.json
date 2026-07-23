@@ -1,0 +1,812 @@
+[
+  {
+    "id": 0,
+    "hex_id": "00",
+    "name": "Bastion",
+    "role": "playable"
+  },
+  {
+    "id": 1,
+    "hex_id": "01",
+    "name": "Faulkner",
+    "role": "playable"
+  },
+  {
+    "id": 2,
+    "hex_id": "02",
+    "name": "Duyere",
+    "role": "playable"
+  },
+  {
+    "id": 3,
+    "hex_id": "03",
+    "name": "Sadira",
+    "role": "playable"
+  },
+  {
+    "id": 4,
+    "hex_id": "04",
+    "name": "Logan",
+    "role": "playable"
+  },
+  {
+    "id": 5,
+    "hex_id": "05",
+    "name": "Radcot",
+    "role": "playable"
+  },
+  {
+    "id": 6,
+    "hex_id": "06",
+    "name": "Zeira",
+    "role": "playable"
+  },
+  {
+    "id": 7,
+    "hex_id": "07",
+    "name": "Dionne",
+    "role": "playable"
+  },
+  {
+    "id": 8,
+    "hex_id": "08",
+    "name": "Alden",
+    "role": "playable"
+  },
+  {
+    "id": 9,
+    "hex_id": "09",
+    "name": "Kamorge",
+    "role": "playable"
+  },
+  {
+    "id": 10,
+    "hex_id": "0A",
+    "name": "Galvas",
+    "role": "playable"
+  },
+  {
+    "id": 11,
+    "hex_id": "0B",
+    "name": "Ganlon",
+    "role": "playable"
+  },
+  {
+    "id": 12,
+    "hex_id": "0C",
+    "name": "Reyna",
+    "role": "playable"
+  },
+  {
+    "id": 13,
+    "hex_id": "0D",
+    "name": "Devlin",
+    "role": "playable"
+  },
+  {
+    "id": 14,
+    "hex_id": "0E",
+    "name": "Barlow",
+    "role": "playable"
+  },
+  {
+    "id": 15,
+    "hex_id": "0F",
+    "name": "Thomson",
+    "role": "playable"
+  },
+  {
+    "id": 16,
+    "hex_id": "10",
+    "name": "Halak",
+    "role": "playable"
+  },
+  {
+    "id": 17,
+    "hex_id": "11",
+    "name": "Zakov",
+    "role": "playable"
+  },
+  {
+    "id": 18,
+    "hex_id": "12",
+    "name": "Claire",
+    "role": "playable"
+  },
+  {
+    "id": 19,
+    "hex_id": "13",
+    "name": "Shion",
+    "role": "playable"
+  },
+  {
+    "id": 20,
+    "hex_id": "14",
+    "name": "Ione",
+    "role": "playable"
+  },
+  {
+    "id": 21,
+    "hex_id": "15",
+    "name": "Kaidul",
+    "role": "playable"
+  },
+  {
+    "id": 22,
+    "hex_id": "16",
+    "name": "Andrew",
+    "role": "playable"
+  },
+  {
+    "id": 23,
+    "hex_id": "17",
+    "name": "Cherno",
+    "role": "playable"
+  },
+  {
+    "id": 24,
+    "hex_id": "18",
+    "name": "Melior",
+    "role": "playable"
+  },
+  {
+    "id": 25,
+    "hex_id": "19",
+    "name": "Anseis",
+    "role": "playable"
+  },
+  {
+    "id": 26,
+    "hex_id": "1A",
+    "name": "Puck",
+    "role": "playable"
+  },
+  {
+    "id": 27,
+    "hex_id": "1B",
+    "name": "Cecilia",
+    "role": "playable"
+  },
+  {
+    "id": 28,
+    "hex_id": "1C",
+    "name": "Milea",
+    "role": "playable"
+  },
+  {
+    "id": 29,
+    "hex_id": "1D",
+    "name": "Armory",
+    "role": "npc"
+  },
+  {
+    "id": 30,
+    "hex_id": "1E",
+    "name": "Franco",
+    "role": "npc"
+  },
+  {
+    "id": 31,
+    "hex_id": "1F",
+    "name": "Madoc",
+    "role": "npc"
+  },
+  {
+    "id": 32,
+    "hex_id": "20",
+    "name": "Kuriem-Hilt",
+    "role": "npc"
+  },
+  {
+    "id": 33,
+    "hex_id": "21",
+    "name": "Nana",
+    "role": "npc"
+  },
+  {
+    "id": 34,
+    "hex_id": "22",
+    "name": "Kyu-Kyu",
+    "role": "npc"
+  },
+  {
+    "id": 35,
+    "hex_id": "23",
+    "name": "King",
+    "role": "npc"
+  },
+  {
+    "id": 36,
+    "hex_id": "24",
+    "name": "Savaro",
+    "role": "npc"
+  },
+  {
+    "id": 37,
+    "hex_id": "25",
+    "name": "Faulkner (variant)",
+    "role": "npc"
+  },
+  {
+    "id": 38,
+    "hex_id": "26",
+    "name": "Degalle",
+    "role": "npc"
+  },
+  {
+    "id": 39,
+    "hex_id": "27",
+    "name": "Security Chief",
+    "role": "npc"
+  },
+  {
+    "id": 40,
+    "hex_id": "28",
+    "name": "Kamorge (variant)",
+    "role": "npc"
+  },
+  {
+    "id": 41,
+    "hex_id": "29",
+    "name": "Imperial General",
+    "role": "npc"
+  },
+  {
+    "id": 42,
+    "hex_id": "2A",
+    "name": "Bodyguard Chief",
+    "role": "npc"
+  },
+  {
+    "id": 43,
+    "hex_id": "2B",
+    "name": "Imperial",
+    "role": "npc"
+  },
+  {
+    "id": 44,
+    "hex_id": "2C",
+    "name": "Kingdom",
+    "role": "npc"
+  },
+  {
+    "id": 45,
+    "hex_id": "2D",
+    "name": "Bandit Chief",
+    "role": "npc"
+  },
+  {
+    "id": 46,
+    "hex_id": "2E",
+    "name": "Red Tiger",
+    "role": "npc"
+  },
+  {
+    "id": 47,
+    "hex_id": "2F",
+    "name": "Muspel Soldier",
+    "role": "npc"
+  },
+  {
+    "id": 48,
+    "hex_id": "30",
+    "name": "Mercenary",
+    "role": "npc"
+  },
+  {
+    "id": 49,
+    "hex_id": "31",
+    "name": "Jinba Soldier",
+    "role": "npc"
+  },
+  {
+    "id": 50,
+    "hex_id": "32",
+    "name": "Prisoner",
+    "role": "npc"
+  },
+  {
+    "id": 51,
+    "hex_id": "33",
+    "name": "Imperial 1",
+    "role": "enemy"
+  },
+  {
+    "id": 52,
+    "hex_id": "34",
+    "name": "Imperial 2",
+    "role": "enemy"
+  },
+  {
+    "id": 53,
+    "hex_id": "35",
+    "name": "Imperial 3",
+    "role": "enemy"
+  },
+  {
+    "id": 54,
+    "hex_id": "36",
+    "name": "Imperial 4",
+    "role": "enemy"
+  },
+  {
+    "id": 55,
+    "hex_id": "37",
+    "name": "Imperial 5",
+    "role": "enemy"
+  },
+  {
+    "id": 56,
+    "hex_id": "38",
+    "name": "Imperial 6",
+    "role": "enemy"
+  },
+  {
+    "id": 57,
+    "hex_id": "39",
+    "name": "Imperial 7",
+    "role": "enemy"
+  },
+  {
+    "id": 58,
+    "hex_id": "3A",
+    "name": "Imperial 8",
+    "role": "enemy"
+  },
+  {
+    "id": 59,
+    "hex_id": "3B",
+    "name": "Imperial 9",
+    "role": "enemy"
+  },
+  {
+    "id": 60,
+    "hex_id": "3C",
+    "name": "Bandit 1",
+    "role": "enemy"
+  },
+  {
+    "id": 61,
+    "hex_id": "3D",
+    "name": "Bandit 2",
+    "role": "enemy"
+  },
+  {
+    "id": 62,
+    "hex_id": "3E",
+    "name": "Bandit 3",
+    "role": "enemy"
+  },
+  {
+    "id": 63,
+    "hex_id": "3F",
+    "name": "Bandit 4",
+    "role": "enemy"
+  },
+  {
+    "id": 64,
+    "hex_id": "40",
+    "name": "Bandit 5",
+    "role": "enemy"
+  },
+  {
+    "id": 65,
+    "hex_id": "41",
+    "name": "Bandit 6",
+    "role": "enemy"
+  },
+  {
+    "id": 66,
+    "hex_id": "42",
+    "name": "Bandit 7",
+    "role": "enemy"
+  },
+  {
+    "id": 67,
+    "hex_id": "43",
+    "name": "Bandit 8",
+    "role": "enemy"
+  },
+  {
+    "id": 68,
+    "hex_id": "44",
+    "name": "Bandit 9",
+    "role": "enemy"
+  },
+  {
+    "id": 69,
+    "hex_id": "45",
+    "name": "Bodyguard 1",
+    "role": "enemy"
+  },
+  {
+    "id": 70,
+    "hex_id": "46",
+    "name": "Bodyguard 2",
+    "role": "enemy"
+  },
+  {
+    "id": 71,
+    "hex_id": "47",
+    "name": "Bodyguard 3",
+    "role": "enemy"
+  },
+  {
+    "id": 72,
+    "hex_id": "48",
+    "name": "Bodyguard 4",
+    "role": "enemy"
+  },
+  {
+    "id": 73,
+    "hex_id": "49",
+    "name": "Avalon 1",
+    "role": "enemy"
+  },
+  {
+    "id": 74,
+    "hex_id": "4A",
+    "name": "Avalon 2",
+    "role": "enemy"
+  },
+  {
+    "id": 75,
+    "hex_id": "4B",
+    "name": "Avalon 3",
+    "role": "enemy"
+  },
+  {
+    "id": 76,
+    "hex_id": "4C",
+    "name": "Avalon 4",
+    "role": "enemy"
+  },
+  {
+    "id": 77,
+    "hex_id": "4D",
+    "name": "Avalon 5",
+    "role": "enemy"
+  },
+  {
+    "id": 78,
+    "hex_id": "4E",
+    "name": "Avalon 6",
+    "role": "enemy"
+  },
+  {
+    "id": 79,
+    "hex_id": "4F",
+    "name": "Avalon 7",
+    "role": "enemy"
+  },
+  {
+    "id": 80,
+    "hex_id": "50",
+    "name": "Avalon 8",
+    "role": "enemy"
+  },
+  {
+    "id": 81,
+    "hex_id": "51",
+    "name": "Avalon 9",
+    "role": "enemy"
+  },
+  {
+    "id": 82,
+    "hex_id": "52",
+    "name": "Kingdom 1",
+    "role": "enemy"
+  },
+  {
+    "id": 83,
+    "hex_id": "53",
+    "name": "Kingdom 2",
+    "role": "enemy"
+  },
+  {
+    "id": 84,
+    "hex_id": "54",
+    "name": "Kingdom 3",
+    "role": "enemy"
+  },
+  {
+    "id": 85,
+    "hex_id": "55",
+    "name": "Kingdom 4",
+    "role": "enemy"
+  },
+  {
+    "id": 86,
+    "hex_id": "56",
+    "name": "Kingdom 5",
+    "role": "enemy"
+  },
+  {
+    "id": 87,
+    "hex_id": "57",
+    "name": "Kingdom 6",
+    "role": "enemy"
+  },
+  {
+    "id": 88,
+    "hex_id": "58",
+    "name": "Kingdom 7",
+    "role": "enemy"
+  },
+  {
+    "id": 89,
+    "hex_id": "59",
+    "name": "Kingdom 8",
+    "role": "enemy"
+  },
+  {
+    "id": 90,
+    "hex_id": "5A",
+    "name": "Kingdom 9",
+    "role": "enemy"
+  },
+  {
+    "id": 91,
+    "hex_id": "5B",
+    "name": "Nordilain 1",
+    "role": "enemy"
+  },
+  {
+    "id": 92,
+    "hex_id": "5C",
+    "name": "Nordilain 2",
+    "role": "enemy"
+  },
+  {
+    "id": 93,
+    "hex_id": "5D",
+    "name": "Nordilain 3",
+    "role": "enemy"
+  },
+  {
+    "id": 94,
+    "hex_id": "5E",
+    "name": "Nordilain 4",
+    "role": "enemy"
+  },
+  {
+    "id": 95,
+    "hex_id": "5F",
+    "name": "Nordilain 5",
+    "role": "enemy"
+  },
+  {
+    "id": 96,
+    "hex_id": "60",
+    "name": "Nordilain 6",
+    "role": "enemy"
+  },
+  {
+    "id": 97,
+    "hex_id": "61",
+    "name": "Nordilain 7",
+    "role": "enemy"
+  },
+  {
+    "id": 98,
+    "hex_id": "62",
+    "name": "Nordilain 8",
+    "role": "enemy"
+  },
+  {
+    "id": 99,
+    "hex_id": "63",
+    "name": "Nordilain 9",
+    "role": "enemy"
+  },
+  {
+    "id": 100,
+    "hex_id": "64",
+    "name": "Muspel 1",
+    "role": "enemy"
+  },
+  {
+    "id": 101,
+    "hex_id": "65",
+    "name": "Muspel 2",
+    "role": "enemy"
+  },
+  {
+    "id": 102,
+    "hex_id": "66",
+    "name": "Muspel 3",
+    "role": "enemy"
+  },
+  {
+    "id": 103,
+    "hex_id": "67",
+    "name": "Muspel 4",
+    "role": "enemy"
+  },
+  {
+    "id": 104,
+    "hex_id": "68",
+    "name": "Muspel 5",
+    "role": "enemy"
+  },
+  {
+    "id": 105,
+    "hex_id": "69",
+    "name": "Muspel 6",
+    "role": "enemy"
+  },
+  {
+    "id": 106,
+    "hex_id": "6A",
+    "name": "Muspel 7",
+    "role": "enemy"
+  },
+  {
+    "id": 107,
+    "hex_id": "6B",
+    "name": "Muspel 8",
+    "role": "enemy"
+  },
+  {
+    "id": 108,
+    "hex_id": "6C",
+    "name": "Muspel 9",
+    "role": "enemy"
+  },
+  {
+    "id": 109,
+    "hex_id": "6D",
+    "name": "Muspel 10",
+    "role": "enemy"
+  },
+  {
+    "id": 110,
+    "hex_id": "6E",
+    "name": "Muspel 11",
+    "role": "enemy"
+  },
+  {
+    "id": 111,
+    "hex_id": "6F",
+    "name": "Muspel 12",
+    "role": "enemy"
+  },
+  {
+    "id": 112,
+    "hex_id": "70",
+    "name": "Imperial 1",
+    "role": "enemy"
+  },
+  {
+    "id": 113,
+    "hex_id": "71",
+    "name": "Imperial 2",
+    "role": "enemy"
+  },
+  {
+    "id": 114,
+    "hex_id": "72",
+    "name": "Imperial 3",
+    "role": "enemy"
+  },
+  {
+    "id": 115,
+    "hex_id": "73",
+    "name": "Imperial 4",
+    "role": "enemy"
+  },
+  {
+    "id": 116,
+    "hex_id": "74",
+    "name": "Imperial 5",
+    "role": "enemy"
+  },
+  {
+    "id": 117,
+    "hex_id": "75",
+    "name": "Hibernia 1",
+    "role": "enemy"
+  },
+  {
+    "id": 118,
+    "hex_id": "76",
+    "name": "Hibernia 2",
+    "role": "enemy"
+  },
+  {
+    "id": 119,
+    "hex_id": "77",
+    "name": "Hibernia 3",
+    "role": "enemy"
+  },
+  {
+    "id": 120,
+    "hex_id": "78",
+    "name": "Hibernia 4",
+    "role": "enemy"
+  },
+  {
+    "id": 121,
+    "hex_id": "79",
+    "name": "Hibernia 5",
+    "role": "enemy"
+  },
+  {
+    "id": 122,
+    "hex_id": "7A",
+    "name": "Hibernia 6",
+    "role": "enemy"
+  },
+  {
+    "id": 123,
+    "hex_id": "7B",
+    "name": "Hibernia 7",
+    "role": "enemy"
+  },
+  {
+    "id": 124,
+    "hex_id": "7C",
+    "name": "Hibernia 8",
+    "role": "enemy"
+  },
+  {
+    "id": 125,
+    "hex_id": "7D",
+    "name": "Hibernia 9",
+    "role": "enemy"
+  },
+  {
+    "id": 126,
+    "hex_id": "7E",
+    "name": "Mercenary 1",
+    "role": "enemy"
+  },
+  {
+    "id": 127,
+    "hex_id": "7F",
+    "name": "Mercenary 2",
+    "role": "enemy"
+  },
+  {
+    "id": 128,
+    "hex_id": "80",
+    "name": "Mercenary 3",
+    "role": "enemy"
+  },
+  {
+    "id": 129,
+    "hex_id": "81",
+    "name": "Mercenary 4",
+    "role": "enemy"
+  },
+  {
+    "id": 130,
+    "hex_id": "82",
+    "name": "Mercenary 5",
+    "role": "enemy"
+  },
+  {
+    "id": 131,
+    "hex_id": "83",
+    "name": "Mercenary 6",
+    "role": "enemy"
+  },
+  {
+    "id": 132,
+    "hex_id": "84",
+    "name": "Mercenary 7",
+    "role": "enemy"
+  },
+  {
+    "id": 133,
+    "hex_id": "85",
+    "name": "Mercenary 8",
+    "role": "enemy"
+  },
+  {
+    "id": 134,
+    "hex_id": "86",
+    "name": "Mercenary 9",
+    "role": "enemy"
+  }
+]

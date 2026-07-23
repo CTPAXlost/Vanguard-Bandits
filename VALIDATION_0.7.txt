@@ -1,0 +1,15 @@
+Vanguard Bandits Remaster 0.7 — отчёт проверки
+
+Проверено локально:
+- 29 Python-тестов: успешно.
+- gdformat --check для всех GDScript-файлов: успешно.
+- gdlint новых campaign-скриптов: успешно.
+- JSON первой и второй миссии читается.
+- 5 стартовых Barbatos и 6 Barbatos подкрепления во второй миссии.
+- Референсные MultiView-наборы Alba, Barbatos, Barazaph, Vedocorban и Cador присутствуют.
+- Портреты Bastion, Kamorge, имперца, Cador и Andrew присутствуют.
+- GitHub workflow содержит smoke-test боевой сцены и лагеря перед экспортом EXE.
+
+Ограничение текущей среды:
+- Полный запуск Godot здесь не выполнен из-за отсутствия локального бинарника движка.
+- GitHub Actions скачает Godot 4.6.3 stable, импортирует проект, запустит smoke-тесты и только после этого соберёт Windows EXE.

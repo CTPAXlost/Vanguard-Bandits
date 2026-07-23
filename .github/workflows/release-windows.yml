@@ -1,0 +1,172 @@
+name: Release Windows Remaster
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GODOT_VERSION: "4.6.3"
+      GODOT_STATUS: "stable"
+      GODOT_CACHE_DIR: "${{ github.workspace }}/.cache/godot"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install test dependencies
+        run: python -m pip install --upgrade Pillow
+
+      - name: Run importer tests
+        run: python -m unittest discover -s tools/tests -v
+
+
+      - name: Cache Godot editor and export templates
+        uses: actions/cache@v4
+        with:
+          path: .cache/godot
+          key: godot-${{ runner.os }}-${{ env.GODOT_VERSION }}-${{ env.GODOT_STATUS }}
+
+      - name: Download Godot editor and export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$GODOT_CACHE_DIR"
+          GODOT_ZIP="$GODOT_CACHE_DIR/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64.zip"
+          TEMPLATES_TPZ="$GODOT_CACHE_DIR/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_export_templates.tpz"
+          GODOT_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${GODOT_STATUS}/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64.zip"
+          TEMPLATES_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${GODOT_STATUS}/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_export_templates.tpz"
+
+          download_with_resume() {
+            local url="$1"
+            local output="$2"
+            local label="$3"
+            if [ -s "$output" ]; then
+              echo "$label already exists in cache: $output"
+              return 0
+            fi
+            for attempt in 1 2 3 4 5 6 7 8; do
+              echo "Downloading $label (attempt $attempt/8)..."
+              if curl --http1.1 --fail --location                 --retry 4 --retry-delay 4 --retry-all-errors                 --connect-timeout 30 --speed-time 90 --speed-limit 1024                 --continue-at - --output "$output" "$url"; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+
+          download_with_resume "$GODOT_URL" "$GODOT_ZIP" "Godot editor"
+          download_with_resume "$TEMPLATES_URL" "$TEMPLATES_TPZ" "Godot export templates"
+
+          rm -rf godot templates-unpacked
+          mkdir -p godot templates-unpacked
+          unzip -q -t "$GODOT_ZIP"
+          unzip -q "$GODOT_ZIP" -d godot
+          chmod +x "godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          unzip -q -t "$TEMPLATES_TPZ"
+          unzip -q "$TEMPLATES_TPZ" -d templates-unpacked
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_STATUS}"
+          rm -rf "$TEMPLATE_DIR"
+          mkdir -p "$TEMPLATE_DIR"
+          cp -R templates-unpacked/templates/. "$TEMPLATE_DIR/"
+          test -f "$TEMPLATE_DIR/windows_release_x86_64.exe"
+
+      - name: Import project resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          "$GODOT" --headless --path project --import --quit-after 300
+
+      - name: Runtime smoke test for battle scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/BattlePrototype.tscn --quit-after 8 2>&1 | tee battle-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node" battle-smoke.log; then
+            echo "Battle scene smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          exit "$STATUS"
+
+      - name: Runtime smoke test for mission 3 branch scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/Mission3Smoke.tscn --quit-after 10 2>&1 | tee mission3-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function" mission3-smoke.log; then
+            echo "Mission 3 smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          exit "$STATUS"
+
+
+      - name: Runtime smoke test for castle rescue mission
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/Mission4Smoke.tscn --quit-after 10 2>&1 | tee mission4-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function" mission4-smoke.log; then
+            echo "Castle rescue mission smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          exit "$STATUS"
+
+      - name: Runtime smoke test for common team shop
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/Shop.tscn --quit-after 5 2>&1 | tee shop-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function" shop-smoke.log; then
+            echo "Common team shop smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          exit "$STATUS"
+
+      - name: Export Windows build with real models
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/windows
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          "$GODOT" --headless --path project --export-release "Windows Desktop (Local Imported)" "../build/windows/Vanguard Bandits Remaster.exe"
+          cp README.md build/windows/README.txt
+          test -s "build/windows/Vanguard Bandits Remaster.exe"
+          cd build
+          zip -r "Vanguard-Bandits-Remaster-${GITHUB_REF_NAME}-Windows-x64.zip" windows
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/Vanguard-Bandits-Remaster-${{ github.ref_name }}-Windows-x64.zip
+          generate_release_notes: true

@@ -1,0 +1,212 @@
+[
+  {
+    "id": 0,
+    "hex_id": "00",
+    "name": "Ultragunner",
+    "status": "catalogued"
+  },
+  {
+    "id": 1,
+    "hex_id": "01",
+    "name": "Zulwarn",
+    "status": "catalogued"
+  },
+  {
+    "id": 2,
+    "hex_id": "02",
+    "name": "TIC-TAC",
+    "status": "catalogued"
+  },
+  {
+    "id": 3,
+    "hex_id": "03",
+    "name": "Alba",
+    "status": "catalogued"
+  },
+  {
+    "id": 4,
+    "hex_id": "04",
+    "name": "Serata",
+    "status": "catalogued"
+  },
+  {
+    "id": 5,
+    "hex_id": "05",
+    "name": "Haizuron",
+    "status": "catalogued"
+  },
+  {
+    "id": 6,
+    "hex_id": "06",
+    "name": "Glaive",
+    "status": "catalogued"
+  },
+  {
+    "id": 7,
+    "hex_id": "07",
+    "name": "Waiban",
+    "status": "catalogued"
+  },
+  {
+    "id": 8,
+    "hex_id": "08",
+    "name": "Solarus",
+    "status": "catalogued"
+  },
+  {
+    "id": 9,
+    "hex_id": "09",
+    "name": "Sarbelas",
+    "status": "catalogued"
+  },
+  {
+    "id": 10,
+    "hex_id": "0A",
+    "name": "Sylpheed",
+    "status": "catalogued"
+  },
+  {
+    "id": 11,
+    "hex_id": "0B",
+    "name": "Korbelan",
+    "status": "catalogued"
+  },
+  {
+    "id": 12,
+    "hex_id": "0C",
+    "name": "Sharking",
+    "status": "catalogued"
+  },
+  {
+    "id": 13,
+    "hex_id": "0D",
+    "name": "Einlager",
+    "status": "catalogued"
+  },
+  {
+    "id": 14,
+    "hex_id": "0E",
+    "name": "Botsu (0E)",
+    "status": "catalogued"
+  },
+  {
+    "id": 15,
+    "hex_id": "0F",
+    "name": "Barbatos",
+    "status": "catalogued"
+  },
+  {
+    "id": 16,
+    "hex_id": "10",
+    "name": "Altagrave",
+    "status": "catalogued"
+  },
+  {
+    "id": 17,
+    "hex_id": "11",
+    "name": "Amphisia",
+    "status": "catalogued"
+  },
+  {
+    "id": 18,
+    "hex_id": "12",
+    "name": "Eigol",
+    "status": "catalogued"
+  },
+  {
+    "id": 19,
+    "hex_id": "13",
+    "name": "Ratatosk",
+    "status": "catalogued"
+  },
+  {
+    "id": 20,
+    "hex_id": "14",
+    "name": "Crimson",
+    "status": "catalogued"
+  },
+  {
+    "id": 21,
+    "hex_id": "15",
+    "name": "Botsu (15)",
+    "status": "catalogued"
+  },
+  {
+    "id": 22,
+    "hex_id": "16",
+    "name": "Rahabor",
+    "status": "catalogued"
+  },
+  {
+    "id": 23,
+    "hex_id": "17",
+    "name": "Toreadore",
+    "status": "catalogued"
+  },
+  {
+    "id": 24,
+    "hex_id": "18",
+    "name": "Botsu (18)",
+    "status": "catalogued"
+  },
+  {
+    "id": 25,
+    "hex_id": "19",
+    "name": "Roaring Lion",
+    "status": "catalogued"
+  },
+  {
+    "id": 26,
+    "hex_id": "1A",
+    "name": "Flaros",
+    "status": "catalogued"
+  },
+  {
+    "id": 27,
+    "hex_id": "1B",
+    "name": "Vedocorban",
+    "status": "catalogued"
+  },
+  {
+    "id": 28,
+    "hex_id": "1C",
+    "name": "Bahamut",
+    "status": "catalogued"
+  },
+  {
+    "id": 29,
+    "hex_id": "1D",
+    "name": "Yurangol",
+    "status": "catalogued"
+  },
+  {
+    "id": 30,
+    "hex_id": "1E",
+    "name": "No. 86",
+    "status": "catalogued"
+  },
+  {
+    "id": 31,
+    "hex_id": "1F",
+    "name": "Dantarius",
+    "status": "catalogued"
+  },
+  {
+    "id": 32,
+    "hex_id": "20",
+    "name": "Barazaph",
+    "status": "catalogued"
+  },
+  {
+    "id": 33,
+    "hex_id": "21",
+    "name": "Andoras",
+    "status": "catalogued"
+  },
+  {
+    "id": 34,
+    "hex_id": "22",
+    "name": "Haurol",
+    "status": "catalogued"
+  }
+]

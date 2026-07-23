@@ -1,0 +1,301 @@
+extends Control
+
+var status_label: Label
+var character_panel: PanelContainer
+var portrait: TextureRect
+var character_select: OptionButton
+var atac_select: OptionButton
+var character_stats: Label
+var points_label: Label
+var selected_character_id: String = "bastion"
+var mission_button: Button
+var title_label: Label
+var subtitle_label: Label
+var wallet_label: Label
+var store_button: Button
+var mode_button: Button
+
+
+func _ready() -> void:
+	_build_interface()
+	_refresh_campaign_status()
+
+
+func _build_interface() -> void:
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var background: ColorRect = ColorRect.new()
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.color = Color(0.035, 0.055, 0.085)
+	add_child(background)
+
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(center)
+	var panel: PanelContainer = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(930, 680)
+	center.add_child(panel)
+	var margin: MarginContainer = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 38)
+	margin.add_theme_constant_override("margin_right", 38)
+	margin.add_theme_constant_override("margin_top", 32)
+	margin.add_theme_constant_override("margin_bottom", 32)
+	panel.add_child(margin)
+	var root_box: VBoxContainer = VBoxContainer.new()
+	root_box.add_theme_constant_override("separation", 14)
+	margin.add_child(root_box)
+
+	title_label = Label.new()
+	title_label.text = "ЛАГЕРЬ — ПОСЛЕ ПЕРВОЙ МИССИИ"
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.add_theme_font_size_override("font_size", 34)
+	root_box.add_child(title_label)
+	subtitle_label = Label.new()
+	subtitle_label.text = "Подготовка отряда перед дорогой через лес и болото"
+	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle_label.add_theme_font_size_override("font_size", 20)
+	root_box.add_child(subtitle_label)
+
+	status_label = Label.new()
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	root_box.add_child(status_label)
+	wallet_label = Label.new()
+	wallet_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	wallet_label.add_theme_font_size_override("font_size", 23)
+	wallet_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.32))
+	root_box.add_child(wallet_label)
+
+	var buttons: GridContainer = GridContainer.new()
+	buttons.columns = 2
+	buttons.add_theme_constant_override("h_separation", 12)
+	buttons.add_theme_constant_override("v_separation", 12)
+	root_box.add_child(buttons)
+	_add_button(buttons, "Сохранить достижение", _save_progress)
+	store_button = _add_button(buttons, "Общий магазин", _open_shop)
+	mode_button = _add_button(buttons, "3D-арена атак", _toggle_3d_mode)
+	_add_button(buttons, "Персонажи и ATAC", _open_characters)
+	_add_button(buttons, "Выбор пройденной миссии", _open_mission_select)
+	mission_button = _add_button(buttons, "Начать следующую миссию", _start_next_mission)
+	_add_button(buttons, "Главное меню", _return_to_main)
+	_add_button(buttons, "Выход", func(): get_tree().quit())
+
+	character_panel = PanelContainer.new()
+	character_panel.visible = false
+	character_panel.custom_minimum_size = Vector2(0, 390)
+	root_box.add_child(character_panel)
+	var character_margin: MarginContainer = MarginContainer.new()
+	character_margin.add_theme_constant_override("margin_left", 18)
+	character_margin.add_theme_constant_override("margin_right", 18)
+	character_margin.add_theme_constant_override("margin_top", 16)
+	character_margin.add_theme_constant_override("margin_bottom", 16)
+	character_panel.add_child(character_margin)
+	var columns: HBoxContainer = HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 20)
+	character_margin.add_child(columns)
+	portrait = TextureRect.new()
+	portrait.custom_minimum_size = Vector2(250, 250)
+	portrait.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	columns.add_child(portrait)
+	var right: VBoxContainer = VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 8)
+	columns.add_child(right)
+	character_select = OptionButton.new()
+	character_select.item_selected.connect(_on_character_selected)
+	right.add_child(character_select)
+	atac_select = OptionButton.new()
+	atac_select.item_selected.connect(_on_atac_selected)
+	right.add_child(atac_select)
+	character_stats = Label.new()
+	character_stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	right.add_child(character_stats)
+	points_label = Label.new()
+	right.add_child(points_label)
+	var stat_buttons: GridContainer = GridContainer.new()
+	stat_buttons.columns = 2
+	right.add_child(stat_buttons)
+	_add_button(stat_buttons, "+ Сила", func(): _allocate("strength"))
+	_add_button(stat_buttons, "+ Ловкость", func(): _allocate("agility"))
+	_add_button(stat_buttons, "+ Защита", func(): _allocate("defense"))
+	_add_button(stat_buttons, "+ Умение атаки", func(): _allocate("attack_skill"))
+	_add_button(right, "Закрыть персонажей", func(): character_panel.visible = false)
+	_populate_characters()
+
+
+func _add_button(parent: Control, text: String, callback: Callable) -> Button:
+	var button: Button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(0, 48)
+	button.pressed.connect(callback)
+	parent.add_child(button)
+	return button
+
+
+func _refresh_campaign_status() -> void:
+	wallet_label.text = "Общий фонд команды: %d монет" % CampaignState.get_coin_balance()
+	store_button.disabled = not CampaignState.is_shop_available()
+	store_button.text = "Общий магазин — открыт" if CampaignState.is_shop_available() else "Общий магазин — закрыт"
+	mode_button.text = "3D-арена атак: %s" % ("ВКЛ" if CampaignState.arena_battles_enabled else "ВЫКЛ")
+	if CampaignState.mission_4_complete:
+		title_label.text = "ИМПЕРСКИЙ ЗАМОК ОСВОБОЖДЁН"
+		subtitle_label.text = "Bastion и Andrew снова в отряде"
+		status_label.text = (
+			"Kamorge вернулся на Eigol, Galvas и партизаны помогли взять крепость. "
+			+ "Общий магазин открыт: оружие, амулеты и камни покупаются из единого фонда команды."
+		)
+		mission_button.text = "Следующая глава — готовится"
+		mission_button.disabled = true
+	elif CampaignState.mission_3_complete and CampaignState.story_branch == "seek_southern_aid":
+		title_label.text = "ГЛАВА IV — ШТУРМ ИМПЕРСКОГО ЗАМКА"
+		subtitle_label.text = "Kamorge выжил, нашёл Eigol и союзников"
+		status_label.text = (
+			"Bastion и Andrew находятся в плену. Kamorge, Ione, Reyna и Galvas готовят штурм; "
+			+ "Zeira собирает верных королю солдат на Glaive."
+		)
+		mission_button.text = "Начать четвёртую миссию — штурм замка"
+		mission_button.disabled = false
+	elif CampaignState.mission_3_complete:
+		title_label.text = "ЛЕСНОЙ ЛАГЕРЬ ПАРТИЗАН"
+		subtitle_label.text = "В этой ветке Kamorge погиб у моста"
+		status_label.text = "Ione, Reyna и Zeira присоединились. Продолжение этой альтернативной ветки будет добавлено отдельно."
+		mission_button.text = "Продолжение ветки — готовится"
+		mission_button.disabled = true
+	elif CampaignState.mission_2_complete:
+		title_label.text = "ЛАГЕРЬ — ПОСЛЕ ВТОРОЙ МИССИИ"
+		subtitle_label.text = "Andrew и Vedocorban присоединились к отряду"
+		status_label.text = "Распределите очки и подготовьте Bastion, Andrew и Kamorge к мосту перед королевством."
+		mission_button.text = "Начать третью миссию — мост перед королевством"
+		mission_button.disabled = false
+	else:
+		title_label.text = "ЛАГЕРЬ — ПОСЛЕ ПЕРВОЙ МИССИИ"
+		subtitle_label.text = "Подготовка отряда перед дорогой через лес и болото"
+		status_label.text = "Первая миссия завершена. Kamorge присоединился к отряду."
+		mission_button.text = "Начать вторую миссию"
+		mission_button.disabled = false
+
+
+func _save_progress() -> void:
+	status_label.text = (
+		"Достижение сохранено." if CampaignState.save_game() else "Не удалось сохранить игру."
+	)
+
+
+func _open_characters() -> void:
+	character_panel.visible = true
+	_populate_characters()
+
+
+func _populate_characters() -> void:
+	character_select.clear()
+	var ids: Array[String] = CampaignState.get_unlocked_character_ids()
+	for character_id: String in ids:
+		var data: Dictionary = CampaignState.get_character(character_id)
+		character_select.add_item(str(data.get("name", character_id)))
+		character_select.set_item_metadata(character_select.item_count - 1, character_id)
+	if not ids.is_empty():
+		selected_character_id = ids[0]
+		_refresh_character_panel()
+
+
+func _on_character_selected(index: int) -> void:
+	selected_character_id = str(character_select.get_item_metadata(index))
+	_refresh_character_panel()
+
+
+func _refresh_character_panel() -> void:
+	var data: Dictionary = CampaignState.get_character(selected_character_id)
+	if data.is_empty():
+		return
+	portrait.texture = load(str(data.get("portrait", "")))
+	atac_select.clear()
+	var selected_atac: String = str(data.get("atac", "alba"))
+	var selected_index: int = 0
+	for atac_id: String in CampaignState.unlocked_atacs:
+		var atac_data: Dictionary = CampaignState.ATAC_DATA.get(atac_id, {}) as Dictionary
+		atac_select.add_item(str(atac_data.get("name", atac_id.capitalize())))
+		atac_select.set_item_metadata(atac_select.item_count - 1, atac_id)
+		if atac_id == selected_atac:
+			selected_index = atac_select.item_count - 1
+	atac_select.select(selected_index)
+	var level: int = int(data.get("level", 1))
+	character_stats.text = (
+		(
+			"Уровень: %d\nОпыт: %d / %d\nТекущий ATAC: %s\n"
+			+ "Бонус силы: +%d • ловкости: +%d • защиты: +%d • умения атаки: +%d\n"
+			+ "HP отдельно не прокачивается: оно растёт вместе с уровнем установленного ATAC."
+		)
+		% [
+			level,
+			int(data.get("experience", 0)),
+			CampaignState.xp_needed(level),
+			str(
+				(CampaignState.ATAC_DATA.get(selected_atac, {}) as Dictionary).get(
+					"name", selected_atac
+				)
+			),
+			int(data.get("strength_bonus", 0)),
+			int(data.get("agility_bonus", 0)),
+			int(data.get("defense_bonus", 0)),
+			int(data.get("attack_skill_bonus", 0)),
+		]
+	)
+	points_label.text = "Свободные очки прокачки: %d" % int(data.get("stat_points", 0))
+
+
+func _on_atac_selected(index: int) -> void:
+	var atac_id: String = str(atac_select.get_item_metadata(index))
+	if CampaignState.assign_atac(selected_character_id, atac_id):
+		status_label.text = (
+			"ATAC назначен. Если он был у другого союзника, "
+			+ "роботы автоматически обменялись владельцами."
+		)
+		_refresh_character_panel()
+
+
+func _allocate(stat_key: String) -> void:
+	if CampaignState.allocate_stat(selected_character_id, stat_key):
+		status_label.text = "Очко характеристики распределено."
+	else:
+		status_label.text = "Нет свободных очков прокачки."
+	_refresh_character_panel()
+
+
+func _start_next_mission() -> void:
+	if CampaignState.mission_4_complete:
+		return
+	if CampaignState.mission_3_complete:
+		if CampaignState.story_branch == "seek_southern_aid":
+			CampaignState.current_mission = 4
+			CampaignState.save_game()
+			get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
+		return
+	CampaignState.current_mission = 3 if CampaignState.mission_2_complete else 2
+	CampaignState.save_game()
+	get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
+
+
+func _open_shop() -> void:
+	if not CampaignState.is_shop_available():
+		status_label.text = "Магазин ещё закрыт."
+		return
+	get_tree().change_scene_to_file("res://scenes/Shop.tscn")
+
+
+func _toggle_3d_mode() -> void:
+	var enabled: bool = CampaignState.toggle_arena_battles()
+	status_label.text = (
+		"3D-арена включена: атаки игрока показываются отдельной сценой крупным планом."
+		if enabled
+		else "3D-арена отключена: атаки снова показываются прямо на тактическом поле."
+	)
+	_refresh_campaign_status()
+
+
+func _return_to_main() -> void:
+	get_tree().change_scene_to_file("res://scenes/Main.tscn")
+
+
+func _open_mission_select() -> void:
+	CampaignState.mission_selector_return_scene = "res://scenes/CampaignHub.tscn"
+	get_tree().change_scene_to_file("res://scenes/MissionSelect.tscn")

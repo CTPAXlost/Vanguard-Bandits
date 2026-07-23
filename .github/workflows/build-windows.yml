@@ -1,0 +1,298 @@
+name: Build Windows Remaster
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - "project/**"
+      - "tools/**"
+      - ".github/workflows/build-windows.yml"
+  pull_request:
+    paths:
+      - "project/**"
+      - "tools/**"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GODOT_VERSION: "4.6.3"
+      GODOT_STATUS: "stable"
+      GODOT_CACHE_DIR: "${{ github.workspace }}/.cache/godot"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install importer dependencies
+        run: python -m pip install --upgrade Pillow
+
+      - name: Run importer tests
+        run: python -m unittest discover -s tools/tests -v
+
+
+      - name: Cache Godot editor and export templates
+        uses: actions/cache@v4
+        with:
+          path: .cache/godot
+          key: godot-${{ runner.os }}-${{ env.GODOT_VERSION }}-${{ env.GODOT_STATUS }}
+
+      - name: Download official Godot editor and export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$GODOT_CACHE_DIR"
+          GODOT_ZIP="$GODOT_CACHE_DIR/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64.zip"
+          TEMPLATES_TPZ="$GODOT_CACHE_DIR/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_export_templates.tpz"
+
+          GODOT_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${GODOT_STATUS}/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64.zip"
+          TEMPLATES_URL="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${GODOT_STATUS}/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_export_templates.tpz"
+
+          download_with_resume() {
+            local url="$1"
+            local output="$2"
+            local label="$3"
+
+            if [ -s "$output" ]; then
+              echo "$label already exists in cache: $output"
+              return 0
+            fi
+
+            for attempt in 1 2 3 4 5 6 7 8; do
+              echo "Downloading $label (attempt $attempt/8)..."
+              if curl --http1.1 --fail --location                 --retry 4 --retry-delay 4 --retry-all-errors                 --connect-timeout 30 --speed-time 90 --speed-limit 1024                 --continue-at - --output "$output" "$url"; then
+                return 0
+              fi
+              echo "$label download interrupted; retrying with resume..."
+              sleep $((attempt * 5))
+            done
+
+            echo "Failed to download $label after all retries." >&2
+            return 1
+          }
+
+          download_with_resume "$GODOT_URL" "$GODOT_ZIP" "Godot editor"
+          download_with_resume "$TEMPLATES_URL" "$TEMPLATES_TPZ" "Godot export templates"
+
+          rm -rf godot templates-unpacked
+          mkdir -p godot templates-unpacked
+          unzip -q -t "$GODOT_ZIP"
+          unzip -q "$GODOT_ZIP" -d godot
+          chmod +x "godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+
+          unzip -q -t "$TEMPLATES_TPZ"
+          unzip -q "$TEMPLATES_TPZ" -d templates-unpacked
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_STATUS}"
+          rm -rf "$TEMPLATE_DIR"
+          mkdir -p "$TEMPLATE_DIR"
+          cp -R templates-unpacked/templates/. "$TEMPLATE_DIR/"
+
+          "godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64" --version
+          test -f "$TEMPLATE_DIR/windows_release_x86_64.exe"
+
+      - name: Import Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          "$GODOT" --headless --path project --import --quit-after 300
+
+      - name: Runtime smoke test for battle scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/BattlePrototype.tscn --quit-after 8 2>&1 | tee battle-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node" battle-smoke.log; then
+            echo "Battle scene smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          exit "$STATUS"
+
+      - name: Runtime smoke test for mission 3 branch scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          # --quit-after принимает количество кадров, а не секунд.
+          "$GODOT" --headless --path project res://scenes/Mission3Smoke.tscn --quit-after 300 2>&1 | tee mission3-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|Parent node is busy" mission3-smoke.log; then
+            echo "Mission 3 smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          grep -q "MISSION3_SMOKE_OK" mission3-smoke.log
+          exit "$STATUS"
+
+      - name: Runtime smoke test for mission selector
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/MissionSelect.tscn --quit-after 4 2>&1 | tee mission-select-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function" mission-select-smoke.log; then
+            echo "Mission selector smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          exit "$STATUS"
+
+      - name: Runtime smoke test for campaign hub
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/CampaignHub.tscn --quit-after 4 2>&1 | tee hub-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node" hub-smoke.log; then
+            echo "Campaign hub smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          exit "$STATUS"
+
+
+      - name: Runtime smoke test for castle rescue mission
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          # Даём сцене несколько кадров на безопасную инициализацию.
+          "$GODOT" --headless --path project res://scenes/Mission4Smoke.tscn --quit-after 300 2>&1 | tee mission4-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|Parent node is busy" mission4-smoke.log; then
+            echo "Castle rescue mission smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          grep -q "MISSION4_SMOKE_OK" mission4-smoke.log
+          exit "$STATUS"
+
+
+      - name: Runtime smoke test for tactical ATAC visibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/VisibilitySmoke.tscn --quit-after 300 2>&1 | tee visibility-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|TACTICAL_VISIBILITY_.*FAILED" visibility-smoke.log; then
+            echo "Tactical ATAC visibility smoke test found an error." >&2
+            exit 1
+          fi
+          grep -q "TACTICAL_VISIBILITY_SMOKE_OK" visibility-smoke.log
+          exit "$STATUS"
+
+      - name: Runtime smoke test for 3D attack arena
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          # 8 здесь означало всего 8 кадров, поэтому тест завершался до конца анимации.
+          "$GODOT" --headless --path project res://scenes/ArenaSmoke.tscn --quit-after 2400 2>&1 | tee arena-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function" arena-smoke.log; then
+            echo "3D attack arena smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          grep -q "ARENA_V15_AI_OK" arena-smoke.log
+          grep -q "ARENA_SMOKE_OK" arena-smoke.log
+          exit "$STATUS"
+
+      - name: Runtime smoke test for common team shop
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/Shop.tscn --quit-after 5 2>&1 | tee shop-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function" shop-smoke.log; then
+            echo "Common team shop smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          exit "$STATUS"
+
+      - name: Runtime smoke test for corrected branch story scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/StorySmoke.tscn --quit-after 6 2>&1 | tee story-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function" story-smoke.log; then
+            echo "Corrected branch story scene smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          exit "$STATUS"
+
+      - name: Upload runtime smoke logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vanguard-Bandits-Smoke-Logs
+          path: |
+            battle-smoke.log
+            mission3-smoke.log
+            hub-smoke.log
+            mission4-smoke.log
+            story-smoke.log
+            mission-select-smoke.log
+            shop-smoke.log
+            arena-smoke.log
+            visibility-smoke.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Export Windows x64
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/windows
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          PRESET="Windows Desktop (Clean Prototype)"
+          if [ -f "project/assets/imported/models/alba/alba.obj" ]; then
+            PRESET="Windows Desktop (Local Imported)"
+            echo "Imported ATAC assets detected; building the model-enabled preset."
+          else
+            echo "No imported ATAC assets detected; building the clean preset."
+          fi
+          "$GODOT" --headless --path project --export-release "$PRESET" "../build/windows/Vanguard Bandits Remaster.exe"
+          cp README.md build/windows/README.txt
+          test -s "build/windows/Vanguard Bandits Remaster.exe"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vanguard-Bandits-Remaster-Windows-x64
+          path: build/windows/
+          if-no-files-found: error
+          compression-level: 9

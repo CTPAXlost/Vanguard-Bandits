@@ -1,0 +1,11 @@
+Vanguard Bandits Remaster 1.4.1 — проверка пакета
+
+Проверено:
+- 77 Python-тестов: OK;
+- workflow увеличивает ArenaSmoke до 1200 кадров;
+- Mission3Smoke и Mission4Smoke создают боевую сцену после process_frame;
+- присутствуют маркеры ARENA_SMOKE_OK, MISSION3_SMOKE_OK и MISSION4_SMOKE_OK;
+- очистка временных объектов арены не вызывает remove_child() во время изменения дерева;
+- игровой контент и формат сохранений версии 1.4 не менялись.
+
+Фактический headless-запуск Godot выполнит GitHub Actions после загрузки этого пакета.
