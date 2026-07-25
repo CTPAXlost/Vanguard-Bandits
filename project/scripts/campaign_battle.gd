@@ -455,7 +455,7 @@ func _show_cador_cameo() -> void:
 	var cador := Node3D.new()
 	cador.name = "Cador_Cameo"
 	cador.position = _cell_to_world(cell)
-	var visual: Node3D = AtacFactory.create_atac("cador")
+	var visual: Node3D = AtacFactory.create_atac("cador", "tactical")
 	visual.name = "ATACVisual"
 	visual.scale = Vector3.ONE * 0.84
 	cador.add_child(visual)

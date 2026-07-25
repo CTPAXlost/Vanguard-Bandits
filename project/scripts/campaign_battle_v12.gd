@@ -393,9 +393,11 @@ func _begin_tactical_attack_presentation(attacker: Node3D, target: Node3D, attac
 	var target_visual: Node3D = target.get_node_or_null("ATACVisual") as Node3D
 	var prep: Tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	if attacker_visual != null:
-		prep.tween_property(attacker_visual, "scale", Vector3.ONE * 1.10, 0.12)
+		var attacker_base: Vector3 = attacker_visual.get_meta("base_tactical_scale", attacker_visual.scale)
+		prep.tween_property(attacker_visual, "scale", attacker_base * 1.10, 0.12)
 	if target_visual != null:
-		prep.tween_property(target_visual, "scale", Vector3.ONE * 1.04, 0.12)
+		var target_base: Vector3 = target_visual.get_meta("base_tactical_scale", target_visual.scale)
+		prep.tween_property(target_visual, "scale", target_base * 1.04, 0.12)
 	await prep.finished
 	await get_tree().create_timer(0.055).timeout
 
@@ -407,9 +409,11 @@ func _finish_tactical_attack_presentation(attacker: Node3D, target: Node3D, mode
 	var target_visual: Node3D = target.get_node_or_null("ATACVisual") as Node3D
 	var finish: Tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if attacker_visual != null:
-		finish.tween_property(attacker_visual, "scale", Vector3.ONE, 0.18)
+		var attacker_base: Vector3 = attacker_visual.get_meta("base_tactical_scale", attacker_visual.scale)
+		finish.tween_property(attacker_visual, "scale", attacker_base, 0.18)
 	if target_visual != null:
-		finish.tween_property(target_visual, "scale", Vector3.ONE, 0.22)
+		var target_base: Vector3 = target_visual.get_meta("base_tactical_scale", target_visual.scale)
+		finish.tween_property(target_visual, "scale", target_base, 0.22)
 	await finish.finished
 
 
@@ -464,6 +468,9 @@ func _animate_desert_storm_v12(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "%s вызывает «Бурю в пустыне»" % str(attacker.get_meta("label"))
 	_face_target(attacker, target)
 	var visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	if visual != null and visual.has_method("set_combat_pose"):
+		visual.call("set_combat_pose", "desert_storm", 0.48)
+	await CinematicVfx.play(self, "desert_storm", target.global_position + Vector3(0, 0.05, 0), 1.25, 0.11)
 	for index: int in range(22):
 		if visual != null and visual.has_method("set_combat_pose"):
 			visual.call("set_combat_pose", "desert_storm", float(index) / 21.0)
@@ -476,12 +483,19 @@ func _animate_desert_storm_v12(attacker: Node3D, target: Node3D) -> void:
 
 func _animate_sticky_sandstorm(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "%s поднимает «Вязкую бурю в песках»" % str(attacker.get_meta("label"))
+	_face_target(attacker, target)
+	var visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	if visual != null and visual.has_method("set_combat_pose"):
+		visual.call("set_combat_pose", "sticky_sandstorm", 0.52)
+	await CinematicVfx.play(self, "sticky_sandstorm", target.global_position + Vector3(0, 0.04, 0), 1.28, 0.105)
 	for index: int in range(30):
 		_spawn_sand_arc(target.global_position + Vector3(0, 0.35, 0), index)
 		if index % 4 == 0:
 			_spawn_sand_column(target.global_position + Vector3(rng.randf_range(-0.8, 0.8), 0, rng.randf_range(-0.8, 0.8)))
 		await get_tree().create_timer(0.022).timeout
 	_camera_shake(0.45, 0.20)
+	if visual != null and visual.has_method("reset_pose"):
+		visual.call("reset_pose")
 
 
 func _animate_healing_ban(attacker: Node3D, target: Node3D) -> void:
@@ -556,7 +570,7 @@ func _play_mission_four_intro() -> void:
 		visual.visible = true
 		visual.scale = Vector3.ZERO
 		var reveal: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		reveal.tween_property(visual, "scale", Vector3.ONE * 0.64, 0.78)
+		reveal.tween_property(visual, "scale", visual.get_meta("base_tactical_scale", Vector3.ONE * 0.76), 0.78)
 		await reveal.finished
 	_spawn_arrival_effect(eigol_unit.global_position + Vector3(0, 1.0, 0))
 	await _show_dialogue("Kamorge", "Eigol принял меня. Значит, я ещё могу исправить свою ошибку.", KAMORGE_PORTRAIT)

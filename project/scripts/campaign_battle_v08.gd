@@ -2,6 +2,7 @@ extends "res://scripts/campaign_battle.gd"
 
 const CombatCatalog = preload("res://scripts/combat_catalog.gd")
 const BattleArenaDirectorScript = preload("res://scripts/battle_arena_director.gd")
+const CinematicVfx = preload("res://scripts/cinematic_vfx.gd")
 const MISSION_THREE_PATH: String = "res://data/maps/mission_03.json"
 const MISSION_FOUR_PATH: String = "res://data/maps/mission_04.json"
 const STORY_SCENE_PATH: String = "res://scenes/StoryChapter.tscn"
@@ -1468,6 +1469,9 @@ func _animate_tornado(attacker: Node3D, target: Node3D) -> void:
 func _animate_bright_bomb(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "Faulkner формирует «Яркую бомбу»"
 	_face_target(attacker, target)
+	var vfx_visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	if vfx_visual != null and vfx_visual.has_method("set_combat_pose"):
+		vfx_visual.call("set_combat_pose", "bright_bomb", 0.48)
 	var orb: MeshInstance3D = MeshInstance3D.new()
 	var sphere: SphereMesh = SphereMesh.new()
 	sphere.radius = 0.28
@@ -1488,6 +1492,9 @@ func _animate_bright_bomb(attacker: Node3D, target: Node3D) -> void:
 	var flight: Tween = create_tween().set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_IN)
 	flight.tween_property(orb, "position", target.global_position + Vector3(0, 1.0, 0), 0.42)
 	await flight.finished
+	await CinematicVfx.play(self, "bright_bomb", target.global_position + Vector3(0, 0.16, 0), 1.22, 0.095)
+	if vfx_visual != null and vfx_visual.has_method("reset_pose"):
+		vfx_visual.call("reset_pose")
 	_screen_flash(Color(1.0, 0.92, 0.55), 0.48, 0.32)
 	_spawn_attack_burst(target.global_position + Vector3(0, 1.0, 0), Color(1.0, 0.75, 0.18), 1.75)
 	_camera_shake(0.44, 0.20)
@@ -1880,7 +1887,7 @@ func _play_mission_four_intro() -> void:
 		visual.visible = true
 		visual.scale = Vector3.ZERO
 		var reveal: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		reveal.tween_property(visual, "scale", Vector3.ONE * 0.60, 0.72)
+		reveal.tween_property(visual, "scale", visual.get_meta("base_tactical_scale", Vector3.ONE * 0.76), 0.72)
 		await reveal.finished
 	_spawn_arrival_effect(eigol_unit.global_position + Vector3(0, 1.0, 0))
 	await _show_dialogue(
@@ -2232,6 +2239,12 @@ func _animate_spear_throw(attacker: Node3D, target: Node3D) -> void:
 func _animate_ice_rain(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "%s вызывает «Ледяной дождь»" % str(attacker.get_meta("label"))
 	_face_target(attacker, target)
+	var vfx_visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	if vfx_visual != null and vfx_visual.has_method("set_combat_pose"):
+		vfx_visual.call("set_combat_pose", "ice_rain", 0.52)
+	await CinematicVfx.play(self, "ice_rain", target.global_position + Vector3(0, 0.10, 0), 1.20, 0.105)
+	if vfx_visual != null and vfx_visual.has_method("reset_pose"):
+		vfx_visual.call("reset_pose")
 	for index: int in range(10):
 		var shard: MeshInstance3D = MeshInstance3D.new()
 		var mesh: BoxMesh = BoxMesh.new()
@@ -2386,6 +2399,19 @@ func _animate_miss(unit: Node3D) -> void:
 	await tween.finished
 
 
+func _animate_ball_lightning(attacker: Node3D, target: Node3D) -> void:
+	status_label.text = "%s использует «Шаровую молнию»" % str(attacker.get_meta("label"))
+	_face_target(attacker, target)
+	var visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	if visual != null and visual.has_method("set_combat_pose"):
+		visual.call("set_combat_pose", "ball_lightning", 0.52)
+	await CinematicVfx.play(self, "ball_lightning", target.global_position + Vector3(0, 0.12, 0), 1.18, 0.105)
+	_spawn_attack_burst(target.global_position + Vector3(0, 0.90, 0), Color(0.38, 0.55, 1.0), 1.32)
+	_camera_shake(0.34, 0.13)
+	if visual != null and visual.has_method("reset_pose"):
+		visual.call("reset_pose")
+
+
 func _animate_desert_whirl(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "%s использует «Вихрь в пустыне»" % str(attacker.get_meta("label"))
 	_face_target(attacker, target)
@@ -2408,6 +2434,12 @@ func _animate_desert_whirl(attacker: Node3D, target: Node3D) -> void:
 func _animate_quicksand(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "%s применяет «Зыбучие пески»" % str(attacker.get_meta("label"))
 	_face_target(attacker, target)
+	var vfx_visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	if vfx_visual != null and vfx_visual.has_method("set_combat_pose"):
+		vfx_visual.call("set_combat_pose", "quicksand", 0.50)
+	await CinematicVfx.play(self, "quicksand", target.global_position + Vector3(0, -0.02, 0), 1.16, 0.11)
+	if vfx_visual != null and vfx_visual.has_method("reset_pose"):
+		vfx_visual.call("reset_pose")
 	var origin: Vector3 = target.global_position + Vector3(0, 0.04, 0)
 	for index: int in range(6):
 		var ring: MeshInstance3D = MeshInstance3D.new()

@@ -220,9 +220,27 @@ jobs:
             exit 1
           fi
           grep -q "TACTICAL_VISIBILITY_SMOKE_OK" visibility-smoke.log
+          grep -q "SKELETAL_ATAC_SMOKE_OK" visibility-smoke.log
           exit "$STATUS"
 
-      - name: Runtime smoke test for 3D attack arena
+      - name: Runtime smoke test for defeated ATAC cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/DeathCleanupSmoke.tscn --quit-after 900 2>&1 | tee death-cleanup-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|DEATH_CLEANUP_SMOKE_FAILED" death-cleanup-smoke.log; then
+            echo "Defeated ATAC cleanup smoke test found an error." >&2
+            exit 1
+          fi
+          grep -q "DEATH_CLEANUP_SMOKE_OK" death-cleanup-smoke.log
+          exit "$STATUS"
+
+      - name: Runtime smoke test for legacy 3D attack arena code
+
         shell: bash
         run: |
           set -euo pipefail
@@ -285,6 +303,7 @@ jobs:
             shop-smoke.log
             arena-smoke.log
             visibility-smoke.log
+            death-cleanup-smoke.log
           if-no-files-found: ignore
           retention-days: 14
 

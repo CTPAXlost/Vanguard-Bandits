@@ -507,9 +507,18 @@ func _spawn_unit(
 
 	var visual := AtacFactory.create_atac(model_slug, "tactical")
 	visual.name = "ATACVisual"
-	visual.scale = (
-		Vector3.ONE * (0.64 if model_slug in ["barazaph", "eigol"] else (0.61 if player_controlled else 0.58))
-	)
+	if bool(visual.get_meta("real_skeleton", false)):
+		var skeletal_scale: float = 0.82
+		if model_slug in ["barazaph", "eigol", "cador", "toreadore"]:
+			skeletal_scale = 0.76
+		elif model_slug in ["amphisia", "haurol", "serata"]:
+			skeletal_scale = 0.86
+		visual.scale = Vector3.ONE * skeletal_scale
+	else:
+		visual.scale = (
+			Vector3.ONE * (0.64 if model_slug in ["barazaph", "eigol"] else (0.61 if player_controlled else 0.58))
+		)
+	visual.set_meta("base_tactical_scale", visual.scale)
 	visual.rotation_degrees.y = 180.0 if team == "ally" else 0.0
 	unit.add_child(visual)
 
@@ -1037,19 +1046,23 @@ func _damage_target(target: Node3D, damage: int) -> void:
 		hit_tween.tween_property(visual, "scale", original_scale * Vector3(1.10, 0.90, 1.10), 0.07)
 		hit_tween.tween_property(visual, "scale", original_scale, 0.12)
 	if int(stats["hp"]) <= 0:
+		var defeat_position: Vector3 = target.global_position
 		status_label.text = "%s уничтожен" % str(target.get_meta("label"))
 		var death_tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		death_tween.tween_property(target, "rotation_degrees:z", 82.0, 0.42)
-		death_tween.parallel().tween_property(target, "position:y", target.position.y - 0.22, 0.42)
-		death_tween.tween_property(target, "scale", Vector3.ZERO, 0.32)
+		death_tween.tween_property(target, "rotation_degrees:z", 82.0, 0.34)
+		death_tween.parallel().tween_property(target, "position:y", target.position.y - 0.22, 0.34)
+		death_tween.tween_property(target, "scale", Vector3.ZERO, 0.24)
 		await death_tween.finished
+		# Hide every visual explicitly.  The old 2.5D renderer used a top-level
+		# camera-facing child, so scaling the unit to zero did not always remove it.
+		_mark_defeated_invisible(target)
 		if str(target.get_meta("team")) == "enemy":
 			if not bool(target.get_meta("coin_rewarded", false)):
 				target.set_meta("coin_rewarded", true)
 				var coin_reward: int = CampaignState.award_atac_elimination(
 					str(target.get_meta("model_slug", "")), bool(target.get_meta("commander", false))
 				)
-				_spawn_coin_reward_label(target.global_position + Vector3(0, 2.75, 0), coin_reward)
+				_spawn_coin_reward_label(defeat_position + Vector3(0, 2.75, 0), coin_reward)
 				_refresh_coin_display()
 				status_label.text = "%s уничтожен • +%d монет" % [str(target.get_meta("label")), coin_reward]
 			defeated_enemy_count += 1
@@ -1059,7 +1072,37 @@ func _damage_target(target: Node3D, damage: int) -> void:
 				and not kamorge_spawned
 			):
 				await _spawn_kamorge_event()
+		call_deferred("_finalize_defeated_unit", target)
 	_refresh_ui()
+
+
+func _mark_defeated_invisible(unit: Node3D) -> void:
+	if unit == null or not is_instance_valid(unit):
+		return
+	unit.set_meta("defeated", true)
+	unit.visible = false
+	unit.set_process(false)
+	unit.set_physics_process(false)
+	var visual: Node3D = unit.get_node_or_null("ATACVisual") as Node3D
+	if visual != null:
+		visual.visible = false
+	var hp_bar: Node3D = unit.get_node_or_null("HPBar") as Node3D
+	if hp_bar != null:
+		hp_bar.visible = false
+	var ring: Node3D = unit.get_node_or_null("SelectionRing") as Node3D
+	if ring != null:
+		ring.visible = false
+	unit.set_meta("cell", Vector2i(-9999, -9999))
+	if selected_unit == unit:
+		selected_unit = null
+
+
+func _finalize_defeated_unit(unit: Node3D) -> void:
+	if unit == null or not is_instance_valid(unit):
+		return
+	units.erase(unit)
+	if unit.get_parent() != null:
+		unit.queue_free()
 
 
 func _spawn_damage_label(world_position: Vector3, damage: int) -> void:

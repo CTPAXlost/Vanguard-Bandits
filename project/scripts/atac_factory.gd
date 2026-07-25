@@ -3,14 +3,19 @@ extends RefCounted
 
 const MultiViewAtac = preload("res://scripts/multiview_atac.gd")
 const RealModelAtac = preload("res://scripts/real_model_atac.gd")
+const SkeletalAtac = preload("res://scripts/skeletal_atac.gd")
 
 
 static func create_atac(slug: String, render_context: String = "auto") -> Node3D:
 	var normalized: String = slug.to_lower()
-	# The tactical map deliberately uses the stable multi-view rig. The imported
-	# static GLB meshes are reserved for the close-up arena and model gallery so
-	# a malformed scale/import cannot make a unit disappear on the grid.
+	# V1.7: every tactical ATAC is a complete articulated Skeleton3D model.
+	# The old camera-facing sheets remain only as a guarded fallback for an
+	# unknown slug, so units cannot disappear or be cut off at camera angles.
 	if render_context == "tactical":
+		if SkeletalAtac.supports(normalized):
+			var skeletal_root: SkeletalAtac = SkeletalAtac.new()
+			skeletal_root.configure(normalized)
+			return skeletal_root
 		return _create_multiview(normalized)
 	if render_context == "arena":
 		if RealModelAtac.supports(normalized):
