@@ -8,9 +8,9 @@ const SkeletalAtac = preload("res://scripts/skeletal_atac.gd")
 
 static func create_atac(slug: String, render_context: String = "auto") -> Node3D:
 	var normalized: String = slug.to_lower()
-	# V1.7: every tactical ATAC is a complete articulated Skeleton3D model.
-	# The old camera-facing sheets remain only as a guarded fallback for an
-	# unknown slug, so units cannot disappear or be cut off at camera angles.
+	# V1.7.1: every tactical ATAC uses its original illustrated armour skin,
+	# segmented into articulated layers on a real Skeleton3D. The guarded
+	# multiview fallback remains only for unknown slugs.
 	if render_context == "tactical":
 		if SkeletalAtac.supports(normalized):
 			var skeletal_root: SkeletalAtac = SkeletalAtac.new()

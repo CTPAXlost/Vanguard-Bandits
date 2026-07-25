@@ -520,19 +520,37 @@ func _animate_long_lunge(attacker: Node3D, target: Node3D) -> void:
 
 func _spawn_afterimages(unit: Node3D, tint: Color) -> void:
 	var original := unit.get_node_or_null("ATACVisual/ModelRoot/AtacSprite") as Sprite3D
-	if original == null or original.texture == null:
+	var texture: Texture2D = null
+	var pixel_size: float = 0.0021
+	if original != null and original.texture != null:
+		texture = original.texture
+		pixel_size = original.pixel_size
+	else:
+		var visual: Node3D = unit.get_node_or_null("ATACVisual") as Node3D
+		if visual != null:
+			var source_path: String = str(visual.get_meta("source_front_path", ""))
+			pixel_size = float(visual.get_meta("skin_pixel_size", 0.0021))
+			if not source_path.is_empty():
+				texture = ResourceLoader.load(source_path, "Texture2D", ResourceLoader.CACHE_MODE_REUSE) as Texture2D
+	if texture == null:
 		return
 	for index: int in range(3):
 		var ghost := Sprite3D.new()
-		ghost.texture = original.texture
+		ghost.texture = texture
 		ghost.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		ghost.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
-		ghost.pixel_size = original.pixel_size
-		ghost.position = unit.global_position + Vector3(0, 1.28, 0)
-		ghost.modulate = Color(tint.r, tint.g, tint.b, tint.a - index * 0.07)
+		ghost.alpha_cut = SpriteBase3D.ALPHA_CUT_OPAQUE_PREPASS
+		ghost.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE
+		ghost.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		ghost.shaded = false
+		ghost.double_sided = true
+		ghost.pixel_size = pixel_size
+		ghost.position = unit.global_position + Vector3(0, 1.08, 0)
+		ghost.scale = Vector3.ONE * float(unit.get_node("ATACVisual").scale.x)
+		ghost.modulate = Color(tint.r, tint.g, tint.b, maxf(0.05, tint.a - index * 0.07))
+		ghost.no_depth_test = false
 		add_child(ghost)
 		var tween := create_tween()
-		tween.tween_property(ghost, "position:y", ghost.position.y + 0.15 + index * 0.06, 0.28)
+		tween.tween_property(ghost, "position", ghost.position + Vector3(0, 0.12 + index * 0.05, 0), 0.28)
 		tween.parallel().tween_property(ghost, "modulate:a", 0.0, 0.28)
 		tween.tween_callback(Callable(ghost, "queue_free"))
 

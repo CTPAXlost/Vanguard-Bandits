@@ -32,10 +32,18 @@ func _ready() -> void:
 		if skeleton == null or skeleton.get_bone_count() < 20:
 			_fail("TACTICAL_VISIBILITY_RIG_FAILED_%s" % slug)
 			return
-		var meshes: Array[Node] = rig.find_children("*", "MeshInstance3D", true, false)
-		if meshes.size() < 18:
-			_fail("TACTICAL_VISIBILITY_INCOMPLETE_MODEL_%s" % slug)
+		if not bool(rig.get_meta("original_skin_rig", false)):
+			_fail("TACTICAL_VISIBILITY_ORIGINAL_SKIN_MISSING_%s" % slug)
 			return
+		var sprites: Array[Node] = rig.find_children("*", "Sprite3D", true, false)
+		if sprites.size() < 10:
+			_fail("TACTICAL_VISIBILITY_INCOMPLETE_SKIN_%s" % slug)
+			return
+		for sprite_node: Node in sprites:
+			var skin_sprite: Sprite3D = sprite_node as Sprite3D
+			if skin_sprite != null and skin_sprite.texture == null:
+				_fail("TACTICAL_VISIBILITY_SKIN_TEXTURE_MISSING_%s" % slug)
+				return
 		var tested_angles: int = 0
 		for camera_position: Vector3 in camera_positions:
 			camera.position = camera_position
@@ -49,7 +57,7 @@ func _ready() -> void:
 		if tested_angles != 4:
 			_fail("TACTICAL_VIEW_SWAP_FAILED_%s" % slug)
 			return
-		for pose_name: String in ["slash", "lunge", "strong_slash", "ball_lightning", "hit"]:
+		for pose_name: String in ["slash", "lunge", "long_lunge", "strong_slash", "ball_lightning", "hit"]:
 			rig.call("set_combat_pose", pose_name, 0.55)
 			await get_tree().process_frame
 		rig.call("reset_pose")
@@ -58,6 +66,8 @@ func _ready() -> void:
 
 	print("TACTICAL_VISIBILITY_SMOKE_OK")
 	print("SKELETAL_ATAC_SMOKE_OK")
+	print("ORIGINAL_SKIN_RIG_SMOKE_OK")
+	print("BASIC_ATTACK_ANIMATION_SMOKE_OK")
 	get_tree().quit()
 
 

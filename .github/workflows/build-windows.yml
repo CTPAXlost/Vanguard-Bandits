@@ -221,6 +221,8 @@ jobs:
           fi
           grep -q "TACTICAL_VISIBILITY_SMOKE_OK" visibility-smoke.log
           grep -q "SKELETAL_ATAC_SMOKE_OK" visibility-smoke.log
+          grep -q "ORIGINAL_SKIN_RIG_SMOKE_OK" visibility-smoke.log
+          grep -q "BASIC_ATTACK_ANIMATION_SMOKE_OK" visibility-smoke.log
           exit "$STATUS"
 
       - name: Runtime smoke test for defeated ATAC cleanup

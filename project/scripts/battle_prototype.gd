@@ -844,111 +844,74 @@ func _animate_path(unit: Node3D, path: Array, step_duration: float) -> void:
 func _animate_slash(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "%s использует «Порез»" % str(attacker.get_meta("label"))
 	_face_target(attacker, target)
-	var body := attacker.get_node_or_null("ATACVisual/ModelRoot") as Node3D
-	var arm := attacker.get_node_or_null("ATACVisual/ModelRoot/RightArmPivot") as Node3D
-	var weapon := (
-		attacker.get_node_or_null("ATACVisual/ModelRoot/RightArmPivot/WeaponPivot") as Node3D
-	)
-	var arm_start := arm.rotation_degrees if arm != null else Vector3.ZERO
-	var weapon_start := weapon.rotation_degrees if weapon != null else Vector3.ZERO
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	if body != null:
-		tween.parallel().tween_property(body, "rotation_degrees:z", -7.0, 0.18)
-	if arm != null:
-		tween.tween_property(arm, "rotation_degrees", Vector3(-28, 14, -74), 0.18)
-	else:
-		tween.tween_interval(0.18)
-	if weapon != null:
-		tween.parallel().tween_property(weapon, "rotation_degrees", Vector3(8, 0, -42), 0.18)
-	tween.tween_callback(
-		Callable(self, "_spawn_slash_effect").bind(target.global_position + Vector3(0, 1.0, 0))
-	)
-	if arm != null:
-		tween.tween_property(arm, "rotation_degrees", Vector3(18, -8, 52), 0.14)
-	else:
-		tween.tween_interval(0.14)
-	if arm != null:
-		tween.tween_property(arm, "rotation_degrees", arm_start, 0.22)
-	if weapon != null:
-		tween.parallel().tween_property(weapon, "rotation_degrees", weapon_start, 0.22)
-	if body != null:
-		tween.parallel().tween_property(body, "rotation_degrees:z", 0.0, 0.22)
+	var visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	var start_position: Vector3 = attacker.position
+	var direction: Vector3 = (target.position - attacker.position).normalized()
+	var windup_position: Vector3 = start_position - direction * 0.08
+	var strike_position: Vector3 = start_position + direction * 0.26
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "slash"), 0.0, 0.30, 0.17)
+	tween.parallel().tween_property(attacker, "position", windup_position, 0.17)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "slash"), 0.30, 0.74, 0.13)
+	tween.parallel().tween_property(attacker, "position", strike_position, 0.13)
+	tween.tween_callback(Callable(self, "_spawn_slash_effect").bind(target.global_position + Vector3(0, 1.0, 0)))
+	tween.tween_interval(0.055)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "slash"), 0.74, 1.0, 0.22)
+	tween.parallel().tween_property(attacker, "position", start_position, 0.22)
+	tween.tween_callback(Callable(self, "_reset_visual_pose").bind(visual))
 	await tween.finished
 
 
 func _animate_lunge(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "%s использует «Выпад»" % str(attacker.get_meta("label"))
 	_face_target(attacker, target)
-	var body := attacker.get_node_or_null("ATACVisual/ModelRoot") as Node3D
-	var start_position := attacker.position
-	var direction := (target.position - attacker.position).normalized()
-	var thrust_position := start_position + direction * 0.46
-	var arm := attacker.get_node_or_null("ATACVisual/ModelRoot/RightArmPivot") as Node3D
-	var weapon := (
-		attacker.get_node_or_null("ATACVisual/ModelRoot/RightArmPivot/WeaponPivot") as Node3D
-	)
-	var arm_start := arm.rotation_degrees if arm != null else Vector3.ZERO
-	var weapon_start := weapon.rotation_degrees if weapon != null else Vector3.ZERO
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	if body != null:
-		tween.parallel().tween_property(body, "rotation_degrees:x", -9.0, 0.15)
-	if arm != null:
-		tween.tween_property(arm, "rotation_degrees", Vector3(-58, 0, -12), 0.15)
-	else:
-		tween.tween_interval(0.15)
-	if weapon != null:
-		tween.parallel().tween_property(weapon, "rotation_degrees", Vector3(88, 0, 0), 0.15)
-	tween.tween_property(attacker, "position", thrust_position, 0.18)
-	tween.parallel().tween_callback(
-		Callable(self, "_spawn_lunge_effect").bind(
-			target.global_position + Vector3(0, 1.0, 0), direction
-		)
-	)
-	tween.tween_interval(0.09)
-	tween.tween_property(attacker, "position", start_position, 0.23)
-	if arm != null:
-		tween.parallel().tween_property(arm, "rotation_degrees", arm_start, 0.23)
-	if weapon != null:
-		tween.parallel().tween_property(weapon, "rotation_degrees", weapon_start, 0.23)
-	if body != null:
-		tween.parallel().tween_property(body, "rotation_degrees:x", 0.0, 0.23)
+	var visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	var start_position: Vector3 = attacker.position
+	var direction: Vector3 = (target.position - attacker.position).normalized()
+	var crouch_position: Vector3 = start_position - direction * 0.06
+	var thrust_position: Vector3 = start_position + direction * 0.48
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "lunge"), 0.0, 0.28, 0.16)
+	tween.parallel().tween_property(attacker, "position", crouch_position, 0.16)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "lunge"), 0.28, 0.76, 0.15)
+	tween.parallel().tween_property(attacker, "position", thrust_position, 0.15)
+	tween.parallel().tween_callback(Callable(self, "_spawn_lunge_effect").bind(target.global_position + Vector3(0, 1.0, 0), direction))
+	tween.tween_interval(0.06)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "lunge"), 0.76, 1.0, 0.24)
+	tween.parallel().tween_property(attacker, "position", start_position, 0.24)
+	tween.tween_callback(Callable(self, "_reset_visual_pose").bind(visual))
 	await tween.finished
 
 
 func _animate_long_lunge(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "%s использует «Длинный выпад»" % str(attacker.get_meta("label"))
 	_face_target(attacker, target)
-	var body := attacker.get_node_or_null("ATACVisual/ModelRoot") as Node3D
-	var start_position := attacker.position
-	var direction := (target.position - attacker.position).normalized()
-	var thrust_position := start_position + direction * 0.72
-	var arm := attacker.get_node_or_null("ATACVisual/ModelRoot/RightArmPivot") as Node3D
-	var weapon := (
-		attacker.get_node_or_null("ATACVisual/ModelRoot/RightArmPivot/WeaponPivot") as Node3D
-	)
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	if body != null:
-		tween.parallel().tween_property(body, "rotation_degrees:x", -9.0, 0.15)
-	if arm != null:
-		tween.tween_property(arm, "rotation_degrees", Vector3(-78, 0, -10), 0.15)
-	else:
-		tween.tween_interval(0.15)
-	if weapon != null:
-		tween.parallel().tween_property(weapon, "rotation_degrees", Vector3(92, 0, 0), 0.15)
-	tween.tween_property(attacker, "position", thrust_position, 0.20)
-	tween.parallel().tween_callback(
-		Callable(self, "_spawn_lunge_effect").bind(
-			target.global_position + Vector3(0, 1.0, 0), direction
-		)
-	)
-	tween.tween_property(attacker, "position", start_position, 0.25)
-	if arm != null:
-		tween.parallel().tween_property(arm, "rotation_degrees", Vector3.ZERO, 0.25)
-	if weapon != null:
-		tween.parallel().tween_property(weapon, "rotation_degrees", Vector3(4, 0, -7), 0.25)
-	if body != null:
-		tween.parallel().tween_property(body, "rotation_degrees:x", 0.0, 0.25)
+	var visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
+	var start_position: Vector3 = attacker.position
+	var direction: Vector3 = (target.position - attacker.position).normalized()
+	var crouch_position: Vector3 = start_position - direction * 0.12
+	var thrust_position: Vector3 = start_position + direction * 0.78
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "long_lunge"), 0.0, 0.30, 0.20)
+	tween.parallel().tween_property(attacker, "position", crouch_position, 0.20)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "long_lunge"), 0.30, 0.79, 0.17)
+	tween.parallel().tween_property(attacker, "position", thrust_position, 0.17)
+	tween.parallel().tween_callback(Callable(self, "_spawn_long_lunge_effect").bind(target.global_position + Vector3(0, 1.0, 0), direction))
+	tween.tween_interval(0.075)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "long_lunge"), 0.79, 1.0, 0.27)
+	tween.parallel().tween_property(attacker, "position", start_position, 0.27)
+	tween.tween_callback(Callable(self, "_reset_visual_pose").bind(visual))
 	await tween.finished
+
+
+func _apply_visual_pose(progress: float, visual: Node3D, kind: String) -> void:
+	if visual != null and is_instance_valid(visual) and visual.has_method("set_combat_pose"):
+		visual.call("set_combat_pose", kind, progress)
+
+
+func _reset_visual_pose(visual: Node3D) -> void:
+	if visual != null and is_instance_valid(visual) and visual.has_method("reset_pose"):
+		visual.call("reset_pose")
 
 
 func _face_target(attacker: Node3D, target: Node3D) -> void:
@@ -1122,51 +1085,114 @@ func _spawn_damage_label(world_position: Vector3, damage: int) -> void:
 
 
 func _spawn_slash_effect(world_position: Vector3) -> void:
-	var effect := Node3D.new()
+	var effect: Node3D = Node3D.new()
 	effect.position = world_position
 	add_child(effect)
-	for index in range(3):
-		var arc := MeshInstance3D.new()
-		var torus := TorusMesh.new()
-		torus.inner_radius = 0.46 + index * 0.08
-		torus.outer_radius = 0.52 + index * 0.08
-		torus.rings = 28
+	for index: int in range(5):
+		var arc: MeshInstance3D = MeshInstance3D.new()
+		var torus: TorusMesh = TorusMesh.new()
+		torus.inner_radius = 0.38 + index * 0.075
+		torus.outer_radius = 0.43 + index * 0.075
+		torus.rings = 32
 		torus.ring_segments = 6
 		arc.mesh = torus
-		arc.rotation_degrees = Vector3(68, 18 + index * 9, 20 - index * 11)
-		arc.scale = Vector3(1.0, 0.42, 1.0)
-		arc.material_override = _effect_material(Color(0.66, 0.92, 1.0, 0.76 - index * 0.14))
+		arc.rotation_degrees = Vector3(70, 12 + index * 8, 30 - index * 8)
+		arc.scale = Vector3(1.28, 0.34 + index * 0.025, 1.0)
+		arc.material_override = _effect_material(Color(0.52 + index * 0.06, 0.84 + index * 0.025, 1.0, 0.88 - index * 0.12))
 		effect.add_child(arc)
-	var tween := create_tween()
-	effect.scale = Vector3.ONE * 0.30
-	tween.tween_property(effect, "scale", Vector3.ONE * 1.30, 0.15)
-	tween.parallel().tween_property(effect, "rotation_degrees", Vector3(0, 55, 0), 0.15)
-	tween.tween_property(effect, "scale", Vector3.ONE * 0.08, 0.20)
+	for spark_index: int in range(9):
+		var spark: MeshInstance3D = MeshInstance3D.new()
+		var spark_mesh: BoxMesh = BoxMesh.new()
+		spark_mesh.size = Vector3(0.025, 0.025, 0.20 + spark_index * 0.018)
+		spark.mesh = spark_mesh
+		spark.rotation_degrees = Vector3(0, spark_index * 40.0, -35.0 + spark_index * 8.0)
+		spark.position = Vector3((spark_index % 3 - 1) * 0.08, (spark_index / 3) * 0.06 - 0.05, 0)
+		spark.material_override = _effect_material(Color(1.0, 0.78, 0.26, 0.82))
+		effect.add_child(spark)
+	var light: OmniLight3D = OmniLight3D.new()
+	light.light_color = Color(0.52, 0.88, 1.0)
+	light.light_energy = 5.6
+	light.omni_range = 2.5
+	effect.add_child(light)
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	effect.scale = Vector3.ONE * 0.22
+	tween.tween_property(effect, "scale", Vector3.ONE * 1.42, 0.13)
+	tween.parallel().tween_property(effect, "rotation_degrees", Vector3(0, 62, 0), 0.13)
+	tween.tween_interval(0.035)
+	tween.tween_property(effect, "scale", Vector3.ONE * 0.06, 0.18)
 	tween.tween_callback(Callable(effect, "queue_free"))
 
 
 func _spawn_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
-	var effect := Node3D.new()
-	effect.position = world_position - direction * 0.30
+	var effect: Node3D = Node3D.new()
+	effect.position = world_position - direction * 0.42
 	effect.look_at(world_position + direction, Vector3.UP)
 	add_child(effect)
-	for index in range(4):
-		var streak := MeshInstance3D.new()
-		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.055 + index * 0.018, 0.055 + index * 0.018, 0.80 + index * 0.18)
+	for index: int in range(6):
+		var streak: MeshInstance3D = MeshInstance3D.new()
+		var mesh: BoxMesh = BoxMesh.new()
+		mesh.size = Vector3(0.035 + index * 0.010, 0.035 + index * 0.010, 0.72 + index * 0.16)
 		streak.mesh = mesh
-		streak.position = Vector3((index - 1.5) * 0.08, (index % 2) * 0.08, -index * 0.06)
-		streak.material_override = _effect_material(Color(0.75, 0.96, 1.0, 0.80 - index * 0.12))
+		streak.position = Vector3((index - 2.5) * 0.055, sin(index * 1.7) * 0.07, -index * 0.065)
+		streak.material_override = _effect_material(Color(0.58 + index * 0.05, 0.88, 1.0, 0.90 - index * 0.11))
 		effect.add_child(streak)
-	var light := OmniLight3D.new()
-	light.light_color = Color(0.46, 0.88, 1.0)
-	light.light_energy = 4.5
-	light.omni_range = 2.2
+	var impact: MeshInstance3D = MeshInstance3D.new()
+	var impact_mesh: SphereMesh = SphereMesh.new()
+	impact_mesh.radius = 0.16
+	impact_mesh.height = 0.32
+	impact.mesh = impact_mesh
+	impact.position = Vector3(0, 0, -0.64)
+	impact.material_override = _effect_material(Color(1.0, 0.93, 0.52, 0.90))
+	effect.add_child(impact)
+	var light: OmniLight3D = OmniLight3D.new()
+	light.light_color = Color(0.44, 0.86, 1.0)
+	light.light_energy = 5.0
+	light.omni_range = 2.4
 	effect.add_child(light)
-	var tween := create_tween()
-	effect.scale = Vector3(0.25, 0.25, 0.25)
-	tween.tween_property(effect, "scale", Vector3(1.25, 1.25, 1.25), 0.12)
-	tween.tween_property(effect, "scale", Vector3(0.05, 0.05, 0.05), 0.18)
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	effect.scale = Vector3(0.16, 0.16, 0.16)
+	tween.tween_property(effect, "scale", Vector3(1.28, 1.28, 1.28), 0.11)
+	tween.tween_property(effect, "scale", Vector3(0.04, 0.04, 0.04), 0.17)
+	tween.tween_callback(Callable(effect, "queue_free"))
+
+
+func _spawn_long_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
+	var effect: Node3D = Node3D.new()
+	effect.position = world_position - direction * 0.72
+	effect.look_at(world_position + direction, Vector3.UP)
+	add_child(effect)
+	for index: int in range(9):
+		var trail: MeshInstance3D = MeshInstance3D.new()
+		var trail_mesh: BoxMesh = BoxMesh.new()
+		trail_mesh.size = Vector3(0.045 + index * 0.008, 0.045 + index * 0.008, 1.10 + index * 0.18)
+		trail.mesh = trail_mesh
+		trail.position = Vector3((index - 4.0) * 0.045, sin(index * 1.25) * 0.09, -index * 0.075)
+		trail.rotation_degrees.z = -8.0 + index * 2.0
+		trail.material_override = _effect_material(Color(0.36 + index * 0.045, 0.82 + index * 0.018, 1.0, 0.92 - index * 0.085))
+		effect.add_child(trail)
+	for ring_index: int in range(3):
+		var ring: MeshInstance3D = MeshInstance3D.new()
+		var torus: TorusMesh = TorusMesh.new()
+		torus.inner_radius = 0.18 + ring_index * 0.10
+		torus.outer_radius = 0.22 + ring_index * 0.10
+		torus.rings = 24
+		torus.ring_segments = 6
+		ring.mesh = torus
+		ring.position = Vector3(0, 0, -0.90 - ring_index * 0.14)
+		ring.rotation_degrees.x = 90
+		ring.material_override = _effect_material(Color(1.0, 0.72, 0.20, 0.86 - ring_index * 0.18))
+		effect.add_child(ring)
+	var light: OmniLight3D = OmniLight3D.new()
+	light.light_color = Color(0.95, 0.68, 0.20)
+	light.light_energy = 7.0
+	light.omni_range = 3.2
+	effect.add_child(light)
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	effect.scale = Vector3.ONE * 0.12
+	tween.tween_property(effect, "scale", Vector3.ONE * 1.52, 0.13)
+	tween.parallel().tween_property(effect, "position", effect.position + direction * 0.28, 0.13)
+	tween.tween_interval(0.04)
+	tween.tween_property(effect, "scale", Vector3.ONE * 0.035, 0.20)
 	tween.tween_callback(Callable(effect, "queue_free"))
 
 

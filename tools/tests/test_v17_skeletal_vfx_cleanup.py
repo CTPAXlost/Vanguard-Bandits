@@ -10,7 +10,8 @@ PROJECT = ROOT / "project"
 class Version17SkeletalVfxCleanupTests(unittest.TestCase):
     def test_project_version_header(self) -> None:
         project_text = (PROJECT / "project.godot").read_text(encoding="utf-8")
-        self.assertIn("v1.7 skeletal ATAC and cinematic VFX", project_text)
+        self.assertIn("1.7.1", project_text)
+        self.assertIn("original ATAC skins on Skeleton3D", project_text)
 
     def test_every_campaign_atac_has_skeletal_renderer_support(self) -> None:
         script = (PROJECT / "scripts/skeletal_atac.gd").read_text(encoding="utf-8")
@@ -35,12 +36,12 @@ class Version17SkeletalVfxCleanupTests(unittest.TestCase):
         campaign = (PROJECT / "scripts/campaign_battle.gd").read_text(encoding="utf-8")
         self.assertIn('AtacFactory.create_atac("cador", "tactical")', campaign)
 
-    def test_skeletal_models_share_meshes_and_materials(self) -> None:
+    def test_skeletal_models_share_original_skin_textures(self) -> None:
         script = (PROJECT / "scripts/skeletal_atac.gd").read_text(encoding="utf-8")
-        self.assertIn("static var MESH_CACHE", script)
-        self.assertIn("static var MATERIAL_CACHE", script)
+        self.assertIn("static var TEXTURE_CACHE", script)
+        self.assertIn('set_meta("original_skin_rig", true)', script)
         self.assertIn("custom_aabb = SAFE_AABB", script)
-        self.assertIn("CULL_DISABLED", script)
+        self.assertIn("CACHE_MODE_REUSE", script)
 
     def test_defeated_atac_is_hidden_unblocked_removed_and_freed(self) -> None:
         battle = (PROJECT / "scripts/battle_prototype.gd").read_text(encoding="utf-8")

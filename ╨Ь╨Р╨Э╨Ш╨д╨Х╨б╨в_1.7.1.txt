@@ -1,0 +1,13 @@
+Vanguard Bandits Remaster 1.7.1
+
+Основные новые файлы:
+- project/assets/atac_rigged/* — 14 оригинальных ATAC, разделённых на 153 подвижных слоя;
+- project/scripts/skeletal_atac.gd — Skeleton3D, BoneAttachment3D и позы костей;
+- project/scripts/battle_prototype.gd — порез, выпад и длинный выпад;
+- project/scripts/visibility_smoke.gd — runtime-проверка скинов и трёх атак;
+- tools/tests/test_v171_original_skin_animation.py — регрессионные проверки;
+- ИЗМЕНЕНИЯ_1.7.1.txt и VALIDATION_1.7.1.txt.
+
+Для GitHub:
+полностью замените содержимое закрытого репозитория содержимым этой папки,
+включая скрытую папку .github.
