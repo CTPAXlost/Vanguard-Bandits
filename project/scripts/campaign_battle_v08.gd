@@ -618,31 +618,56 @@ func _rebuild_dynamic_attack_menu() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not event.is_pressed() or event.is_echo():
-		return
+	# В 1.6 обработчик выбора направления/цели перекрыл родительский
+	# BattlePrototype._unhandled_input(). Из-за этого клики по клеткам, масштаб
+	# колёсиком, фокус F и клики по целям вообще не доходили до поля боя.
+	# Модальные режимы обрабатываем здесь, всё остальное обязательно передаём
+	# базовому классу.
 	if facing_choice_pending:
-		if event.is_action_pressed("ui_up"):
-			_choose_facing(Vector2i(0, -1)); get_viewport().set_input_as_handled()
-		elif event.is_action_pressed("ui_down"):
-			_choose_facing(Vector2i(0, 1)); get_viewport().set_input_as_handled()
-		elif event.is_action_pressed("ui_left"):
-			_choose_facing(Vector2i(-1, 0)); get_viewport().set_input_as_handled()
-		elif event.is_action_pressed("ui_right"):
-			_choose_facing(Vector2i(1, 0)); get_viewport().set_input_as_handled()
+		if event.is_pressed() and not event.is_echo():
+			if event.is_action_pressed("ui_up"):
+				_choose_facing(Vector2i(0, -1))
+				get_viewport().set_input_as_handled()
+			elif event.is_action_pressed("ui_down"):
+				_choose_facing(Vector2i(0, 1))
+				get_viewport().set_input_as_handled()
+			elif event.is_action_pressed("ui_left"):
+				_choose_facing(Vector2i(-1, 0))
+				get_viewport().set_input_as_handled()
+			elif event.is_action_pressed("ui_right"):
+				_choose_facing(Vector2i(1, 0))
+				get_viewport().set_input_as_handled()
 		return
+
 	if target_selection_active and not eligible_attack_targets.is_empty():
-		var key_event: InputEventKey = event as InputEventKey
-		var keycode: Key = key_event.keycode if key_event != null else KEY_NONE
-		if event.is_action_pressed("ui_down") or keycode == KEY_D:
-			target_picker_index = (target_picker_index + 1) % eligible_attack_targets.size()
-			_refresh_target_picker_selection(); get_viewport().set_input_as_handled()
-		elif event.is_action_pressed("ui_up") or keycode == KEY_A:
-			target_picker_index = (target_picker_index - 1 + eligible_attack_targets.size()) % eligible_attack_targets.size()
-			_refresh_target_picker_selection(); get_viewport().set_input_as_handled()
-		elif event.is_action_pressed("ui_accept"):
-			_confirm_target_picker(target_picker_index); get_viewport().set_input_as_handled()
-		elif event.is_action_pressed("ui_cancel"):
-			_cancel_target_selection(); get_viewport().set_input_as_handled()
+		if event.is_pressed() and not event.is_echo():
+			var key_event: InputEventKey = event as InputEventKey
+			var keycode: Key = key_event.keycode if key_event != null else KEY_NONE
+			if event.is_action_pressed("ui_down") or keycode == KEY_D:
+				target_picker_index = (target_picker_index + 1) % eligible_attack_targets.size()
+				_refresh_target_picker_selection()
+				get_viewport().set_input_as_handled()
+				return
+			elif event.is_action_pressed("ui_up") or keycode == KEY_A:
+				target_picker_index = (target_picker_index - 1 + eligible_attack_targets.size()) % eligible_attack_targets.size()
+				_refresh_target_picker_selection()
+				get_viewport().set_input_as_handled()
+				return
+			elif event.is_action_pressed("ui_accept"):
+				_confirm_target_picker(target_picker_index)
+				get_viewport().set_input_as_handled()
+				return
+			elif event.is_action_pressed("ui_cancel"):
+				_cancel_target_selection()
+				get_viewport().set_input_as_handled()
+				return
+		# Щелчок мышью должен пройти в базовый обработчик. Он вызовет
+		# переопределённый _handle_click(), который подтвердит подсвеченную цель.
+		super._unhandled_input(event)
+		return
+
+	# Обычный режим: движение по клеткам, выбор юнита, приближение камеры и F.
+	super._unhandled_input(event)
 
 
 func _open_target_picker() -> void:

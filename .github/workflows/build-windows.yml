@@ -124,6 +124,22 @@ jobs:
           fi
           exit "$STATUS"
 
+      - name: Runtime smoke test for mouse movement input
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/MovementInputSmoke.tscn --quit-after 600 2>&1 | tee movement-input-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|MOVEMENT_INPUT_SMOKE_FAILED" movement-input-smoke.log; then
+            echo "Mouse movement input smoke test found an error." >&2
+            exit 1
+          fi
+          grep -q "MOVEMENT_INPUT_SMOKE_OK" movement-input-smoke.log
+          exit "$STATUS"
+
       - name: Runtime smoke test for mission 3 branch scene
         shell: bash
         run: |
