@@ -21,7 +21,7 @@ func _build_interface() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	var panel: PanelContainer = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(980, 760)
+	panel.custom_minimum_size = Vector2(1040, 900)
 	center.add_child(panel)
 	var margin: MarginContainer = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 44)
@@ -39,7 +39,7 @@ func _build_interface() -> void:
 	title.add_theme_font_size_override("font_size", 34)
 	box.add_child(title)
 	var subtitle: Label = Label.new()
-	subtitle.text = "Пройденные задания можно запускать повторно. Для третьей миссии доступны оба сюжетных исхода."
+	subtitle.text = "Пройденные задания можно запускать повторно. Для третьей и пятой миссий доступны отдельные сюжетные варианты."
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.add_theme_font_size_override("font_size", 19)
@@ -87,11 +87,25 @@ func _build_interface() -> void:
 		4,
 		"seek_southern_aid"
 	)
+	_add_mission_button(
+		box,
+		"Миссия 5А — Защитить освобождённый замок",
+		"Faulkner атакует замок. Sadira, Franco и Halak наблюдают с востока и вступят в бой против того, кто ударит их первым.",
+		5,
+		"defend_castle"
+	)
+	_add_mission_button(
+		box,
+		"Миссия 5Б — Покинуть замок и идти к Logan",
+		"Отряд отказывается от тяжёлой обороны, уходит лесами на юг и начинает поиск помощи Logan.",
+		5,
+		"leave_castle"
+	)
 
 	details_label = Label.new()
 	details_label.text = (
 		"Награды: обычный ATAC — 25 монет, командир — 50, элитный ATAC — 75. "
-		+ "За первое прохождение миссий: 200 / 300 / 500 / 800 монет. Все награды поступают в общий фонд команды. Повторные бои сохраняют награды за уничтоженные ATAC."
+		+ "За первое прохождение миссий: 200 / 300 / 500 / 800 / 1200 монет. Все награды поступают в общий фонд команды. Повторные бои сохраняют награды за уничтоженные ATAC."
 	)
 	details_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	details_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

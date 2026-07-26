@@ -169,6 +169,45 @@ const ATTACKS: Dictionary = {
 		"animation": "slide",
 		"pass_through": true,
 	},
+	"sound_strike": {
+		"label": "Звуковой удар",
+		"fatigue": 0,
+		"energy": 20,
+		"range": 3,
+		"range_mode": "up_to",
+		"multiplier": 1.12,
+		"animation": "sound_strike",
+	},
+	"wind_strike": {
+		"label": "Удар ветра",
+		"fatigue": 0,
+		"energy": 25,
+		"range": 4,
+		"range_mode": "up_to",
+		"multiplier": 1.32,
+		"animation": "wind_strike",
+	},
+	"incinerate": {
+		"label": "Испепелить",
+		"fatigue": 0,
+		"energy": 30,
+		"range": 3,
+		"range_mode": "up_to",
+		"multiplier": 0.20,
+		"animation": "incinerate",
+		"fixed_damage_chance": 0.40,
+		"fixed_damage": 400,
+	},
+	"guillotine": {
+		"label": "Гильотина",
+		"fatigue": 0,
+		"energy": 40,
+		"range": 1,
+		"multiplier": 2.15,
+		"animation": "guillotine",
+		"disable_chance": 0.45,
+		"disable_turns": 1,
+	},
 }
 
 const LOADOUTS: Dictionary = {
@@ -210,6 +249,10 @@ const LOADOUTS: Dictionary = {
 		"bright_bomb",
 	],
 	"duyere": ["slash", "lunge", "earthquake"],
+	"sadira_sylpheed": ["slash", "lunge", "long_lunge", "sound_strike", "wind_strike"],
+	"franco_korbelan": ["slash", "lunge", "long_lunge", "strong_slash", "incinerate", "guillotine"],
+	"halak_korbelan": ["slash", "lunge", "long_lunge", "strong_slash", "incinerate", "guillotine"],
+	"korbelan_guard": ["slash", "lunge", "long_lunge", "strong_slash", "incinerate", "guillotine"],
 }
 
 

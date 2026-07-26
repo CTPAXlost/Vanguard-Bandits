@@ -138,15 +138,32 @@ func _refresh_campaign_status() -> void:
 	store_button.disabled = not CampaignState.is_shop_available()
 	store_button.text = "Общий магазин — открыт" if CampaignState.is_shop_available() else "Общий магазин — закрыт"
 	mode_button.text = "Тактические анимации: ВКЛ"
-	if CampaignState.mission_4_complete:
-		title_label.text = "ИМПЕРСКИЙ ЗАМОК ОСВОБОЖДЁН"
-		subtitle_label.text = "Bastion и Andrew снова в отряде"
-		status_label.text = (
-			"Kamorge вернулся на Eigol, Galvas и партизаны помогли взять крепость. "
-			+ "Общий магазин открыт: оружие, амулеты и камни покупаются из единого фонда команды."
-		)
-		mission_button.text = "Следующая глава — готовится"
+	if CampaignState.mission_5_complete:
+		if CampaignState.mission_5_result == "castle_defended":
+			title_label.text = "ОСВОБОЖДЁННЫЙ ЗАМОК ЗАЩИЩЁН"
+			subtitle_label.text = "Faulkner отступил, оружейная сохранена"
+			status_label.text = (
+				"В общий магазин поступили новые мечи, амулеты и камни умения. "
+				+ "Sadira и её телохранители запомнили исход сражения."
+			)
+		else:
+			title_label.text = "ЮЖНАЯ ДОРОГА"
+			subtitle_label.text = "Отряд движется через леса за помощью Logan"
+			status_label.text = (
+				"Замок оставлен или потерян. Bastion, Kamorge и союзники идут на юг, "
+				+ "чтобы попросить Logan собрать новые силы."
+			)
+		mission_button.text = "Следующая глава — путь к Logan готовится"
 		mission_button.disabled = true
+	elif CampaignState.mission_4_complete:
+		title_label.text = "ГЛАВА V — ЗАЩИТА ОСВОБОЖДЁННОГО ЗАМКА"
+		subtitle_label.text = "Faulkner возвращается с новой армией"
+		status_label.text = (
+			"Bastion и Andrew снова в отряде. Faulkner идёт на замок, а Sadira с двумя "
+			+ "телохранителями наблюдает за сражением с востока."
+		)
+		mission_button.text = "Начать пятую миссию — защита замка"
+		mission_button.disabled = false
 	elif CampaignState.mission_3_complete and CampaignState.story_branch == "seek_southern_aid":
 		title_label.text = "ГЛАВА IV — ШТУРМ ИМПЕРСКОГО ЗАМКА"
 		subtitle_label.text = "Kamorge выжил, нашёл Eigol и союзников"
@@ -263,7 +280,12 @@ func _allocate(stat_key: String) -> void:
 
 
 func _start_next_mission() -> void:
+	if CampaignState.mission_5_complete:
+		return
 	if CampaignState.mission_4_complete:
+		CampaignState.current_mission = 5
+		CampaignState.save_game()
+		get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
 		return
 	if CampaignState.mission_3_complete:
 		if CampaignState.story_branch == "seek_southern_aid":

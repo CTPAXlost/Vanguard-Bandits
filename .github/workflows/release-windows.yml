@@ -113,15 +113,18 @@ jobs:
           set -euo pipefail
           GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
           set +e
-          "$GODOT" --headless --path project res://scenes/Mission3Smoke.tscn --quit-after 10 2>&1 | tee mission3-smoke.log
+          "$GODOT" --headless --path project res://scenes/Mission3Smoke.tscn --quit-after 3000 2>&1 | tee mission3-smoke.log
           STATUS=${PIPESTATUS[0]}
           set -e
-          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function" mission3-smoke.log; then
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|MISSION3_MOVEMENT_SMOKE_FAILED" mission3-smoke.log; then
             echo "Mission 3 smoke test found a runtime/script error." >&2
             exit 1
           fi
+          grep -q "MISSION3_MOVEMENT_UNLOCK_OK" mission3-smoke.log
+          grep -q "MISSION3_BRANCH_3A_MOVEMENT_OK" mission3-smoke.log
+          grep -q "MISSION3_BRANCH_3B_MOVEMENT_OK" mission3-smoke.log
+          grep -q "MISSION3_SMOKE_OK" mission3-smoke.log
           exit "$STATUS"
-
 
       - name: Runtime smoke test for castle rescue mission
         shell: bash
@@ -129,13 +132,32 @@ jobs:
           set -euo pipefail
           GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
           set +e
-          "$GODOT" --headless --path project res://scenes/Mission4Smoke.tscn --quit-after 10 2>&1 | tee mission4-smoke.log
+          "$GODOT" --headless --path project res://scenes/Mission4Smoke.tscn --quit-after 300 2>&1 | tee mission4-smoke.log
           STATUS=${PIPESTATUS[0]}
           set -e
           if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function" mission4-smoke.log; then
             echo "Castle rescue mission smoke test found a runtime/script error." >&2
             exit 1
           fi
+          exit "$STATUS"
+
+
+      - name: Runtime smoke test for castle defense mission
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/Mission5Smoke.tscn --quit-after 1200 2>&1 | tee mission5-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|MISSION5_SMOKE_FAILED" mission5-smoke.log; then
+            echo "Castle defense mission smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          grep -q "MISSION5_DEFENSE_SMOKE_OK" mission5-smoke.log
+          grep -q "MISSION5_NEUTRAL_GROUP_SMOKE_OK" mission5-smoke.log
+          grep -q "NORMALIZED_ATAC_SCALE_SMOKE_OK" mission5-smoke.log
           exit "$STATUS"
 
       - name: Runtime smoke test for skeletal tactical ATAC models

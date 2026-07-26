@@ -508,11 +508,7 @@ func _spawn_unit(
 	var visual := AtacFactory.create_atac(model_slug, "tactical")
 	visual.name = "ATACVisual"
 	if bool(visual.get_meta("real_skeleton", false)):
-		var skeletal_scale: float = 0.82
-		if model_slug in ["barazaph", "eigol", "cador", "toreadore"]:
-			skeletal_scale = 0.76
-		elif model_slug in ["amphisia", "haurol", "serata"]:
-			skeletal_scale = 0.86
+		var skeletal_scale: float = float(visual.get_meta("recommended_tactical_scale", 0.82))
 		visual.scale = Vector3.ONE * skeletal_scale
 	else:
 		visual.scale = (

@@ -10,7 +10,7 @@ extends Node3D
 const SUPPORTED_SLUGS: Array[String] = [
 	"alba", "barbatos", "barazaph", "vedocorban", "cador", "solarus",
 	"sarbelas", "einlager", "eigol", "amphisia", "haurol", "toreadore",
-	"serata", "glaive",
+	"serata", "glaive", "sylpheed", "korbelan",
 ]
 const SAFE_AABB: AABB = AABB(Vector3(-2.4, -0.6, -1.0), Vector3(4.8, 4.6, 2.0))
 
@@ -61,6 +61,11 @@ func configure(model_slug: String) -> void:
 	var alpha_bbox: Array = rig_data.get("alpha_bbox", [0, 0, 512, 940]) as Array
 	bbox_width = float(alpha_bbox[2]) - float(alpha_bbox[0])
 	bbox_height = float(alpha_bbox[3]) - float(alpha_bbox[1])
+	var unscaled_height: float = maxf(0.1, bbox_height * skin_pixel_size)
+	# All humanoid ATACs are normalized to the same tactical height. Their original
+	# silhouettes remain intact, but oversized source sheets no longer dwarf allies.
+	var target_height: float = 1.70
+	set_meta("recommended_tactical_scale", clampf(target_height / unscaled_height, 0.68, 1.08))
 	set_meta("source_front_path", str(rig_data.get("source", "")))
 	set_meta("skin_pixel_size", skin_pixel_size)
 

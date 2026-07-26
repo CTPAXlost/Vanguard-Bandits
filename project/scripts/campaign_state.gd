@@ -1,17 +1,18 @@
 extends Node
 
 const SAVE_PATH: String = "user://vanguard_campaign_save.json"
-const SAVE_VERSION: int = 16
+const SAVE_VERSION: int = 18
 const MISSION_COMPLETION_REWARDS: Dictionary = {
 	1: 200,
 	2: 300,
 	3: 500,
 	4: 800,
+	5: 1200,
 }
 const STANDARD_ATAC_REWARD: int = 25
 const COMMANDER_ATAC_REWARD: int = 50
 const ELITE_ATAC_REWARD: int = 75
-const ELITE_ATACS: Array[String] = ["solarus", "sarbelas", "einlager", "eigol", "toreadore", "serata"]
+const ELITE_ATACS: Array[String] = ["solarus", "sarbelas", "einlager", "eigol", "toreadore", "serata", "sylpheed", "korbelan"]
 const SHOP_ITEMS: Dictionary = {
 	"steel_sword_i": {
 		"name": "Стальной меч I",
@@ -66,6 +67,49 @@ const SHOP_ITEMS: Dictionary = {
 		"price": 500,
 		"buyable": true,
 		"effect": "bright_bomb_10",
+	},
+	"castle_guard_blade": {
+		"name": "Клинок защитника замка",
+		"icon": "res://assets/ui/shop/castle_guard_blade.png",
+		"description": "Наградное оружие защитников. Сила оружия +6.",
+		"category": "weapon", "price": 950, "buyable": true,
+		"requires_castle_defense": true, "bonuses": {"weapon_power": 6},
+	},
+	"royal_vanguard_blade": {
+		"name": "Клинок королевского авангарда",
+		"icon": "res://assets/ui/shop/royal_vanguard_blade.png",
+		"description": "Редкий меч из оружейной замка. Сила оружия +8.",
+		"category": "weapon", "price": 1400, "buyable": true,
+		"requires_castle_defense": true, "bonuses": {"weapon_power": 8},
+	},
+	"castle_oath_amulet": {
+		"name": "Амулет клятвы замка",
+		"icon": "res://assets/ui/shop/castle_oath_amulet.png",
+		"description": "+2 к силе, ловкости, защите и умению атаки.",
+		"category": "amulet", "price": 1100, "buyable": true,
+		"requires_castle_defense": true,
+		"bonuses": {"strength": 2, "agility": 2, "defense": 2, "attack_skill": 2},
+	},
+	"wind_guard_amulet": {
+		"name": "Амулет стража ветра",
+		"icon": "res://assets/ui/shop/wind_guard_amulet.png",
+		"description": "+3 к ловкости и +1 к защите.",
+		"category": "amulet", "price": 850, "buyable": true,
+		"requires_castle_defense": true, "bonuses": {"agility": 3, "defense": 1},
+	},
+	"ruby_skill_stone": {
+		"name": "Камень умения — Рубин",
+		"icon": "res://assets/ui/shop/ruby_skill_stone.png",
+		"description": "Усиливает «Сильный порез» на 10%.",
+		"category": "stone", "price": 750, "buyable": true,
+		"requires_castle_defense": true, "effect": "strong_slash_10",
+	},
+	"sapphire_skill_stone": {
+		"name": "Камень умения — Сапфир",
+		"icon": "res://assets/ui/shop/sapphire_skill_stone.png",
+		"description": "Усиливает ледяные и электрические атаки на 10%.",
+		"category": "stone", "price": 900, "buyable": true,
+		"requires_castle_defense": true, "effect": "elemental_10",
 	},
 }
 const UNIQUE_ATACS: Array[String] = ["toreadore"]
@@ -155,6 +199,14 @@ const ATAC_DATA: Dictionary = {
 		"move_range": 6,
 		"equipment": "Золотая броня королевской гвардии Glaive",
 	},
+	"sylpheed": {
+		"name": "Sylpheed", "base_hp": 218, "hp_per_level": 8, "move_range": 8,
+		"equipment": "Летающая броня Sylpheed",
+	},
+	"korbelan": {
+		"name": "Korbelan", "base_hp": 340, "hp_per_level": 10, "move_range": 6,
+		"equipment": "Стальная генеральская броня Korbelan",
+	},
 }
 
 var current_mission: int = 1
@@ -163,6 +215,9 @@ var mission_2_complete: bool = false
 var mission_3_complete: bool = false
 # Fourth chapter: Kamorge, Eigol and the assault on the imperial castle.
 var mission_4_complete: bool = false
+var mission_5_complete: bool = false
+var mission_5_result: String = ""
+var southern_route_pending: bool = false
 var prison_seen: bool = false
 var story_branch: String = ""
 var kamorge_alive: bool = true
@@ -226,6 +281,15 @@ func _default_characters() -> Dictionary:
 		"galvas": _character_entry(
 			"Galvas", "res://assets/ui/portraits/galvas.png", 18, "serata"
 		),
+		"sadira": _character_entry(
+			"Sadira", "res://assets/ui/portraits/sadira.png", 8, "sylpheed"
+		),
+		"franco": _character_entry(
+			"Franco", "res://assets/ui/portraits/franco.png", 25, "korbelan"
+		),
+		"halak": _character_entry(
+			"Halak", "res://assets/ui/portraits/halak.png", 25, "korbelan"
+		),
 	}
 
 
@@ -235,6 +299,9 @@ func reset_campaign() -> void:
 	mission_2_complete = false
 	mission_3_complete = false
 	mission_4_complete = false
+	mission_5_complete = false
+	mission_5_result = ""
+	southern_route_pending = false
 	prison_seen = false
 	story_branch = ""
 	kamorge_alive = true
@@ -260,6 +327,9 @@ func save_game() -> bool:
 		"mission_2_complete": mission_2_complete,
 		"mission_3_complete": mission_3_complete,
 		"mission_4_complete": mission_4_complete,
+		"mission_5_complete": mission_5_complete,
+		"mission_5_result": mission_5_result,
+		"southern_route_pending": southern_route_pending,
 		"prison_seen": prison_seen,
 		"story_branch": story_branch,
 		"kamorge_alive": kamorge_alive,
@@ -295,6 +365,9 @@ func load_game() -> bool:
 	mission_2_complete = bool(data.get("mission_2_complete", false))
 	mission_3_complete = bool(data.get("mission_3_complete", false))
 	mission_4_complete = bool(data.get("mission_4_complete", false))
+	mission_5_complete = bool(data.get("mission_5_complete", false))
+	mission_5_result = str(data.get("mission_5_result", ""))
+	southern_route_pending = bool(data.get("southern_route_pending", false))
 	prison_seen = bool(data.get("prison_seen", false))
 	story_branch = str(data.get("story_branch", ""))
 	kamorge_alive = bool(data.get("kamorge_alive", true))
@@ -371,7 +444,10 @@ func _migrate_story_state(loaded_version: int) -> void:
 		kamorge_alive = true
 		kamorge_lost_atac = true
 		partisans_joined = mission_4_complete
-		current_mission = 5 if mission_4_complete else 4
+		if mission_5_complete:
+			current_mission = maxi(current_mission, 6)
+		else:
+			current_mission = 5 if mission_4_complete else 4
 		shop_unlocked = true
 
 
@@ -395,6 +471,8 @@ func _migrate_coin_economy(loaded_version: int) -> void:
 		_award_mission_completion_once(3)
 	if mission_4_complete:
 		_award_mission_completion_once(4)
+	if mission_5_complete:
+		_award_mission_completion_once(5)
 
 
 func get_coin_balance() -> int:
@@ -436,8 +514,8 @@ func _award_mission_completion_once(mission_id: int) -> Dictionary:
 
 
 func prepare_mission_for_test(mission_id: int, forced_branch: String = "") -> void:
-	var safe_mission: int = clampi(mission_id, 1, 4)
-	test_forced_branch = forced_branch if forced_branch in ["stay_and_fight", "seek_southern_aid"] else ""
+	var safe_mission: int = clampi(mission_id, 1, 5)
+	test_forced_branch = forced_branch if forced_branch in ["stay_and_fight", "seek_southern_aid", "defend_castle", "leave_castle"] else ""
 	if safe_mission >= 2:
 		mission_1_complete = true
 		unlock_character("kamorge")
@@ -474,6 +552,25 @@ func prepare_mission_for_test(mission_id: int, forced_branch: String = "") -> vo
 		var kamorge_data: Dictionary = characters["kamorge"] as Dictionary
 		kamorge_data["atac"] = "eigol"
 		characters["kamorge"] = kamorge_data
+	if safe_mission == 5:
+		mission_3_complete = true
+		mission_4_complete = true
+		mission_5_complete = false
+		mission_5_result = ""
+		southern_route_pending = false
+		story_branch = "seek_southern_aid"
+		prison_seen = true
+		partisans_joined = true
+		shop_unlocked = true
+		kamorge_alive = true
+		kamorge_lost_atac = true
+		for character_id: String in ["bastion", "kamorge", "andrew", "ione", "reyna", "zeira", "galvas"]:
+			unlock_character(character_id)
+		for atac_id: String in ["alba", "eigol", "vedocorban", "amphisia", "haurol", "toreadore", "serata"]:
+			unlock_atac(atac_id)
+		var kamorge_data_five: Dictionary = characters["kamorge"] as Dictionary
+		kamorge_data_five["atac"] = "eigol"
+		characters["kamorge"] = kamorge_data_five
 	current_mission = safe_mission
 	save_game()
 
@@ -501,6 +598,10 @@ func _rebuild_unlocks_from_progress() -> void:
 		var kamorge_data: Dictionary = characters["kamorge"] as Dictionary
 		kamorge_data["atac"] = "eigol"
 		characters["kamorge"] = kamorge_data
+	if mission_5_complete and mission_5_result == "castle_defended":
+		shop_unlocked = true
+		for atac_id: String in ["sylpheed", "korbelan"]:
+			unlock_atac(atac_id)
 	if not kamorge_alive:
 		mark_character_unavailable("kamorge")
 	if kamorge_lost_atac:
@@ -559,6 +660,15 @@ func complete_mission(mission_id: int, branch: String = "") -> Dictionary:
 		var kamorge_data: Dictionary = characters["kamorge"] as Dictionary
 		kamorge_data["atac"] = "eigol"
 		characters["kamorge"] = kamorge_data
+	elif mission_id == 5:
+		mission_5_complete = true
+		mission_5_result = branch if branch in ["castle_defended", "castle_lost", "left_castle"] else "castle_lost"
+		southern_route_pending = mission_5_result != "castle_defended"
+		current_mission = 6
+		shop_unlocked = true
+		if mission_5_result == "castle_defended":
+			for atac_id: String in ["sylpheed", "korbelan"]:
+				unlock_atac(atac_id)
 	save_game()
 	return coin_result
 
@@ -739,6 +849,15 @@ func is_shop_available() -> bool:
 	return shop_unlocked or mission_3_complete
 
 
+func is_item_available(item_id: String) -> bool:
+	if not SHOP_ITEMS.has(item_id):
+		return false
+	var item: Dictionary = SHOP_ITEMS[item_id] as Dictionary
+	if bool(item.get("requires_castle_defense", false)):
+		return mission_5_complete and mission_5_result == "castle_defended"
+	return true
+
+
 func get_inventory_count(item_id: String) -> int:
 	return maxi(0, int(inventory.get(item_id, 0)))
 
@@ -749,7 +868,7 @@ func get_sell_price(item_id: String) -> int:
 
 
 func buy_item(item_id: String) -> Dictionary:
-	if not is_shop_available() or not SHOP_ITEMS.has(item_id):
+	if not is_shop_available() or not SHOP_ITEMS.has(item_id) or not is_item_available(item_id):
 		return {"ok": false, "message": "Магазин ещё закрыт."}
 	var item: Dictionary = SHOP_ITEMS[item_id] as Dictionary
 	if not bool(item.get("buyable", true)):
@@ -815,6 +934,13 @@ func equipped_item(character_id: String, category: String) -> String:
 
 func character_has_opal(character_id: String) -> bool:
 	return equipped_item(character_id, "stone") == "opal_skill_stone" and not UNIQUE_ATACS.has(character_atac(character_id))
+
+
+func character_stone_effect(character_id: String) -> String:
+	var item_id: String = equipped_item(character_id, "stone")
+	if item_id.is_empty() or not SHOP_ITEMS.has(item_id) or UNIQUE_ATACS.has(character_atac(character_id)):
+		return ""
+	return str((SHOP_ITEMS[item_id] as Dictionary).get("effect", ""))
 
 
 func _apply_equipped_item_bonuses(character_id: String, stats: Dictionary) -> void:

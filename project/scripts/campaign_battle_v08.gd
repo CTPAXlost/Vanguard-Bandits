@@ -78,6 +78,11 @@ func _ready() -> void:
 		_clear_highlights()
 		await _play_mission_three_intro()
 		mission_three_intro_pending = false
+		# The branch setup calls _begin_player_turn() while the intro lock is still
+		# active. Start the first controllable turn only after the lock is released.
+		if branch_combat_active and not branch_resolution_started:
+			action_in_progress = false
+			_begin_player_turn()
 		return
 	if mission_number == 4:
 		action_in_progress = true

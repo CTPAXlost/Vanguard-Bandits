@@ -158,6 +158,8 @@ func _refresh_items() -> void:
 	item_ids.clear()
 	for item_id_value: Variant in CampaignState.SHOP_ITEMS.keys():
 		var item_id: String = str(item_id_value)
+		if not CampaignState.is_item_available(item_id) and CampaignState.get_inventory_count(item_id) <= 0:
+			continue
 		var data: Dictionary = CampaignState.SHOP_ITEMS[item_id] as Dictionary
 		var owned: int = CampaignState.get_inventory_count(item_id)
 		var buy_text: String = "%d монет" % int(data.get("price", 0)) if bool(data.get("buyable", true)) else "только продажа"

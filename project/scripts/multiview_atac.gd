@@ -21,6 +21,8 @@ const SUPPORTED_SLUGS: Array[String] = [
 	"toreadore",
 	"serata",
 	"glaive",
+	"sylpheed",
+	"korbelan",
 ]
 
 var slug: String = "alba"
