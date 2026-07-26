@@ -116,57 +116,63 @@ func _create_castle_gate(gate_name: String, gate_x: int, gate_z_values: Array, o
 	var root := Node3D.new()
 	root.name = gate_name
 	add_child(root)
-	var centre_z: float = 0.0
+	var z_values: Array[int] = []
 	for raw_z: Variant in gate_z_values:
-		centre_z += float(int(raw_z))
-	centre_z /= maxf(1.0, float(gate_z_values.size()))
+		z_values.append(int(raw_z))
+	if z_values.is_empty():
+		z_values = [8, 9]
+	z_values.sort()
+	var min_gate_z: int = z_values[0]
+	var max_gate_z: int = z_values[z_values.size() - 1]
+	var centre_z: float = (float(min_gate_z) + float(max_gate_z)) * 0.5
 	var centre: Vector3 = _cell_to_world(Vector2i(gate_x, roundi(centre_z)))
 	centre.z += (centre_z - round(centre_z)) * TILE_SIZE
-	# Stone side posts and lintel make the opening readable from every camera angle.
-	for z_offset: float in [-1.12, 1.12]:
+	var half_span_world: float = maxf(0.95, (float(max_gate_z - min_gate_z + 1) * TILE_SIZE) * 0.5)
+	var post_offset_x: float = -0.34 if opens_west else 0.34
+	for z_position: float in [
+		_cell_to_world(Vector2i(gate_x, min_gate_z)).z - TILE_SIZE * 0.45,
+		_cell_to_world(Vector2i(gate_x, max_gate_z)).z + TILE_SIZE * 0.45
+	]:
 		var post := MeshInstance3D.new()
 		var post_mesh := BoxMesh.new()
-		post_mesh.size = Vector3(0.72, 2.30, 0.38)
+		post_mesh.size = Vector3(0.42, 2.34, 0.42)
 		post.mesh = post_mesh
-		post.position = centre + Vector3(0, 1.15, z_offset)
+		post.position = Vector3(centre.x + post_offset_x, 1.17, z_position)
 		post.material_override = _prop_material(Color(0.34, 0.36, 0.43))
 		root.add_child(post)
 	var lintel := MeshInstance3D.new()
 	var lintel_mesh := BoxMesh.new()
-	lintel_mesh.size = Vector3(0.76, 0.42, 2.62)
+	lintel_mesh.size = Vector3(0.60, 0.42, half_span_world * 2.0 + 0.36)
 	lintel.mesh = lintel_mesh
-	lintel.position = centre + Vector3(0, 2.18, 0)
+	lintel.position = centre + Vector3(post_offset_x, 2.18, 0)
 	lintel.material_override = _prop_material(Color(0.50, 0.42, 0.29))
 	root.add_child(lintel)
-	# Two dark wooden leaves are visibly opened toward the wall. They have no
-	# collision, so both tactical gate cells remain fully passable.
 	for side: int in [-1, 1]:
 		var leaf := MeshInstance3D.new()
 		leaf.name = "OpenGateLeafLeft" if side < 0 else "OpenGateLeafRight"
 		var leaf_mesh := BoxMesh.new()
-		leaf_mesh.size = Vector3(0.16, 1.72, 0.90)
+		leaf_mesh.size = Vector3(0.12, 1.72, maxf(0.74, half_span_world - 0.10))
 		leaf.mesh = leaf_mesh
-		var x_offset: float = -0.42 if opens_west else 0.42
-		leaf.position = centre + Vector3(x_offset, 0.88, float(side) * 0.72)
-		leaf.rotation_degrees.y = float(side) * (58.0 if opens_west else -58.0)
+		var x_offset: float = -0.86 if opens_west else 0.86
+		leaf.position = centre + Vector3(x_offset, 0.88, float(side) * half_span_world * 0.55)
+		leaf.rotation_degrees.y = float(side) * (68.0 if opens_west else -68.0)
 		leaf.material_override = _prop_material(Color(0.22, 0.105, 0.045))
 		root.add_child(leaf)
 		for band_index: int in range(3):
 			var band := MeshInstance3D.new()
 			var band_mesh := BoxMesh.new()
-			band_mesh.size = Vector3(0.18, 0.09, 0.92)
+			band_mesh.size = Vector3(0.14, 0.09, maxf(0.78, half_span_world - 0.06))
 			band.mesh = band_mesh
 			band.position = leaf.position + Vector3(0, -0.52 + float(band_index) * 0.52, 0)
 			band.rotation = leaf.rotation
 			band.material_override = _prop_material(Color(0.69, 0.52, 0.19))
 			root.add_child(band)
-	# Decorative portcullis teeth above the open passage.
-	for tooth_index: int in range(5):
+	for tooth_index: int in range(7):
 		var tooth := MeshInstance3D.new()
 		var tooth_mesh := PrismMesh.new()
-		tooth_mesh.size = Vector3(0.16, 0.46, 0.18)
+		tooth_mesh.size = Vector3(0.14, 0.42, 0.18)
 		tooth.mesh = tooth_mesh
-		tooth.position = centre + Vector3(0, 1.82, -0.78 + float(tooth_index) * 0.39)
+		tooth.position = centre + Vector3(post_offset_x, 1.82, lerpf(-half_span_world * 0.78, half_span_world * 0.78, float(tooth_index) / 6.0))
 		tooth.rotation_degrees.z = 90.0
 		tooth.material_override = _prop_material(Color(0.18, 0.20, 0.24))
 		root.add_child(tooth)
@@ -718,7 +724,7 @@ func _choose_ai_attack(unit: Node3D, target: Node3D) -> String:
 		"force_field_throw", "sharking_strong_slash", "sharking_slash",
 		"guillotine", "incinerate", "wind_strike", "sound_strike",
 		"slide", "ice_rain", "ultrasound", "spear_throw", "quicksand",
-		"desert_storm", "sticky_sandstorm", "bright_bomb", "earthquake",
+		"desert_storm", "sticky_sandstorm", "fire_rain", "bright_bomb", "earthquake",
 		"tornado", "strong_slash", "ball_lightning", "long_lunge", "lunge", "slash"
 	]:
 		if not modes.has(preferred):
@@ -776,6 +782,16 @@ func _run_smart_ai_turn(unit: Node3D) -> void:
 	await super._run_smart_ai_turn(unit)
 
 
+func _try_disoriented_friendly_fire(unit: Node3D) -> bool:
+	if mission_number == 5 and str(unit.get_meta("character_id", "")) == "zakov":
+		status_label.text = "Zakov сохраняет контроль и не атакует своих."
+		unit.set_meta("disoriented_turns", 0)
+		unit.set_meta("friendly_fire_chance", 0.0)
+		await get_tree().create_timer(0.30).timeout
+		return false
+	return await super._try_disoriented_friendly_fire(unit)
+
+
 func _activate_player_member(member: Node3D) -> void:
 	if int(member.get_meta("disabled_turns", 0)) > 0:
 		member.set_meta("disabled_turns", maxi(0, int(member.get_meta("disabled_turns", 0)) - 1))
@@ -799,12 +815,38 @@ func _play_attack_animation(attacker: Node3D, target: Node3D, mode: String) -> v
 			await _animate_guillotine(attacker, target)
 		"force_field_throw":
 			await _animate_force_field_throw(attacker, target)
+		"fire_rain":
+			await _animate_fire_rain(attacker, target)
 		"sharking_slash":
 			await super._play_attack_animation(attacker, target, "slash")
 		"sharking_strong_slash":
 			await super._play_attack_animation(attacker, target, "strong_slash")
 		_:
 			await super._play_attack_animation(attacker, target, mode)
+
+
+func _animate_fire_rain(attacker: Node3D, target: Node3D) -> void:
+	_face_target(attacker, target)
+	status_label.text = "%s использует «Град огня с неба»" % str(attacker.get_meta("label"))
+	var centre: Vector3 = target.global_position + Vector3(0, 1.0, 0)
+	for meteor_index: int in range(6):
+		var meteor := MeshInstance3D.new()
+		var meteor_mesh := SphereMesh.new()
+		meteor_mesh.radius = 0.11 + float(meteor_index % 2) * 0.03
+		meteor_mesh.height = meteor_mesh.radius * 2.0
+		meteor.mesh = meteor_mesh
+		meteor.global_position = centre + Vector3(rng.randf_range(-1.2, 1.2), 3.4 + float(meteor_index) * 0.18, rng.randf_range(-1.2, 1.2))
+		meteor.material_override = _effect_material(Color(1.0, 0.34, 0.08, 0.95))
+		add_child(meteor)
+		var impact: Vector3 = centre + Vector3(rng.randf_range(-0.6, 0.6), rng.randf_range(-0.10, 0.30), rng.randf_range(-0.6, 0.6))
+		var tween: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_interval(float(meteor_index) * 0.055)
+		tween.tween_property(meteor, "global_position", impact, 0.18)
+		tween.tween_callback(Callable(self, "_spawn_incinerate_explosion").bind(impact))
+		tween.tween_property(meteor, "scale", Vector3.ZERO, 0.05)
+		tween.tween_callback(Callable(meteor, "queue_free"))
+	await get_tree().create_timer(0.56).timeout
+	_camera_shake(0.62, 0.28)
 
 
 func _animate_force_field_throw(attacker: Node3D, target: Node3D) -> void:

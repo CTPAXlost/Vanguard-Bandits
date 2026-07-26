@@ -854,12 +854,7 @@ func is_shop_available() -> bool:
 
 
 func is_item_available(item_id: String) -> bool:
-	if not SHOP_ITEMS.has(item_id):
-		return false
-	var item: Dictionary = SHOP_ITEMS[item_id] as Dictionary
-	if bool(item.get("requires_castle_defense", false)):
-		return mission_5_complete and mission_5_result == "castle_defended"
-	return true
+	return SHOP_ITEMS.has(item_id)
 
 
 func get_inventory_count(item_id: String) -> int:

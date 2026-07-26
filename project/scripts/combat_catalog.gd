@@ -67,6 +67,15 @@ const ATTACKS: Dictionary = {
 		"multiplier": 2.35,
 		"animation": "bright_bomb",
 	},
+	"fire_rain": {
+		"label": "Град огня с неба",
+		"fatigue": 0,
+		"energy": 60,
+		"range": 5,
+		"range_mode": "up_to",
+		"multiplier": 2.05,
+		"animation": "fire_rain",
+	},
 	"earthquake": {
 		"label": "Землетрясение",
 		"fatigue": 0,
@@ -273,6 +282,7 @@ const LOADOUTS: Dictionary = {
 		"strong_slash",
 		"ball_lightning",
 		"bright_bomb",
+		"fire_rain",
 	],
 	"duyere": ["slash", "lunge", "earthquake"],
 	"sadira_sylpheed": ["slash", "lunge", "long_lunge", "sound_strike", "wind_strike"],

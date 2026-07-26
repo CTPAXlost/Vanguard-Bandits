@@ -197,7 +197,7 @@ func _build_original_skin() -> void:
 		sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		sprite.shaded = false
 		sprite.double_sided = true
-		sprite.no_depth_test = false
+		sprite.no_depth_test = true
 		sprite.fixed_size = false
 		sprite.custom_aabb = SAFE_AABB
 		sprite.render_priority = int(part.get("priority", 1))
@@ -212,44 +212,10 @@ func _build_original_skin() -> void:
 
 
 func _build_weapon_overlay() -> void:
-	# These original skins already include their weapon in the artwork. Adding an
-	# extra sword made it float beside the wrist, so they keep the integral blade.
-	if slug in ["haurol", "toreadore", "sarbelas", "sylpheed", "sharking"]:
-		return
-	var path: String = "res://assets/atac_views/sword_level_1.png"
-	var pixel_size: float = 0.00116
-	var local_position := Vector3(0.015, 0.265, 0.012)
-	var local_rotation: float = -12.0
-	if slug == "solarus":
-		path = "res://assets/atac_views/weapons/black_red_sword.png"
-		pixel_size = 0.00104
-		local_position = Vector3(0.008, 0.235, 0.012)
-		local_rotation = -10.0
-	elif slug == "einlager":
-		path = "res://assets/atac_views/weapons/einlager_sword.png"
-		local_position = Vector3(0.010, 0.250, 0.012)
-		local_rotation = -11.0
-	elif slug == "korbelan":
-		local_position = Vector3(0.012, 0.278, 0.012)
-		local_rotation = -8.0
-	var weapon: Sprite3D = Sprite3D.new()
-	weapon.name = "RiggedWeapon"
-	weapon.texture = _shared_texture(path)
-	weapon.pixel_size = pixel_size
-	weapon.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	weapon.alpha_cut = SpriteBase3D.ALPHA_CUT_OPAQUE_PREPASS
-	weapon.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE
-	weapon.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	weapon.shaded = false
-	weapon.double_sided = true
-	weapon.custom_aabb = SAFE_AABB
-	weapon.render_priority = 10
-	# The grip of the vertical sword texture is below its centre. Positive local Y
-	# aligns that grip with hand_r, so the blade follows every skeletal animation.
-	weapon.position = local_position
-	weapon.rotation_degrees.z = local_rotation
-	_attachment("hand_r").add_child(weapon)
-	skin_sprites.append(weapon)
+	# Original articulated skins already include their weapons in the source art.
+	# Extra overlay blades were causing floating artefacts, so the tactical rigs now
+	# keep only the integral weapon that belongs to the original sprite sheet.
+	return
 
 
 func _shared_texture(path: String) -> Texture2D:
