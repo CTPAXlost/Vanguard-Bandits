@@ -12,8 +12,11 @@ class V182CastleReinforcementTests(unittest.TestCase):
     def test_map_has_requested_neutral_and_reinforcement_positions(self):
         data = json.loads((PROJECT / "data/maps/mission_05.json").read_text(encoding="utf-8"))
         self.assertEqual(data["neutral_starts"], {
-            "sadira": [17, 17], "franco": [15, 17], "halak": [19, 17]
+            "sadira": [8, 13], "franco": [9, 12], "halak": [9, 14]
         })
+        # The observers are now outside the west wall in the open battlefield,
+        # not hidden behind the castle where neither side can reach them.
+        self.assertTrue(all(cell[0] < data["castle"]["west_wall_x"] for cell in data["neutral_starts"].values()))
         wave = data["reinforcement_starts"]
         self.assertEqual(len(wave["captains"]), 2)
         self.assertEqual(len(wave["barbatos"]), 3)
@@ -68,12 +71,12 @@ class V182CastleReinforcementTests(unittest.TestCase):
                 self.assertGreaterEqual(image.width, 768)
                 self.assertGreaterEqual(image.height, 768)
 
-    def test_weapon_overlay_is_attached_to_hand_not_floating(self):
+    def test_weapon_overlay_does_not_create_floating_duplicate(self):
         source = (PROJECT / "scripts/skeletal_atac.gd").read_text(encoding="utf-8")
-        self.assertIn('_attachment("hand_r").add_child(weapon)', source)
+        self.assertIn("Original articulated skins already include their weapons", source)
         self.assertNotIn('Vector3(0.30, -0.05, 0.012)', source)
-        self.assertIn('Vector3(0.015, 0.265, 0.012)', source)
-        self.assertIn('"sylpheed", "sharking"', source)
+        self.assertNotIn('weapon.texture = _shared_texture(path)', source)
+        self.assertIn("func _build_weapon_overlay() -> void:\n", source)
 
     def test_zeira_magic_uses_selected_ally(self):
         source = (PROJECT / "scripts/campaign_battle_v08.gd").read_text(encoding="utf-8")
