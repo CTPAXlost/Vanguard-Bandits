@@ -130,7 +130,7 @@ jobs:
           set -euo pipefail
           GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
           set +e
-          "$GODOT" --headless --path project res://scenes/MovementInputSmoke.tscn --quit-after 600 2>&1 | tee movement-input-smoke.log
+          "$GODOT" --headless --path project res://scenes/MovementInputSmoke.tscn --quit-after 1800 2>&1 | tee movement-input-smoke.log
           STATUS=${PIPESTATUS[0]}
           set -e
           if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|MOVEMENT_INPUT_SMOKE_FAILED" movement-input-smoke.log; then

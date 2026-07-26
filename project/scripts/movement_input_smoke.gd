@@ -1,22 +1,26 @@
 extends Node
 
 
-func _ready() -> void:
+func _enter_tree() -> void:
+	# The battle is a scene child, so initialise the campaign before that child
+	# enters the tree. This avoids the old async _ready deadlock where the smoke
+	# test waited for a battle node whose own _ready had not started yet.
 	CampaignState.reset_campaign()
 	CampaignState.current_mission = 1
+	CampaignState.test_forced_branch = ""
 	CampaignState.save_game()
 
-	await get_tree().process_frame
-	var packed_scene: PackedScene = load("res://scenes/BattlePrototype.tscn")
-	var battle: Node = packed_scene.instantiate()
-	add_child(battle)
 
-	# Full ATAC rigs and their textures can take more than a handful of frames to
-	# initialise on a cold GitHub runner. Wait for the actual player and movement
-	# highlights instead of assuming that six frames are always enough.
+func _ready() -> void:
+	var battle: Node = get_node_or_null("BattlePrototype")
+	if battle == null:
+		push_error("MOVEMENT_INPUT_SMOKE_FAILED: pre-instanced battle child is missing")
+		get_tree().quit(1)
+		return
+
 	var player: Node3D = null
 	var reachable: Dictionary = {}
-	for _frame: int in range(360):
+	for _frame: int in range(600):
 		await get_tree().process_frame
 		player = _find_player_unit(battle)
 		var reachable_value: Variant = battle.get("reachable_cells")
@@ -26,7 +30,10 @@ func _ready() -> void:
 			break
 
 	if player == null:
-		push_error("MOVEMENT_INPUT_SMOKE_FAILED: player unit is missing after waiting for battle initialisation")
+		var mission_value: Variant = battle.get("mission_number")
+		var units_value: Variant = battle.get("units")
+		var unit_count: int = units_value.size() if units_value is Array else -1
+		push_error("MOVEMENT_INPUT_SMOKE_FAILED: player unit is missing; mission=%s units=%d children=%d" % [str(mission_value), unit_count, battle.get_child_count()])
 		get_tree().quit(1)
 		return
 	if reachable.is_empty():
@@ -37,13 +44,17 @@ func _ready() -> void:
 	var start_cell: Vector2i = player.get_meta("cell", Vector2i.ZERO)
 	var destination: Vector2i = start_cell
 	var viewport_rect: Rect2 = get_viewport().get_visible_rect()
+	var battle_camera: Camera3D = battle.get("camera") as Camera3D
+	if battle_camera == null:
+		push_error("MOVEMENT_INPUT_SMOKE_FAILED: battle camera is missing")
+		get_tree().quit(1)
+		return
 	for raw_cell: Variant in reachable.keys():
 		var candidate: Vector2i = raw_cell
 		if candidate == start_cell:
 			continue
 		var world_position: Vector3 = battle.call("_cell_to_world", candidate)
-		var battle_camera: Camera3D = battle.get("camera") as Camera3D
-		if battle_camera == null or battle_camera.is_position_behind(world_position):
+		if battle_camera.is_position_behind(world_position):
 			continue
 		var screen_position: Vector2 = battle_camera.unproject_position(world_position)
 		if viewport_rect.has_point(screen_position):
@@ -55,29 +66,22 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
-	var camera: Camera3D = battle.get("camera") as Camera3D
-	if camera == null:
-		push_error("MOVEMENT_INPUT_SMOKE_FAILED: battle camera is missing")
-		get_tree().quit(1)
-		return
 	var destination_world: Vector3 = battle.call("_cell_to_world", destination)
-	var click_position: Vector2 = camera.unproject_position(destination_world)
+	var click_position: Vector2 = battle_camera.unproject_position(destination_world)
 	var click: InputEventMouseButton = InputEventMouseButton.new()
 	click.button_index = MOUSE_BUTTON_LEFT
 	click.position = click_position
 	click.pressed = true
 	battle.call("_unhandled_input", click)
 
-	# Movement uses frame-by-frame animation, so allow enough time even on a slow
-	# headless runner while still failing deterministically when input is broken.
-	for _frame: int in range(420):
+	for _frame: int in range(600):
 		await get_tree().process_frame
 		if player.get_meta("cell", Vector2i.ZERO) == destination:
 			print("MOVEMENT_INPUT_SMOKE_OK")
 			get_tree().quit()
 			return
 
-	push_error("MOVEMENT_INPUT_SMOKE_FAILED: click did not move the unit")
+	push_error("MOVEMENT_INPUT_SMOKE_FAILED: click did not move the unit from %s to %s" % [str(start_cell), str(destination)])
 	get_tree().quit(1)
 
 
