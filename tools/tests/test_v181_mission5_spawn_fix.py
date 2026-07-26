@@ -32,7 +32,7 @@ class Mission5SpawnFixTests(unittest.TestCase):
 
     def test_project_version(self):
         project = (ROOT / "project/project.godot").read_text(encoding="utf-8")
-        self.assertIn('config/version="1.9.3"', project)
+        self.assertIn('config/version="1.9.4"', project)
 
 
 if __name__ == "__main__":

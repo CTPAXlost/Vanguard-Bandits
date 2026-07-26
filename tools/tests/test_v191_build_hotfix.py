@@ -11,7 +11,7 @@ class V191BuildHotfixTests(unittest.TestCase):
 
     def test_project_version(self):
         text = (ROOT / "project/project.godot").read_text(encoding="utf-8")
-        self.assertIn('config/version="1.9.3"', text)
+        self.assertIn('config/version="1.9.4"', text)
 
 if __name__ == "__main__":
     unittest.main()
