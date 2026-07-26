@@ -28,7 +28,7 @@ class V184ZakovTriggerFixTests(unittest.TestCase):
 
     def test_project_version(self):
         project = (ROOT / "project/project.godot").read_text(encoding="utf-8")
-        self.assertIn('config/version="1.9.1"', project)
+        self.assertIn('config/version="1.9.2"', project)
 
 
 if __name__ == "__main__":
