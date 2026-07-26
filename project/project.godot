@@ -1,11 +1,11 @@
-; Vanguard Bandits Remaster 1.9.0 — Война Севера и Юга; original ATAC skins on Skeleton3D; открытые ворота и полный магазин
+; Vanguard Bandits Remaster 1.9.1 — Война Севера и Юга; original ATAC skins on Skeleton3D; открытые ворота и полный магазин
 ; Engine target: Godot 4.6.3 stable
 
 config_version=5
 
 [application]
 config/name="Vanguard Bandits Remaster"
-config/version="1.9.0"
+config/version="1.9.1"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 run/max_fps=60

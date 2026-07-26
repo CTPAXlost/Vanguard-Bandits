@@ -15,6 +15,7 @@ var southern_reinforcement_spawned := false
 var alden_unit: Node3D
 var devlin_unit: Node3D
 var logan_unit: Node3D
+var zeira_unit_five: Node3D
 var devlin_clone: Node3D
 var mission_six_finished := false
 var mission_six_intro_pending := false

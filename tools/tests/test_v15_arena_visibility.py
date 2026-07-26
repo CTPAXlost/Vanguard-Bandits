@@ -68,7 +68,7 @@ class V15ArenaVisibilityTests(unittest.TestCase):
 
     def test_project_header_identifies_v15(self) -> None:
         project = (PROJECT / "project.godot").read_text(encoding="utf-8")
-        self.assertIn("Vanguard Bandits Remaster 1.9.0", project)
+        self.assertIn("Vanguard Bandits Remaster 1.9.1", project)
 
 
 if __name__ == "__main__":
