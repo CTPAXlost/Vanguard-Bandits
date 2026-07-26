@@ -15,14 +15,9 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 
-	# Godot headless may finish the inherited async _ready chain without creating
-	# runtime units when the full campaign scene is embedded as a child fixture.
-	# This is a test-harness quirk, not the normal main-scene launch path. If that
-	# happens, initialise the mission through the same production methods before
-	# exercising the real click handler.
-	await _wait_for_units(battle, 120)
-	if _find_player_unit(battle) == null:
-		await _initialise_fixture_fallback(battle)
+	# The smoke test must use the real scene boot path. It deliberately has no
+	# manual setup fallback: missing units are a blocking runtime failure.
+	await _wait_for_units(battle, 600)
 
 	var player: Node3D = null
 	var reachable: Dictionary = {}
@@ -36,7 +31,7 @@ func _ready() -> void:
 			break
 
 	if player == null:
-		_fail(battle, "player unit is missing after normal and fallback initialisation")
+		_fail(battle, "player unit is missing after normal scene initialisation")
 		return
 	if reachable.is_empty():
 		_fail(battle, "reachable cells are missing after battle initialisation")
@@ -90,19 +85,6 @@ func _ready() -> void:
 			get_tree().quit()
 			return
 
-	# If projection cannot hit in headless, verify the same movement method with
-	# the exact path selected by the production reachable-cell calculation. This
-	# keeps the smoke test deterministic while the desktop build still uses clicks.
-	var path_value: Variant = battle.call("_find_path", start_cell, destination, player)
-	if path_value is Array:
-		var fallback_path: Array = path_value as Array
-		if not fallback_path.is_empty():
-			await battle.call("_animate_path", player, fallback_path, 0.001)
-			if player.get_meta("cell", Vector2i.ZERO) == destination:
-				print("MOVEMENT_INPUT_SMOKE_OK")
-				get_tree().quit()
-				return
-
 	_fail(battle, "movement did not reach %s from %s" % [str(destination), str(start_cell)])
 
 
@@ -111,21 +93,6 @@ func _wait_for_units(battle: Node, frames: int) -> void:
 		await get_tree().process_frame
 		if _find_player_unit(battle) != null:
 			return
-
-
-func _initialise_fixture_fallback(battle: Node) -> void:
-	print("MOVEMENT_INPUT_SMOKE: applying deterministic headless fixture initialisation")
-	# These are the same production setup methods called by BattlePrototype._ready.
-	# Only invoke them when the embedded fixture has created no units or map nodes.
-	var units_value: Variant = battle.get("units")
-	if units_value is Array and not (units_value as Array).is_empty():
-		return
-	battle.call("_build_environment")
-	battle.call("_load_first_mission")
-	battle.call("_build_map")
-	battle.call("_spawn_mission_units")
-	battle.call("_begin_player_turn")
-	await get_tree().process_frame
 
 
 func _find_player_unit(battle: Node) -> Node3D:

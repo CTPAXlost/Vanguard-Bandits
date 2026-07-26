@@ -147,11 +147,11 @@ func _refresh_campaign_status() -> void:
 		mission_button.text = "Следующая глава готовится"
 		mission_button.disabled = true
 	elif CampaignState.mission_5_complete:
-		title_label.text = "ДОРОГА К ДВУМ КОРОЛЕВСТВАМ"
-		subtitle_label.text = "Север и Юг уже ведут открытое сражение"
-		status_label.text = "Отряд должен выбрать будущего союзника: Logan на Юге или Alden на Севере."
-		mission_button.text = "Начать главу VI — выбрать сторону"
-		mission_button.disabled = false
+		title_label.text = "ЗАМОК УДЕРЖАН — ВЕТКА KAMORGE"
+		subtitle_label.text = "Kamorge жив; эта сюжетная линия продолжится в отдельной главе"
+		status_label.text = "Глава VI «Война Севера и Юга» открывается только после гибели Kamorge в миссии 3А."
+		mission_button.text = "Продолжение ветки Kamorge готовится"
+		mission_button.disabled = true
 	elif CampaignState.mission_4_complete:
 		title_label.text = "ГЛАВА V — ЗАЩИТА ОСВОБОЖДЁННОГО ЗАМКА"
 		subtitle_label.text = "Faulkner возвращается с новой армией"
@@ -263,9 +263,7 @@ func _start_next_mission() -> void:
 	if CampaignState.mission_6_complete:
 		return
 	if CampaignState.mission_5_complete:
-		CampaignState.current_mission = 6
-		CampaignState.save_game()
-		get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
+		# Mission VI is not part of the surviving-Kamorge branch.
 		return
 	if CampaignState.mission_4_complete:
 		CampaignState.current_mission = 5

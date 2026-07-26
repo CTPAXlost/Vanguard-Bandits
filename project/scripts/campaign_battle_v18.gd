@@ -26,7 +26,7 @@ var zakov_barbatos: Array[Node3D] = []
 
 func _ready() -> void:
 	mission_five_intro_pending = CampaignState.current_mission == 5
-	super._ready()
+	await super._ready()
 	if mission_number != 5:
 		return
 	action_in_progress = true
@@ -723,12 +723,9 @@ func _run_smart_ai_turn(unit: Node3D) -> void:
 
 
 func _try_disoriented_friendly_fire(unit: Node3D) -> bool:
-	if mission_number == 5 and str(unit.get_meta("character_id", "")) == "zakov":
-		status_label.text = "Zakov сохраняет контроль и не атакует своих."
-		unit.set_meta("disoriented_turns", 0)
-		unit.set_meta("friendly_fire_chance", 0.0)
-		await get_tree().create_timer(0.30).timeout
-		return false
+	# Friendly fire is reached only from the explicit disorientation branch in
+	# _run_enemy_phase. Zakov follows the same rule: never attacks allies during
+	# normal AI, but can do so when a real disorientation effect is active.
 	return await super._try_disoriented_friendly_fire(unit)
 
 

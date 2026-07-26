@@ -24,7 +24,7 @@ class MissionReplayCoinsTests(unittest.TestCase):
 
     def test_wallet_is_persistent_and_has_migration(self):
         state = (PROJECT / "scripts" / "campaign_state.gd").read_text(encoding="utf-8")
-        self.assertRegex(state, r"SAVE_VERSION:\s*int\s*=\s*19")
+        self.assertRegex(state, r"SAVE_VERSION:\s*int\s*=\s*20")
         self.assertIn('"coins": coins', state)
         self.assertIn('"mission_reward_claimed": mission_reward_claimed', state)
         self.assertIn("func _migrate_coin_economy", state)

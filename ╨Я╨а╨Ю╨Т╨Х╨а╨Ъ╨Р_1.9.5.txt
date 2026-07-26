@@ -1,0 +1,68 @@
+VANGUARD BANDITS REMASTER 1.9.5 — ОТЧЁТ ПРОВЕРКИ
+
+1. НАЙДЕННАЯ ПРИЧИНА НЕЗАГРУЗКИ БОЯ
+
+Файл: project/scripts/campaign_battle_v19.gd
+
+В 1.9.4 вызов super._ready() был вложен в условие шестой миссии. Поэтому основная инициализация BattlePrototype не запускалась для миссий I–V. Дополнительно несколько наследуемых слоёв вызывали асинхронную родительскую _ready() без await, что создавало гонку инициализации.
+
+Исправлено:
+- campaign_battle.gd — await super._ready();
+- campaign_battle_v08.gd — await super._ready();
+- campaign_battle_v18.gd — await super._ready();
+- campaign_battle_v19.gd — await super._ready() выполняется вне условия миссии VI.
+
+2. АВТОМАТИЧЕСКИЕ ТЕСТЫ, ВЫПОЛНЕННЫЕ В ЭТОЙ СРЕДЕ
+
+Команда:
+python -m unittest discover -s tools/tests -v
+
+Результат:
+- 143 теста выполнено;
+- 143 теста успешно;
+- ошибок и пропусков нет.
+
+Дополнительная статическая проверка:
+- 36 JSON-файлов корректно разобраны;
+- 2 YAML workflow-файла корректно разобраны;
+- проверено 407 буквальных ссылок res:// — отсутствующих ресурсов не найдено;
+- все найденные вызовы super._ready() в боевой цепочке используют await;
+- continue-on-error в .github отсутствует;
+- целостность всех 524 PNG-файлов проекта подтверждена;
+- портреты Logan, Claire, Shion, Alden, Devlin, Barlow, Matisse и Nordilian совпадают с загруженными оригиналами по SHA-256;
+- найдены ригованные ATAC и четыре вида для Crimson, Rahabor, Altagrave, Snow Soldier и Ratatosk.
+
+3. ЧТО ПРОВЕРЯЕТ GITHUB ACTIONS
+
+Обязательные блокирующие этапы:
+- импорт проекта Godot;
+- проверка GDScript и загрузки ресурсов;
+- обычный запуск BattlePrototype для миссий 1, 2, 3A, 3B, 4, 5, 6A и 6B;
+- полный smoke миссии VI с подкреплением и сохранением обеих сторон;
+- smoke перемещения через настоящий ввод;
+- экспорт Windows x64.
+
+При падении любого этапа workflow завершается ошибкой. Обходов через continue-on-error и ручной достройки боевой сцены в smoke-тестах нет.
+
+4. ОГРАНИЧЕНИЕ ЛОКАЛЬНОЙ СРЕДЫ
+
+В текущем контейнере отсутствует исполняемый файл Godot 4.6.3 и недоступна загрузка бинарного архива движка. Поэтому локально здесь не выполнялись фактический Godot import, запуск движка и Windows-export. Они намеренно оставлены обязательными в GitHub Actions. Архив следует считать подтверждённым релизом только после зелёного прохождения workflow Build Windows Remaster.
+
+5. ОСНОВНЫЕ ИСПРАВЛЕННЫЕ ФАЙЛЫ
+
+- project/scripts/campaign_battle.gd
+- project/scripts/campaign_battle_v08.gd
+- project/scripts/campaign_battle_v18.gd
+- project/scripts/campaign_battle_v19.gd
+- project/scripts/campaign_state.gd
+- project/scripts/campaign_hub.gd
+- project/scripts/mission_select.gd
+- project/scripts/zakov.gd
+- project/scripts/movement_input_smoke.gd
+- project/scripts/mission6_smoke.gd
+- project/scripts/mission_boot_smoke.gd
+- project/scenes/MissionBootSmoke.tscn
+- project/data/maps/mission_06.json
+- .github/workflows/build-windows.yml
+- .github/workflows/release-windows.yml
+- tools/tests/test_v195_battle_boot_release.py

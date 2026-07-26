@@ -22,11 +22,21 @@ var mission_six_intro_pending := false
 var choice_dialog_done := false
 
 func _ready() -> void:
+	if CampaignState.current_mission == 6 and CampaignState.kamorge_alive and CampaignState.test_forced_branch not in ["south", "north"]:
+		# Mission VI is exclusive to the branch where Kamorge died. Repair old
+		# saves that were incorrectly routed here by version 1.9.4.
+		CampaignState.current_mission = 5
+		CampaignState.save_game()
+		call_deferred("_return_to_campaign_hub")
+		return
 	if CampaignState.current_mission == 6:
 		mission_six_intro_pending = true
 		if CampaignState.test_forced_branch in ["south", "north"]:
 			kingdom_choice = CampaignState.test_forced_branch
-		super._ready()
+	# Critical boot fix: the previous build called the parent only for mission 6,
+	# leaving missions 1-5 without map, HUD or units. Await the complete inherited
+	# initialisation chain so chapter-specific coroutines cannot race one another.
+	await super._ready()
 	if mission_number != 6:
 		return
 	action_in_progress = true
@@ -47,7 +57,11 @@ func _load_first_mission() -> void:
 		return
 	mission_number = 6
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MISSION_SIX_PATH))
-	map_data = parsed as Dictionary
+	if parsed is Dictionary:
+		map_data = parsed as Dictionary
+	else:
+		push_error("Mission VI map is missing or invalid: %s" % MISSION_SIX_PATH)
+		map_data = {"name": "Глава VI — Война Севера и Юга", "width": 32, "height": 18, "player_starts": {}, "south_starts": {"bots": []}, "north_starts": {"bots": []}, "south_reinforcements": []}
 	grid_width = int(map_data.get("width", 32))
 	grid_height = int(map_data.get("height", 18))
 	blocked_cells = {}
@@ -160,7 +174,6 @@ func _begin_player_turn() -> void:
 	if mission_number == 6 and mission_six_intro_pending:
 		return
 	if mission_number == 6:
-		_apply_alden_aura()
 		_check_south_reinforcement()
 	super._begin_player_turn()
 
@@ -197,14 +210,16 @@ func _check_south_reinforcement() -> void:
 			false, false, team, "nordilian_rahabar"
 		)
 		_apply_unit_level(u, "rahabar", 10 + i % 6, 25 + i, 23 + i, 25 + i, 25 + i)
+		u.set_meta("portrait_path", "res://assets/ui/portraits/nordilian.png")
+		south_bots.append(u)
 	status_label.text = "К Южному королевству прибыла подмога из шести Rahabor!"
 
 func _resolve_attack(attacker: Node3D, target: Node3D, mode: String) -> void:
-	if target == alden_unit and bool(target.get_meta("magic_immune", false)):
-		if mode in ["ball_lightning", "bright_bomb", "ice_rain", "frost", "storm_vortex"]:
-			status_label.text = "Altagrave невосприимчив к магии."
-			_spawn_guard_flash(target.global_position + Vector3(0, 1, 0), Color(0.5, 0.85, 1.0))
-			return
+	if target == alden_unit and str(attacker.get_meta("team", "")) != str(target.get_meta("team", "")) and bool(target.get_meta("magic_immune", false)) and CombatCatalog.is_magic(mode):
+		status_label.text = "Altagrave полностью невосприимчив к вражеской магии."
+		_spawn_guard_flash(target.global_position + Vector3(0, 1, 0), Color(0.5, 0.85, 1.0))
+		await _try_alden_iceberg_retaliation(attacker)
+		return
 	if mode == "devlin_combo":
 		status_label.text = "Комбо Snow Soldier невозможно заблокировать!"
 		var combo_damage: int = _calculate_damage(attacker, target, float(CombatCatalog.attack(mode).get("multiplier", 3.45)))
@@ -220,11 +235,21 @@ func _resolve_attack(attacker: Node3D, target: Node3D, mode: String) -> void:
 			_spawn_ice_lock_effect(target.global_position + Vector3(0, 1.0, 0))
 	if float(attacker.get_meta("logan_damage_boost", 1.0)) > 1.0:
 		attacker.set_meta("logan_damage_boost", 1.0)
-	if target == alden_unit and _is_alive(attacker) and rng.randf() <= 0.50:
-		status_label.text = "Ответная магия Alden: на атакующего падает айсберг!"
-		await _animate_ice_rain(alden_unit, attacker)
-		var retaliation: int = maxi(1, int(float(_stats(alden_unit).get("strength", 40)) * 2.0))
-		await _damage_target(attacker, retaliation)
+	if target == alden_unit:
+		await _try_alden_iceberg_retaliation(attacker)
+
+
+func _try_alden_iceberg_retaliation(attacker: Node3D) -> void:
+	if alden_unit == null or not _is_alive(alden_unit) or attacker == null or not _is_alive(attacker):
+		return
+	if str(attacker.get_meta("team", "")) == str(alden_unit.get_meta("team", "")):
+		return
+	if rng.randf() > 0.50:
+		return
+	status_label.text = "Ответная магия Alden: на атакующего падает айсберг!"
+	await _animate_ice_rain(alden_unit, attacker)
+	var retaliation: int = maxi(1, int(float(_stats(alden_unit).get("strength", 40)) * 2.0))
+	await _damage_target(attacker, retaliation)
 
 
 func _calculate_damage(attacker: Node3D, target: Node3D, multiplier: float) -> int:
@@ -241,6 +266,9 @@ func _try_automatic_passive(defender: Node3D, attacker: Node3D, back_attack: boo
 	return await super._try_automatic_passive(defender, attacker, back_attack)
 
 func _run_smart_ai_turn(unit: Node3D) -> void:
+	if unit == alden_unit:
+		_apply_alden_aura()
+		await get_tree().create_timer(0.25).timeout
 	if unit == devlin_unit and int(unit.get_meta("clone_uses", 0)) > 0 and devlin_clone == null:
 		var clone_cell: Vector2i = _first_free_adjacent_cell(unit)
 		if clone_cell.x >= 0:
@@ -304,7 +332,7 @@ func _choose_ai_attack(unit: Node3D, target: Node3D) -> String:
 	var modes := CombatCatalog.attacks_for(unit)
 	var distance := _grid_distance(unit, target)
 	for mode: String in [
-		"evil_heart", "storm_vortex", "devlin_combo", "bright_bomb",
+		"evil_heart", "storm_vortex", "iceberg", "devlin_combo", "bright_bomb",
 		"rocket_shot", "ice_rain", "frost", "precise_shot",
 		"ball_lightning", "strong_slash", "long_lunge", "lunge", "slash"
 	]:
@@ -323,7 +351,7 @@ func _play_attack_animation(attacker: Node3D, target: Node3D, mode: String) -> v
 			await _animate_strong_slash(attacker, target)
 			_spawn_heavy_arc(target.global_position + Vector3(0, 1.0, 0), Color(0.85, 0.02, 0.08))
 			_camera_shake(0.55, 0.24)
-		"frost":
+		"frost", "iceberg":
 			await _animate_ice_rain(attacker, target)
 		"storm_vortex":
 			await _animate_tornado(attacker, target)

@@ -10,7 +10,7 @@ PROJECT = ROOT / "project"
 class V14ArenaAIShopTests(unittest.TestCase):
     def test_save_and_arena_setting_are_persistent(self) -> None:
         state = (PROJECT / "scripts/campaign_state.gd").read_text(encoding="utf-8")
-        self.assertRegex(state, r"SAVE_VERSION:\s*int\s*=\s*19")
+        self.assertRegex(state, r"SAVE_VERSION:\s*int\s*=\s*20")
         self.assertIn("arena_battles_enabled: bool = false", state)
         self.assertIn('"arena_battles_enabled": arena_battles_enabled', state)
         self.assertIn("func toggle_arena_battles", state)

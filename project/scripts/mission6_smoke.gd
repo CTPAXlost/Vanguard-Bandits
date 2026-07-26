@@ -20,11 +20,10 @@ func _check_branch(branch: String) -> void:
 	var battle: Node = packed_scene.instantiate()
 	add_child(battle)
 
-	await _wait_for_mission_six(battle, 180)
+	# Use only the normal BattlePrototype scene lifecycle. No test fixture may call
+	# private setup methods to conceal a broken _ready chain.
+	await _wait_for_mission_six(battle, 900)
 	var units_value: Variant = battle.get("units")
-	if not (units_value is Array) or (units_value as Array).is_empty():
-		await _initialise_mission_six_fixture(battle, branch)
-	await _wait_for_mission_six(battle, 300)
 
 	if int(battle.get("mission_number")) != 6:
 		_fail("mission six did not load")
@@ -99,7 +98,8 @@ func _check_branch(branch: String) -> void:
 		if not (south_bots_value is Array):
 			_fail("south bot list is unavailable")
 			return
-		for bot_value: Variant in south_bots_value as Array:
+		var first_wave_size: int = (south_bots_value as Array).size()
+		for bot_value: Variant in (south_bots_value as Array).duplicate():
 			var bot: Node3D = bot_value as Node3D
 			if bot == null:
 				continue
@@ -111,6 +111,22 @@ func _check_branch(branch: String) -> void:
 		if not bool(battle.get("southern_reinforcement_spawned")):
 			_fail("second southern wave did not spawn")
 			return
+		var reinforced_value: Variant = battle.get("south_bots")
+		if not (reinforced_value is Array) or (reinforced_value as Array).size() != first_wave_size + 6:
+			_fail("southern reinforcement must add exactly six Rahabor")
+			return
+
+	# Persist and reload the chosen kingdom. This is the same save path used by
+	# the campaign hub and future chapters.
+	CampaignState.complete_mission(6, branch)
+	if CampaignState.kingdom_alliance != branch:
+		_fail("alliance was not stored in campaign state")
+		return
+	CampaignState.kingdom_alliance = ""
+	if not CampaignState.load_game() or CampaignState.kingdom_alliance != branch:
+		_fail("alliance did not survive save/load")
+		return
+	print("MISSION6_SAVE_%s_OK" % branch.to_upper())
 	print("MISSION6_%s_BRANCH_OK" % branch.to_upper())
 	battle.queue_free()
 	for _frame: int in range(3):
@@ -123,21 +139,6 @@ func _wait_for_mission_six(battle: Node, frames: int) -> void:
 		var units_value: Variant = battle.get("units")
 		if int(battle.get("mission_number")) == 6 and units_value is Array and not (units_value as Array).is_empty():
 			return
-
-
-func _initialise_mission_six_fixture(battle: Node, branch: String) -> void:
-	print("MISSION6_SMOKE: applying deterministic headless fixture initialisation for %s" % branch)
-	battle.set("kingdom_choice", branch)
-	battle.set("mission_six_intro_pending", true)
-	battle.call("_build_environment")
-	battle.call("_load_first_mission")
-	battle.call("_build_map")
-	battle.call("_spawn_mission_units")
-	battle.call("_setup_player_party")
-	battle.call("_apply_kingdom_choice")
-	battle.set("mission_six_intro_pending", false)
-	battle.call("_begin_player_turn")
-	await get_tree().process_frame
 
 
 func _fail(message: String) -> void:

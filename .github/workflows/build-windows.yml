@@ -109,8 +109,28 @@ jobs:
           GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
           "$GODOT" --headless --path project --import --quit-after 300
 
+
+      - name: Blocking boot smoke for missions 1-6
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          for spec in "1:" "2:" "3:stay_and_fight" "3:seek_southern_aid" "4:seek_southern_aid" "5:defend_castle" "6:south" "6:north"; do
+            mission="${spec%%:*}"
+            branch="${spec#*:}"
+            safe_branch="${branch:-default}"
+            log="mission-boot-${mission}-${safe_branch}.log"
+            echo "Booting mission ${mission}, branch ${safe_branch} through the normal BattlePrototype lifecycle..."
+            VBR_SMOKE_MISSION="$mission" VBR_SMOKE_BRANCH="$branch" \
+              "$GODOT" --headless --path project res://scenes/MissionBootSmoke.tscn --quit-after 1800 2>&1 | tee "$log"
+            if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|MISSION_BOOT_SMOKE_FAILED" "$log"; then
+              echo "Mission ${mission}/${safe_branch} failed normal scene boot." >&2
+              exit 1
+            fi
+            grep -q "MISSION_BOOT_SMOKE_OK mission=${mission}" "$log"
+          done
+
       - name: Runtime smoke test for battle scene
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -126,7 +146,6 @@ jobs:
           exit "$STATUS"
 
       - name: Runtime smoke test for mouse movement input
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -143,7 +162,6 @@ jobs:
           exit "$STATUS"
 
       - name: Runtime smoke test for mission 3 branch scene
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -163,7 +181,6 @@ jobs:
           grep -q "MISSION3_BRANCH_3B_MOVEMENT_OK" mission3-smoke.log
           exit "$STATUS"
       - name: Runtime smoke test for mission selector
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -179,7 +196,6 @@ jobs:
           exit "$STATUS"
 
       - name: Runtime smoke test for campaign hub
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -196,7 +212,6 @@ jobs:
 
 
       - name: Runtime smoke test for castle rescue mission
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -216,7 +231,6 @@ jobs:
 
 
       - name: Runtime smoke test for castle defense mission
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -241,7 +255,6 @@ jobs:
 
 
       - name: Runtime smoke test for war of two kingdoms
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -256,11 +269,12 @@ jobs:
           fi
           grep -q "MISSION6_SOUTH_BRANCH_OK" mission6-smoke.log
           grep -q "MISSION6_NORTH_BRANCH_OK" mission6-smoke.log
+          grep -q "MISSION6_SAVE_SOUTH_OK" mission6-smoke.log
+          grep -q "MISSION6_SAVE_NORTH_OK" mission6-smoke.log
           grep -q "MISSION6_SMOKE_OK" mission6-smoke.log
           exit "$STATUS"
 
       - name: Runtime smoke test for tactical ATAC visibility
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -280,7 +294,6 @@ jobs:
           exit "$STATUS"
 
       - name: Runtime smoke test for defeated ATAC cleanup
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -297,7 +310,6 @@ jobs:
           exit "$STATUS"
 
       - name: Runtime smoke test for legacy 3D attack arena code
-        continue-on-error: true
 
         shell: bash
         run: |
@@ -317,7 +329,6 @@ jobs:
           exit "$STATUS"
 
       - name: Runtime smoke test for common team shop
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -333,7 +344,6 @@ jobs:
           exit "$STATUS"
 
       - name: Runtime smoke test for corrected branch story scene
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -355,6 +365,7 @@ jobs:
           name: Vanguard-Bandits-Smoke-Logs
           path: |
             battle-smoke.log
+            mission-boot-*.log
             movement-input-smoke.log
             mission3-smoke.log
             hub-smoke.log

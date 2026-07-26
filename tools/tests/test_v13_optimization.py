@@ -12,7 +12,7 @@ class V13OptimizationTests(unittest.TestCase):
         self.assertIn("window/vsync/vsync_mode=1", project)
         self.assertIn('PerformanceGuard="*res://scripts/performance_guard.gd"', project)
         state = (ROOT / "project/scripts/campaign_state.gd").read_text(encoding="utf-8")
-        self.assertIn("SAVE_VERSION: int = 19", state)
+        self.assertIn("SAVE_VERSION: int = 20", state)
         self.assertIn("experimental_3d_enabled: bool = false", state)
         self.assertIn("_migrate_performance_settings", state)
 
