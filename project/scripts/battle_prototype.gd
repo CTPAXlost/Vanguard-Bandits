@@ -346,8 +346,24 @@ func _create_house(data: Dictionary) -> void:
 	var root := Node3D.new()
 	root.name = "House"
 	var cell := _array_to_cell(data.get("cell", [0, 0]))
-	var raw_size: Array = data.get("size", [2.0, 1.1, 1.4])
-	var size := Vector3(float(raw_size[0]), float(raw_size[1]), float(raw_size[2]))
+	var raw_size_value: Variant = data.get("size", [2.0, 1.1, 1.4])
+	var raw_size: Array = raw_size_value if raw_size_value is Array else []
+	var size := Vector3(2.0, 1.1, 1.4)
+	if raw_size.size() >= 3:
+		# Current format: [width, height, depth].
+		size = Vector3(float(raw_size[0]), float(raw_size[1]), float(raw_size[2]))
+	elif raw_size.size() >= 2:
+		# Legacy mission-map format: [width, depth] plus a separate height field.
+		size = Vector3(
+			float(raw_size[0]),
+			float(data.get("height", 1.1)),
+			float(raw_size[1])
+		)
+	elif raw_size.size() == 1:
+		size.x = float(raw_size[0])
+		size.y = float(data.get("height", size.y))
+	else:
+		size.y = float(data.get("height", size.y))
 	root.position = _cell_to_world(cell) + Vector3(0, 0.04, 0)
 	root.rotation_degrees.y = float(data.get("rotation", 0))
 	add_child(root)

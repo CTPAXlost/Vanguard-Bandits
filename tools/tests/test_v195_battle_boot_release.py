@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import unittest
+
 import json
 import re
 from pathlib import Path
@@ -16,7 +18,7 @@ def read(relative: str) -> str:
 def test_release_and_save_versions_are_current() -> None:
     project = read("project/project.godot")
     state = read("project/scripts/campaign_state.gd")
-    assert 'config/version="1.9.5"' in project
+    assert 'config/version="1.9.6"' in project
     assert "const SAVE_VERSION: int = 20" in state
 
 
@@ -104,8 +106,14 @@ def test_mission_six_is_exclusive_to_kamorge_death_branch() -> None:
     mission5 = state[state.index("elif mission_id == 5:") : state.index("elif mission_id == 6:")]
     assert "current_mission = 5" in mission5
     assert "current_mission = 6" not in mission5
-    assert "if CampaignState.mission_5_complete:" in hub
-    assert "return" in hub[hub.index("if CampaignState.mission_5_complete:") : hub.index("if CampaignState.mission_4_complete:")]
+    start_next = hub[hub.index("func _start_next_mission") : hub.index("func _open_shop")]
+    assert "if CampaignState.mission_5_complete:" in start_next
+    mission5_stop = start_next[
+        start_next.index("if CampaignState.mission_5_complete:") :
+        start_next.index("if CampaignState.mission_4_complete:")
+    ]
+    assert "return" in mission5_stop
+    assert "current_mission = 6" not in mission5_stop
     assert "CampaignState.kamorge_alive" in mission6
     assert 'CampaignState.test_forced_branch not in ["south", "north"]' in mission6
 
@@ -141,7 +149,13 @@ def test_requested_combat_rules_are_registered() -> None:
     assert "return await super._try_disoriented_friendly_fire(unit)" in v18
     assert "CombatCatalog.is_magic(mode)" in v19
     assert '"iceberg"' in catalog
-    assert "alden_restorative_aura" in v19
+    assert "func _apply_alden_aura() -> void:" in v19
+    aura = v19[v19.index("func _apply_alden_aura") : v19.index("func _check_south_reinforcement")]
+    assert "+ 50" in aura
+    assert "+ 30" in aura
+    ai_turn = v19[v19.index("func _run_smart_ai_turn") : v19.index("func _first_free_adjacent_cell")]
+    assert "if unit == alden_unit:" in ai_turn
+    assert "_apply_alden_aura()" in ai_turn
 
 
 def test_shop_catalog_icons_and_mission_maps_are_complete() -> None:
@@ -172,3 +186,11 @@ def test_critical_scene_and_script_references_exist() -> None:
         "project/scenes/Shop.tscn",
     ):
         assert (ROOT / relative).is_file()
+
+
+def load_tests(loader: unittest.TestLoader, tests: unittest.TestSuite, pattern: str | None) -> unittest.TestSuite:
+    suite = unittest.TestSuite()
+    for name, value in sorted(globals().items()):
+        if name.startswith("test_") and callable(value):
+            suite.addTest(unittest.FunctionTestCase(value, description=name))
+    return suite
