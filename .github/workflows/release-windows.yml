@@ -106,7 +106,7 @@ jobs:
             echo "Booting mission ${mission}, branch ${safe_branch} through the normal BattlePrototype lifecycle..."
             VBR_SMOKE_MISSION="$mission" VBR_SMOKE_BRANCH="$branch" \
               "$GODOT" --headless --path project res://scenes/MissionBootSmoke.tscn --quit-after 1800 2>&1 | tee "$log"
-            if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|MISSION_BOOT_SMOKE_FAILED" "$log"; then
+            if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|Missing balance profile|Mission VI player party is incomplete|MISSION_BOOT_SMOKE_FAILED" "$log"; then
               echo "Mission ${mission}/${safe_branch} failed normal scene boot." >&2
               exit 1
             fi
@@ -195,7 +195,7 @@ jobs:
           "$GODOT" --headless --path project res://scenes/Mission6Smoke.tscn --quit-after 3600 2>&1 | tee mission6-smoke.log
           STATUS=${PIPESTATUS[0]}
           set -e
-          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|MISSION6_SMOKE_FAILED" mission6-smoke.log; then
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|Missing balance profile|Mission VI player party is incomplete|MISSION6_SMOKE_FAILED" mission6-smoke.log; then
             echo "War of two kingdoms smoke test found a runtime/script error." >&2
             exit 1
           fi

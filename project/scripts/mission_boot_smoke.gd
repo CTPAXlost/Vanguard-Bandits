@@ -33,6 +33,8 @@ func _ready() -> void:
 			continue
 		if not (party_value is Array) or (party_value as Array).is_empty():
 			continue
+		if expected_mission == 6 and (party_value as Array).size() != 5:
+			continue
 		if expected_mission == 6 and bool(battle.get("mission_six_intro_pending")):
 			continue
 		if expected_mission == 6 and str(battle.get("kingdom_choice")) != forced_branch:

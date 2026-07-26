@@ -36,6 +36,26 @@ func _check_branch(branch: String) -> void:
 	if units.is_empty():
 		_fail("mission six created no units")
 		return
+	var party_value: Variant = battle.get("player_party")
+	if not (party_value is Array) or (party_value as Array).size() != 5:
+		_fail("mission six player party must contain exactly five heroes")
+		return
+	var expected_party_ids: Dictionary = {"bastion": true, "andrew": true, "zeira": true, "ione": true, "reyna": true}
+	var actual_party_ids: Dictionary = {}
+	var party_members: Array = party_value as Array
+	for party_member_value: Variant in party_members:
+		var party_member: Node3D = party_member_value as Node3D
+		if party_member == null or not bool(party_member.get_meta("player", false)) or str(party_member.get_meta("team", "")) != "ally":
+			_fail("mission six party contains a non-player or non-allied unit")
+			return
+		actual_party_ids[str(party_member.get_meta("character_id", ""))] = true
+	if actual_party_ids.size() != expected_party_ids.size():
+		_fail("mission six party roster has the wrong size: %s" % str(actual_party_ids.keys()))
+		return
+	for expected_id: String in expected_party_ids:
+		if not actual_party_ids.has(expected_id):
+			_fail("mission six party is missing %s" % expected_id)
+			return
 
 	var labels: Dictionary = {}
 	var south_count: int = 0
@@ -69,6 +89,10 @@ func _check_branch(branch: String) -> void:
 	var logan: Node3D = battle.get("logan_unit") as Node3D
 	var alden: Node3D = battle.get("alden_unit") as Node3D
 	var devlin: Node3D = battle.get("devlin_unit") as Node3D
+	for leader: Node3D in [logan, alden, devlin]:
+		if leader == null or bool(leader.get_meta("player", true)):
+			_fail("kingdom leaders must be AI-controlled")
+			return
 	if logan == null or not bool(logan.get_meta("double_turn", false)) or int(logan.get_meta("damage_magic_uses", 0)) != 2:
 		_fail("Logan abilities are incomplete")
 		return
@@ -137,8 +161,18 @@ func _wait_for_mission_six(battle: Node, frames: int) -> void:
 	for _frame: int in range(frames):
 		await get_tree().process_frame
 		var units_value: Variant = battle.get("units")
-		if int(battle.get("mission_number")) == 6 and units_value is Array and not (units_value as Array).is_empty():
-			return
+		var party_value: Variant = battle.get("player_party")
+		if int(battle.get("mission_number")) != 6:
+			continue
+		if not (units_value is Array) or (units_value as Array).is_empty():
+			continue
+		if not (party_value is Array) or (party_value as Array).size() != 5:
+			continue
+		if bool(battle.get("mission_six_intro_pending")):
+			continue
+		if str(battle.get("kingdom_choice")) != branch:
+			continue
+		return
 
 
 func _fail(message: String) -> void:

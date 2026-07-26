@@ -84,18 +84,24 @@ func _spawn_mission_units() -> void:
 	reyna_unit = _spawn_campaign_hero("reyna","haurol",_array_to_cell(p.get("reyna",[17,14])),"reyna_haurol",REYNA_PORTRAIT,"Копейщица • игрок")
 	_spawn_south()
 	_spawn_north()
+	# Mission VI bypasses the inherited chapter-specific spawn branches, so the
+	# five controllable heroes must be registered here before the first turn.
+	_setup_player_party()
 
 func _spawn_south() -> void:
 	var s: Dictionary = map_data.get("south_starts",{})
 	logan_unit = _spawn_campaign_hero("logan","crimson",_array_to_cell(s.get("logan",[25,8])),"logan_crimson",LOGAN_PORTRAIT,"Король Южного королевства")
+	_prepare_kingdom_ai_unit(logan_unit, "south")
 	_apply_unit_level(logan_unit, "crimson", 25, 52, 34, 45, 48)
 	logan_unit.set_meta("passive_ability", "logan_reflect")
 	logan_unit.set_meta("max_move_actions", 2)
 	logan_unit.set_meta("double_turn", true)
 	logan_unit.set_meta("damage_magic_uses", 2)
 	var claire := _spawn_campaign_hero("claire","rahabar",_array_to_cell(s.get("claire",[27,7])),"claire_rahabar",CLAIRE_PORTRAIT,"Принцесса Юга")
+	_prepare_kingdom_ai_unit(claire, "south")
 	_apply_unit_level(claire,"rahabar",15,32,31,29,33)
 	var shion := _spawn_campaign_hero("shion","rahabar",_array_to_cell(s.get("shion",[27,9])),"shion_rahabar",SHION_PORTRAIT,"Телохранитель Claire")
+	_prepare_kingdom_ai_unit(shion, "south")
 	_apply_unit_level(shion,"rahabar",22,42,38,37,40)
 	for i in range((s.get("bots",[]) as Array).size()):
 		var u := _spawn_unit("Южный рыцарь %d / Rahabor"%(i+1),"Nordilian • Южное королевство","rahabar",_array_to_cell((s.get("bots",[]) as Array)[i]),false,false,"south","nordilian_rahabar")
@@ -106,13 +112,16 @@ func _spawn_south() -> void:
 func _spawn_north() -> void:
 	var n: Dictionary = map_data.get("north_starts",{})
 	alden_unit = _spawn_campaign_hero("alden","altagrave",_array_to_cell(n.get("alden",[6,8])),"alden_altagrave",ALDEN_PORTRAIT,"Король Северного королевства")
+	_prepare_kingdom_ai_unit(alden_unit, "north")
 	_apply_unit_level(alden_unit, "altagrave", 24, 48, 36, 45, 48)
 	alden_unit.set_meta("magic_immune", true)
 	alden_unit.set_meta("passive_ability", "alden_iceberg")
 	devlin_unit = _spawn_campaign_hero("devlin","snow_soldier",_array_to_cell(n.get("devlin",[4,7])),"devlin_snow_soldier",DEVLIN_PORTRAIT,"Генерал Севера")
+	_prepare_kingdom_ai_unit(devlin_unit, "north")
 	_apply_unit_level(devlin_unit, "snow_soldier", 19, 38, 35, 37, 43)
 	devlin_unit.set_meta("clone_uses", 1)
 	var barlow := _spawn_campaign_hero("barlow","ratatosk",_array_to_cell(n.get("barlow",[4,9])),"barlow_ratatosk",BARLOW_PORTRAIT,"Верный друг Devlin")
+	_prepare_kingdom_ai_unit(barlow, "north")
 	_apply_unit_level(barlow,"ratatosk",14,31,29,33,34)
 	for i in range((n.get("bots",[]) as Array).size()):
 		var u := _spawn_unit("Северный боец %d / Ratatosk"%(i+1),"Matisse • Северное королевство","ratatosk",_array_to_cell((n.get("bots",[]) as Array)[i]),false,false,"north","matisse_ratatosk")
@@ -120,16 +129,49 @@ func _spawn_north() -> void:
 		u.set_meta("portrait_path", "res://assets/ui/portraits/matisse.png")
 		north_bots.append(u)
 
+
+func _prepare_kingdom_ai_unit(unit: Node3D, staging_team: String) -> void:
+	if unit == null:
+		return
+	# _spawn_campaign_hero creates a controllable ally by default. Kingdom leaders
+	# are AI units and must remain on their own side until the player's choice is
+	# applied, otherwise both royal families become player allies.
+	unit.set_meta("player", false)
+	unit.set_meta("team", staging_team)
+	unit.set_meta("round_done", false)
+
+
+func _set_mission_six_combat_team(unit: Node3D, team: String) -> void:
+	if unit == null:
+		return
+	unit.set_meta("team", team)
+	unit.set_meta("player", false)
+	var visual: Node3D = unit.get_node_or_null("ATACVisual") as Node3D
+	if visual != null:
+		visual.rotation_degrees.y = 180.0 if team == "ally" else 0.0
+	var ring: MeshInstance3D = unit.get_node_or_null("SelectionRing") as MeshInstance3D
+	if ring != null:
+		var ring_material := StandardMaterial3D.new()
+		ring_material.albedo_color = Color(0.36, 0.86, 1.0) if team == "ally" else Color(0.95, 0.24, 0.18)
+		ring_material.emission_enabled = true
+		ring_material.emission = ring_material.albedo_color * 0.85
+		ring.material_override = ring_material
+	var hp_bar: Label3D = unit.get_node_or_null("HPBar") as Label3D
+	if hp_bar != null:
+		hp_bar.modulate = Color(0.72, 0.95, 1.0) if team == "ally" else Color(1.0, 0.82, 0.72)
+
 func _setup_player_party() -> void:
 	if mission_number != 6:
 		super._setup_player_party()
 		return
 	player_party.clear()
 	for u: Node3D in [player_unit, andrew_unit, zeira_unit_five, ione_unit, reyna_unit]:
-		if u != null:
+		if u != null and is_instance_valid(u) and _is_alive(u) and not player_party.has(u):
 			u.set_meta("player", true)
 			u.set_meta("team", "ally")
 			player_party.append(u)
+	if player_party.size() != 5:
+		push_error("Mission VI player party is incomplete: expected 5, got %d." % player_party.size())
 
 func _request_kingdom_choice() -> void:
 	choice_dialog_done = false
@@ -162,11 +204,9 @@ func _apply_kingdom_choice() -> void:
 	for u: Node3D in units:
 		var team := str(u.get_meta("team"))
 		if team == "south":
-			u.set_meta("team", "ally" if kingdom_choice == "south" else "enemy")
-			u.set_meta("player", false)
+			_set_mission_six_combat_team(u, "ally" if kingdom_choice == "south" else "enemy")
 		elif team == "north":
-			u.set_meta("team", "ally" if kingdom_choice == "north" else "enemy")
-			u.set_meta("player", false)
+			_set_mission_six_combat_team(u, "ally" if kingdom_choice == "north" else "enemy")
 	var side_label := "Южному" if kingdom_choice == "south" else "Северному"
 	status_label.text = "Вы помогаете %s королевству. Отвергнутая сторона атакует и ваш отряд." % side_label
 
