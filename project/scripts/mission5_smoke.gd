@@ -29,13 +29,13 @@ func _run() -> void:
 		var label: String = str(unit.get_meta("label", ""))
 		if label.begins_with("Sadira"):
 			found_sadira = true
-			neutral_positions_ok = neutral_positions_ok and unit.get_meta("cell") == Vector2i(17, 17)
+			neutral_positions_ok = neutral_positions_ok and unit.get_meta("cell") == Vector2i(8, 13)
 		elif label.begins_with("Franco"):
 			found_franco = true
-			neutral_positions_ok = neutral_positions_ok and unit.get_meta("cell") == Vector2i(15, 17)
+			neutral_positions_ok = neutral_positions_ok and unit.get_meta("cell") == Vector2i(9, 12)
 		elif label.begins_with("Halak"):
 			found_halak = true
-			neutral_positions_ok = neutral_positions_ok and unit.get_meta("cell") == Vector2i(19, 17)
+			neutral_positions_ok = neutral_positions_ok and unit.get_meta("cell") == Vector2i(9, 14)
 		found_faulkner = found_faulkner or label.begins_with("Faulkner")
 		var visual: Node3D = unit.get_node_or_null("ATACVisual") as Node3D
 		if visual != null and bool(visual.get_meta("real_skeleton", false)):
@@ -46,7 +46,10 @@ func _run() -> void:
 		_fail("mission or player party is incomplete")
 		return
 	if not (found_sadira and found_franco and found_halak and found_faulkner and equal_scale_ok and neutral_positions_ok):
-		_fail("requested forces, positions or normalized scale missing")
+		_fail(
+			"requested forces, positions or normalized scale missing: sadira=%s franco=%s halak=%s faulkner=%s positions=%s scale=%s"
+			% [str(found_sadira), str(found_franco), str(found_halak), str(found_faulkner), str(neutral_positions_ok), str(equal_scale_ok)]
+		)
 		return
 	if battle.get_node_or_null("DefenseCastleGateWest") == null or battle.get_node_or_null("DefenseCastleGateEast") == null:
 		_fail("visible castle gates were not created")
