@@ -536,5 +536,112 @@
       "Длинный выпад",
       "Сильный порез"
     ]
+  },
+  "sadira_sylpheed": {
+    "level": 8,
+    "hp": 274,
+    "max_hp": 274,
+    "strength": 23,
+    "agility": 34,
+    "defense": 20,
+    "magic": 29,
+    "attack_skill": 29,
+    "weapon_power": 10,
+    "move_range": 8,
+    "weapon": "Клинок ветра Sylpheed",
+    "equipment": "Летающая броня Sylpheed",
+    "equipment_bonus": {
+      "agility": 4
+    },
+    "amulet": "Печать воздушного наблюдателя",
+    "amulet_bonus": {
+      "magic": 2
+    },
+    "fatigue": 0,
+    "max_fatigue": 100,
+    "energy": 100,
+    "max_energy": 100,
+    "atac_name": "Sylpheed",
+    "ability": "Воздушное уклонение и контратака",
+    "energy_restore_uses": 3,
+    "attacks": [
+      "Порез",
+      "Выпад",
+      "Длинный выпад",
+      "Звуковой удар",
+      "Удар ветра"
+    ]
+  },
+  "franco_korbelan": {
+    "level": 25,
+    "hp": 580,
+    "max_hp": 580,
+    "strength": 47,
+    "agility": 25,
+    "defense": 46,
+    "magic": 18,
+    "attack_skill": 43,
+    "weapon_power": 19,
+    "move_range": 6,
+    "weapon": "Генеральский клинок Korbelan",
+    "equipment": "Стальная генеральская броня Korbelan",
+    "equipment_bonus": {
+      "defense": 7
+    },
+    "amulet": "Стальная печать телохранителя",
+    "amulet_bonus": {
+      "strength": 2
+    },
+    "fatigue": 0,
+    "max_fatigue": 100,
+    "energy": 100,
+    "max_energy": 100,
+    "atac_name": "Korbelan",
+    "ability": "Стальная броня: 60% шанс снизить урон вдвое",
+    "attacks": [
+      "Порез",
+      "Выпад",
+      "Длинный выпад",
+      "Сильный порез",
+      "Испепелить",
+      "Гильотина",
+      "Лечение"
+    ]
+  },
+  "halak_korbelan": {
+    "level": 25,
+    "hp": 580,
+    "max_hp": 580,
+    "strength": 47,
+    "agility": 25,
+    "defense": 46,
+    "magic": 18,
+    "attack_skill": 43,
+    "weapon_power": 19,
+    "move_range": 6,
+    "weapon": "Генеральский клинок Korbelan",
+    "equipment": "Стальная генеральская броня Korbelan",
+    "equipment_bonus": {
+      "defense": 7
+    },
+    "amulet": "Стальная печать телохранителя",
+    "amulet_bonus": {
+      "strength": 2
+    },
+    "fatigue": 0,
+    "max_fatigue": 100,
+    "energy": 100,
+    "max_energy": 100,
+    "atac_name": "Korbelan",
+    "ability": "Стальная броня: 60% шанс снизить урон вдвое",
+    "attacks": [
+      "Порез",
+      "Выпад",
+      "Длинный выпад",
+      "Сильный порез",
+      "Испепелить",
+      "Гильотина",
+      "Лечение"
+    ]
   }
 }

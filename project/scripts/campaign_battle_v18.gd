@@ -123,13 +123,13 @@ func _spawn_mission_units() -> void:
 
 func _spawn_mission_five_units() -> void:
 	var starts: Dictionary = map_data.get("player_starts", {}) as Dictionary
-	player_unit = _spawn_campaign_hero("bastion", "alba", _array_to_cell(starts.get("bastion", [15, 8])), "bastion", BASTION_PORTRAIT_V12, "Наследник королевства • управляется игроком")
+	player_unit = _spawn_campaign_hero("bastion", "alba", _array_to_cell(starts.get("bastion", [15, 8])), "bastion_alba", BASTION_PORTRAIT_V12, "Наследник королевства • управляется игроком")
 	_apply_unit_level(player_unit, "alba", int(CampaignState.get_character("bastion").get("level", 1)), 18, 18, 18, 18)
 	var bastion_unit: Node3D = player_unit
 	kamorge_unit = _spawn_campaign_hero("kamorge", "eigol", _array_to_cell(starts.get("kamorge", [16, 7])), "kamorge_eigol", KAMORGE_PORTRAIT, "Пустынный генерал • управляется игроком")
 	_apply_unit_level(kamorge_unit, "eigol", 20, 35, 24, 31, 34)
 	kamorge_unit.set_meta("magic_uses", 3)
-	andrew_unit = _spawn_campaign_hero("andrew", "vedocorban", _array_to_cell(starts.get("andrew", [15, 10])), "andrew", ANDREW_PORTRAIT_V12, "Освобождённый рыцарь • управляется игроком")
+	andrew_unit = _spawn_campaign_hero("andrew", "vedocorban", _array_to_cell(starts.get("andrew", [15, 10])), "andrew_vedocorban", ANDREW_PORTRAIT_V12, "Освобождённый рыцарь • управляется игроком")
 	_apply_unit_level(andrew_unit, "vedocorban", 14, 29, 31, 24, 30)
 	ione_unit = _spawn_campaign_hero("ione", "amphisia", _array_to_cell(starts.get("ione", [17, 6])), "ione_amphisia", IONE_PORTRAIT, "Разведчица партизан • управляется игроком")
 	_apply_unit_level(ione_unit, "amphisia", 8, 22, 21, 23, 24)
@@ -184,6 +184,9 @@ func _spawn_mission_five_units() -> void:
 
 func _spawn_neutral_profile(label: String, role: String, slug: String, cell: Vector2i, profile: String, portrait_path: String) -> Node3D:
 	var unit: Node3D = _spawn_unit(label, role, slug, cell, false, true, "neutral", profile)
+	if unit == null:
+		push_error("Failed to spawn neutral profile: %s / %s" % [label, slug])
+		return null
 	unit.set_meta("character_id", label.to_lower().split(" / ")[0])
 	unit.set_meta("combat_profile", profile)
 	unit.set_meta("portrait_path", portrait_path)

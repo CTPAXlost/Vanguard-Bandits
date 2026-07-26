@@ -505,7 +505,10 @@ func _spawn_unit(
 	unit.set_meta("stats", _create_stats(profile, player_controlled, commander))
 	unit.position = _cell_to_world(cell)
 
-	var visual := AtacFactory.create_atac(model_slug, "tactical")
+	var visual: Node3D = AtacFactory.create_atac(model_slug, "tactical")
+	if visual == null:
+		push_error("ATAC visual factory returned null for slug: %s" % model_slug)
+		visual = Node3D.new()
 	visual.name = "ATACVisual"
 	if bool(visual.get_meta("real_skeleton", false)):
 		var skeletal_scale: float = float(visual.get_meta("recommended_tactical_scale", 0.82))
@@ -545,27 +548,58 @@ func _spawn_unit(
 
 
 func _create_stats(profile: String, player_controlled: bool, commander: bool) -> Dictionary:
-	var selected_profile := profile
+	var selected_profile: String = profile
 	if selected_profile.is_empty():
 		selected_profile = (
 			"bastion_alba"
 			if player_controlled
 			else ("imperial_commander" if commander else "imperial_soldier")
 		)
+	# Compatibility aliases protect new missions from failing when a character id
+	# is accidentally passed instead of its balance profile key.
+	var profile_aliases: Dictionary = {
+		"bastion": "bastion_alba",
+		"andrew": "andrew_vedocorban",
+		"kamorge": "kamorge_eigol",
+		"ione": "ione_amphisia",
+		"reyna": "reyna_haurol",
+		"zeira": "zeira_toreadore",
+		"galvas": "galvas_serata",
+	}
+	selected_profile = str(profile_aliases.get(selected_profile, selected_profile))
 	if balance_data.has(selected_profile):
 		var loaded: Dictionary = (balance_data[selected_profile] as Dictionary).duplicate(true)
 		loaded["fatigue"] = int(loaded.get("fatigue", 0))
 		loaded["max_fatigue"] = int(loaded.get("max_fatigue", 100))
 		loaded["energy"] = int(loaded.get("energy", 0))
 		loaded["max_energy"] = int(loaded.get("max_energy", 0))
+		loaded["hp"] = int(loaded.get("hp", loaded.get("max_hp", 1)))
+		loaded["max_hp"] = maxi(1, int(loaded.get("max_hp", loaded["hp"])))
 		return loaded
-	return {}
+	push_error("Missing balance profile '%s'; using safe fallback stats." % selected_profile)
+	return {
+		"level": 1,
+		"hp": 1,
+		"max_hp": 1,
+		"strength": 1,
+		"agility": 1,
+		"defense": 1,
+		"magic": 0,
+		"attack_skill": 1,
+		"weapon_power": 0,
+		"move_range": 1,
+		"fatigue": 0,
+		"max_fatigue": 100,
+		"energy": 0,
+		"max_energy": 0,
+	}
 
 
 func _create_hp_bar(unit: Node3D) -> Label3D:
-	var stats: Dictionary = unit.get_meta("stats")
+	var stats_variant: Variant = unit.get_meta("stats", {})
+	var stats: Dictionary = stats_variant as Dictionary if stats_variant is Dictionary else {}
 	var label := Label3D.new()
-	label.text = "HP %d" % int(stats["hp"])
+	label.text = "HP %d" % maxi(0, int(stats.get("hp", stats.get("max_hp", 1))))
 	label.font_size = 34
 	label.outline_size = 7
 	label.modulate = (

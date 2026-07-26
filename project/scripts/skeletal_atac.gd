@@ -427,8 +427,12 @@ func reset_pose() -> void:
 	pose_scale = Vector3.ONE
 	pose_offset_y = 0.0
 	if model_root != null:
-		# ModelRoot is top-level; keep it at the unit world position to avoid a one-frame jump.
-		model_root.global_position = global_position
+		# During factory configuration neither this node nor ModelRoot is in the
+		# SceneTree yet. Accessing global transforms there produces errors in Godot.
+		if is_inside_tree() and model_root.is_inside_tree():
+			model_root.global_position = global_position
+		else:
+			model_root.position = Vector3.ZERO
 		model_root.rotation.x = 0.0
 		model_root.rotation.z = 0.0
 	right_arm_pivot.rotation = Vector3.ZERO

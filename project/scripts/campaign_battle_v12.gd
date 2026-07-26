@@ -137,6 +137,9 @@ func _spawn_campaign_hero(character_id: String, slug: String, cell: Vector2i, pr
 	var character: Dictionary = CampaignState.get_character(character_id)
 	var label: String = "%s / %s" % [str(character.get("name", character_id.capitalize())), str((CampaignState.ATAC_DATA.get(slug, {}) as Dictionary).get("name", slug.capitalize()))]
 	var unit: Node3D = _spawn_unit(label, role, slug, cell, true, false, "ally", profile)
+	if unit == null:
+		push_error("Failed to spawn campaign hero: %s / %s" % [character_id, slug])
+		return null
 	unit.set_meta("character_id", character_id)
 	unit.set_meta("combat_profile", profile)
 	unit.set_meta("portrait_path", portrait_path)
@@ -151,6 +154,9 @@ func _spawn_campaign_hero(character_id: String, slug: String, cell: Vector2i, pr
 
 func _spawn_enemy_profile(label: String, role: String, slug: String, cell: Vector2i, profile: String, combat_profile: String, portrait_path: String, commander: bool) -> Node3D:
 	var unit: Node3D = _spawn_unit(label, role, slug, cell, false, commander, "enemy", profile)
+	if unit == null:
+		push_error("Failed to spawn enemy profile: %s / %s" % [label, slug])
+		return null
 	unit.set_meta("character_id", "")
 	unit.set_meta("combat_profile", combat_profile)
 	unit.set_meta("portrait_path", portrait_path)
