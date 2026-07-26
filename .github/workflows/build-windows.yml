@@ -224,6 +224,10 @@ jobs:
           fi
           grep -q "MISSION5_DEFENSE_SMOKE_OK" mission5-smoke.log
           grep -q "MISSION5_NEUTRAL_GROUP_SMOKE_OK" mission5-smoke.log
+          grep -q "MISSION5_NEUTRAL_POSITION_SMOKE_OK" mission5-smoke.log
+          grep -q "MISSION5_GATE_SMOKE_OK" mission5-smoke.log
+          grep -q "MISSION5_ZAKOV_WAVE_SMOKE_OK" mission5-smoke.log
+          grep -q "SHARKING_ARMOR_SMOKE_OK" mission5-smoke.log
           grep -q "NORMALIZED_ATAC_SCALE_SMOKE_OK" mission5-smoke.log
           exit "$STATUS"
 

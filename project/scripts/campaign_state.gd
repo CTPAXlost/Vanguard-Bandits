@@ -12,7 +12,7 @@ const MISSION_COMPLETION_REWARDS: Dictionary = {
 const STANDARD_ATAC_REWARD: int = 25
 const COMMANDER_ATAC_REWARD: int = 50
 const ELITE_ATAC_REWARD: int = 75
-const ELITE_ATACS: Array[String] = ["solarus", "sarbelas", "einlager", "eigol", "toreadore", "serata", "sylpheed", "korbelan"]
+const ELITE_ATACS: Array[String] = ["solarus", "sarbelas", "einlager", "eigol", "toreadore", "serata", "sylpheed", "korbelan", "sharking"]
 const SHOP_ITEMS: Dictionary = {
 	"steel_sword_i": {
 		"name": "Стальной меч I",
@@ -206,6 +206,10 @@ const ATAC_DATA: Dictionary = {
 	"korbelan": {
 		"name": "Korbelan", "base_hp": 340, "hp_per_level": 10, "move_range": 6,
 		"equipment": "Стальная генеральская броня Korbelan",
+	},
+	"sharking": {
+		"name": "Sharking", "base_hp": 360, "hp_per_level": 10, "move_range": 10,
+		"equipment": "Тяжёлая броня Sharking с регенерирующим силовым полем",
 	},
 }
 

@@ -61,6 +61,7 @@ var target_picker_index: int = 0
 var target_picker_buttons: Array[Button] = []
 var undo_move_button: Button
 var move_undo_snapshot: Dictionary = {}
+var support_magic_caster: Node3D
 
 
 func _ready() -> void:
@@ -559,8 +560,13 @@ func _handle_click(screen_position: Vector2) -> void:
 		if clicked != null and eligible_attack_targets.has(clicked):
 			_select_unit(clicked)
 			target_selection_active = false
+			if target_picker_panel != null:
+				target_picker_panel.visible = false
 			_clear_target_highlights()
-			await _request_player_attack(pending_attack_mode)
+			if pending_attack_mode == "__restore_energy__":
+				await _apply_toreadore_energy_magic(clicked)
+			else:
+				await _request_player_attack(pending_attack_mode)
 		else:
 			status_label.text = "Выберите одну из подсвеченных целей."
 		return
@@ -616,8 +622,7 @@ func _rebuild_dynamic_attack_menu() -> void:
 		var uses: int = int(player_unit.get_meta("energy_restore_uses", 0))
 		magic_button.text = "Магия: восстановить 50% энергии — %d/3" % uses
 		magic_button.custom_minimum_size = Vector2(360, 40)
-		var stats: Dictionary = _stats(player_unit)
-		magic_button.disabled = uses <= 0 or int(stats.get("energy", 0)) >= int(stats.get("max_energy", 0))
+		magic_button.disabled = uses <= 0 or _energy_magic_targets(player_unit).is_empty()
 		magic_button.pressed.connect(_use_toreadore_energy_magic)
 		box.add_child(magic_button)
 		dynamic_attack_buttons.append(magic_button)
@@ -709,9 +714,13 @@ func _confirm_target_picker(index: int) -> void:
 	var target: Node3D = eligible_attack_targets[index]
 	_select_unit(target)
 	target_selection_active = false
-	if target_picker_panel != null: target_picker_panel.visible = false
+	if target_picker_panel != null:
+		target_picker_panel.visible = false
 	_clear_target_highlights()
-	await _request_player_attack(pending_attack_mode)
+	if pending_attack_mode == "__restore_energy__":
+		await _apply_toreadore_energy_magic(target)
+	else:
+		await _request_player_attack(pending_attack_mode)
 
 
 func _undo_last_move() -> void:
@@ -742,6 +751,19 @@ func _undo_last_move() -> void:
 	_refresh_ui()
 
 
+func _energy_magic_targets(caster: Node3D) -> Array[Node3D]:
+	var result: Array[Node3D] = []
+	if caster == null:
+		return result
+	for candidate: Node3D in units:
+		if not _is_alive(candidate) or str(candidate.get_meta("team", "")) != "ally":
+			continue
+		var candidate_stats: Dictionary = _stats(candidate)
+		if int(candidate_stats.get("energy", 0)) < int(candidate_stats.get("max_energy", 0)):
+			result.append(candidate)
+	return result
+
+
 func _use_toreadore_energy_magic() -> void:
 	if player_unit == null or action_in_progress:
 		return
@@ -749,18 +771,48 @@ func _use_toreadore_energy_magic() -> void:
 	if uses <= 0:
 		status_label.text = "Магия Toreadore уже использована три раза за бой."
 		return
-	var stats: Dictionary = _stats(player_unit)
-	var maximum: int = int(stats.get("max_energy", 0))
-	var restored: int = maxi(1, int(float(maximum) * 0.50))
-	stats["energy"] = mini(maximum, int(stats.get("energy", 0)) + restored)
-	player_unit.set_meta("stats", stats)
-	player_unit.set_meta("energy_restore_uses", uses - 1)
+	var candidates: Array[Node3D] = _energy_magic_targets(player_unit)
+	if candidates.is_empty():
+		status_label.text = "У всех союзников уже полная энергия."
+		return
+	support_magic_caster = player_unit
+	pending_attack_mode = "__restore_energy__"
+	eligible_attack_targets = candidates
+	target_selection_active = true
+	target_picker_index = 0
 	_close_attack_menu()
-	_spawn_arrival_effect(player_unit.global_position + Vector3(0, 1.0, 0))
-	status_label.text = "Zeira восстанавливает 50% энергии Toreadore. Осталось применений: %d." % (uses - 1)
-	player_unit.set_meta("acted", true)
+	_show_attack_targets(candidates)
+	_open_target_picker()
+	status_label.text = "Выберите союзника, которому Zeira восстановит 50% энергии."
+
+
+func _apply_toreadore_energy_magic(target: Node3D) -> void:
+	var caster: Node3D = support_magic_caster
+	if caster == null or not is_instance_valid(caster) or target == null or not _is_alive(target):
+		_cancel_target_selection()
+		return
+	var uses: int = int(caster.get_meta("energy_restore_uses", 0))
+	if uses <= 0:
+		_cancel_target_selection()
+		return
+	action_in_progress = true
+	var target_stats: Dictionary = _stats(target)
+	var maximum: int = int(target_stats.get("max_energy", 0))
+	var restored: int = maxi(1, int(float(maximum) * 0.50))
+	var before: int = int(target_stats.get("energy", 0))
+	target_stats["energy"] = mini(maximum, before + restored)
+	target.set_meta("stats", target_stats)
+	caster.set_meta("energy_restore_uses", uses - 1)
+	_spawn_arrival_effect(target.global_position + Vector3(0, 1.0, 0))
+	status_label.text = "Zeira восстанавливает %d энергии союзнику %s. Осталось применений: %d." % [int(target_stats["energy"]) - before, str(target.get_meta("label")), uses - 1]
+	caster.set_meta("acted", true)
+	support_magic_caster = null
+	pending_attack_mode = ""
+	eligible_attack_targets.clear()
+	_select_unit(caster)
 	_refresh_ui()
-	await get_tree().create_timer(0.35).timeout
+	await get_tree().create_timer(0.45).timeout
+	action_in_progress = false
 	await _end_player_turn()
 
 
@@ -784,6 +836,7 @@ func _cancel_target_selection() -> void:
 	target_selection_active = false
 	pending_attack_mode = ""
 	eligible_attack_targets.clear()
+	support_magic_caster = null
 	_clear_target_highlights()
 
 
@@ -799,7 +852,7 @@ func _show_attack_targets(targets: Array[Node3D]) -> void:
 		ring.mesh = mesh
 		ring.rotation_degrees.x = 90.0
 		ring.position = target.position + Vector3(0, 0.08, 0)
-		ring.material_override = _highlight_material(Color(1.0, 0.14, 0.08, 0.82))
+		ring.material_override = _highlight_material(Color(0.30, 1.0, 0.58, 0.88) if pending_attack_mode == "__restore_energy__" else Color(1.0, 0.14, 0.08, 0.82))
 		target_highlight_root.add_child(ring)
 
 

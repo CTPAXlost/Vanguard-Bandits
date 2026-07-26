@@ -1,5 +1,5 @@
 {
-  "version": "1.8",
+  "version": "1.8.2",
   "slug": "sylpheed",
   "source": "res://assets/atac_views/sylpheed/front.png",
   "pixel_size": 0.00205,
@@ -8,10 +8,10 @@
     1024
   ],
   "alpha_bbox": [
-    145,
-    67,
-    624,
-    1002
+    122,
+    70,
+    645,
+    1000
   ],
   "parts": [
     {
@@ -19,63 +19,19 @@
       "bone": "head",
       "texture": "res://assets/atac_rigged/sylpheed/head.png",
       "position": [
-        -0.001025,
-        1.7794,
+        0.001025,
+        1.0004000000000002,
         0.0066
       ],
       "priority": 7
-    },
-    {
-      "name": "lower_arm_l",
-      "bone": "lower_arm_l",
-      "texture": "res://assets/atac_rigged/sylpheed/lower_arm_l.png",
-      "position": [
-        -0.40282500000000004,
-        1.1275000000000002,
-        0.0058000000000000005
-      ],
-      "priority": 6
-    },
-    {
-      "name": "lower_arm_r",
-      "bone": "lower_arm_r",
-      "texture": "res://assets/atac_rigged/sylpheed/lower_arm_r.png",
-      "position": [
-        0.40282500000000004,
-        0.96145,
-        0.0058000000000000005
-      ],
-      "priority": 6
-    },
-    {
-      "name": "upper_arm_l",
-      "bone": "upper_arm_l",
-      "texture": "res://assets/atac_rigged/sylpheed/upper_arm_l.png",
-      "position": [
-        -0.2993,
-        1.397075,
-        0.005
-      ],
-      "priority": 5
-    },
-    {
-      "name": "upper_arm_r",
-      "bone": "upper_arm_r",
-      "texture": "res://assets/atac_rigged/sylpheed/upper_arm_r.png",
-      "position": [
-        0.34030000000000005,
-        1.397075,
-        0.005
-      ],
-      "priority": 5
     },
     {
       "name": "torso",
       "bone": "chest",
       "texture": "res://assets/atac_rigged/sylpheed/torso.png",
       "position": [
-        0.034850000000000006,
-        1.2925250000000001,
+        0.001025,
+        1.0004000000000002,
         0.004200000000000001
       ],
       "priority": 4
@@ -85,30 +41,63 @@
       "bone": "pelvis",
       "texture": "res://assets/atac_rigged/sylpheed/pelvis.png",
       "position": [
-        0.033825,
-        0.83025,
+        0.001025,
+        1.0004000000000002,
         0.0034000000000000002
       ],
       "priority": 3
+    },
+    {
+      "name": "upper_arm_l",
+      "bone": "upper_arm_l",
+      "texture": "res://assets/atac_rigged/sylpheed/upper_arm_l.png",
+      "position": [
+        0.001025,
+        1.0004000000000002,
+        0.005
+      ],
+      "priority": 5
+    },
+    {
+      "name": "lower_arm_l",
+      "bone": "lower_arm_l",
+      "texture": "res://assets/atac_rigged/sylpheed/lower_arm_l.png",
+      "position": [
+        0.001025,
+        1.0004000000000002,
+        0.0058000000000000005
+      ],
+      "priority": 6
+    },
+    {
+      "name": "upper_arm_r",
+      "bone": "upper_arm_r",
+      "texture": "res://assets/atac_rigged/sylpheed/upper_arm_r.png",
+      "position": [
+        0.001025,
+        1.0004000000000002,
+        0.005
+      ],
+      "priority": 5
+    },
+    {
+      "name": "lower_arm_r",
+      "bone": "lower_arm_r",
+      "texture": "res://assets/atac_rigged/sylpheed/lower_arm_r.png",
+      "position": [
+        0.001025,
+        1.0004000000000002,
+        0.0058000000000000005
+      ],
+      "priority": 6
     },
     {
       "name": "upper_leg_l",
       "bone": "upper_leg_l",
       "texture": "res://assets/atac_rigged/sylpheed/upper_leg_l.png",
       "position": [
-        -0.14965,
-        0.5258250000000001,
-        0.0026
-      ],
-      "priority": 2
-    },
-    {
-      "name": "upper_leg_r",
-      "bone": "upper_leg_r",
-      "texture": "res://assets/atac_rigged/sylpheed/upper_leg_r.png",
-      "position": [
-        0.267525,
-        0.5258250000000001,
+        0.001025,
+        1.0004000000000002,
         0.0026
       ],
       "priority": 2
@@ -118,33 +107,33 @@
       "bone": "lower_leg_l",
       "texture": "res://assets/atac_rigged/sylpheed/lower_leg_l.png",
       "position": [
-        -0.14042500000000002,
-        0.21217500000000003,
+        0.001025,
+        1.0004000000000002,
         0.0018
       ],
       "priority": 1
+    },
+    {
+      "name": "upper_leg_r",
+      "bone": "upper_leg_r",
+      "texture": "res://assets/atac_rigged/sylpheed/upper_leg_r.png",
+      "position": [
+        0.001025,
+        1.0004000000000002,
+        0.0026
+      ],
+      "priority": 2
     },
     {
       "name": "lower_leg_r",
       "bone": "lower_leg_r",
       "texture": "res://assets/atac_rigged/sylpheed/lower_leg_r.png",
       "position": [
-        0.20397500000000002,
-        0.21217500000000003,
+        0.001025,
+        1.0004000000000002,
         0.0018
       ],
       "priority": 1
-    },
-    {
-      "name": "armor_misc",
-      "bone": "chest",
-      "texture": "res://assets/atac_rigged/sylpheed/armor_misc.png",
-      "position": [
-        0.06457500000000001,
-        1.7640250000000002,
-        0.009
-      ],
-      "priority": 8
     }
   ],
   "joints": {

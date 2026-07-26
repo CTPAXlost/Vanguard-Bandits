@@ -4,6 +4,7 @@ const MISSION_FIVE_PATH: String = "res://data/maps/mission_05.json"
 const SADIRA_PORTRAIT: String = "res://assets/ui/portraits/sadira.png"
 const FRANCO_PORTRAIT: String = "res://assets/ui/portraits/franco.png"
 const HALAK_PORTRAIT: String = "res://assets/ui/portraits/halak.png"
+const SHARKING_REINFORCEMENT_ROUND: int = 4
 
 var mission_five_intro_pending: bool = false
 var mission_five_choice_pending: bool = false
@@ -17,6 +18,10 @@ var mission_five_neutrals: Array[Node3D] = []
 var mission_five_choice_dialog: ConfirmationDialog
 var mission_five_choice_result: String = ""
 var mission_five_aura_round: int = -1
+var zakov_reinforcements_arrived: bool = false
+var zakov_reinforcements_spawning: bool = false
+var zakov_captains: Array[Node3D] = []
+var zakov_barbatos: Array[Node3D] = []
 
 
 func _ready() -> void:
@@ -103,14 +108,68 @@ func _build_defense_castle_geometry() -> void:
 		tower.position = _cell_to_world(tower_cell) + Vector3(0, 1.37, 0)
 		tower.material_override = _prop_material(Color(0.34, 0.36, 0.42))
 		add_child(tower)
-	for gate_x: int in [west_x, east_x]:
-		var arch: MeshInstance3D = MeshInstance3D.new()
-		var arch_mesh: BoxMesh = BoxMesh.new()
-		arch_mesh.size = Vector3(0.56, 0.40, 2.0)
-		arch.mesh = arch_mesh
-		arch.position = _cell_to_world(Vector2i(gate_x, 8)) + Vector3(0, 1.80, 0.5)
-		arch.material_override = _prop_material(Color(0.54, 0.43, 0.27))
-		add_child(arch)
+	_create_castle_gate("DefenseCastleGateWest", west_x, gate_z_values, true)
+	_create_castle_gate("DefenseCastleGateEast", east_x, gate_z_values, false)
+
+
+func _create_castle_gate(gate_name: String, gate_x: int, gate_z_values: Array, opens_west: bool) -> void:
+	var root := Node3D.new()
+	root.name = gate_name
+	add_child(root)
+	var centre_z: float = 0.0
+	for raw_z: Variant in gate_z_values:
+		centre_z += float(int(raw_z))
+	centre_z /= maxf(1.0, float(gate_z_values.size()))
+	var centre: Vector3 = _cell_to_world(Vector2i(gate_x, roundi(centre_z)))
+	centre.z += (centre_z - round(centre_z)) * TILE_SIZE
+	# Stone side posts and lintel make the opening readable from every camera angle.
+	for z_offset: float in [-1.12, 1.12]:
+		var post := MeshInstance3D.new()
+		var post_mesh := BoxMesh.new()
+		post_mesh.size = Vector3(0.72, 2.30, 0.38)
+		post.mesh = post_mesh
+		post.position = centre + Vector3(0, 1.15, z_offset)
+		post.material_override = _prop_material(Color(0.34, 0.36, 0.43))
+		root.add_child(post)
+	var lintel := MeshInstance3D.new()
+	var lintel_mesh := BoxMesh.new()
+	lintel_mesh.size = Vector3(0.76, 0.42, 2.62)
+	lintel.mesh = lintel_mesh
+	lintel.position = centre + Vector3(0, 2.18, 0)
+	lintel.material_override = _prop_material(Color(0.50, 0.42, 0.29))
+	root.add_child(lintel)
+	# Two dark wooden leaves are visibly opened toward the wall. They have no
+	# collision, so both tactical gate cells remain fully passable.
+	for side: int in [-1, 1]:
+		var leaf := MeshInstance3D.new()
+		leaf.name = "OpenGateLeafLeft" if side < 0 else "OpenGateLeafRight"
+		var leaf_mesh := BoxMesh.new()
+		leaf_mesh.size = Vector3(0.16, 1.72, 0.90)
+		leaf.mesh = leaf_mesh
+		var x_offset: float = -0.42 if opens_west else 0.42
+		leaf.position = centre + Vector3(x_offset, 0.88, float(side) * 0.72)
+		leaf.rotation_degrees.y = float(side) * (58.0 if opens_west else -58.0)
+		leaf.material_override = _prop_material(Color(0.22, 0.105, 0.045))
+		root.add_child(leaf)
+		for band_index: int in range(3):
+			var band := MeshInstance3D.new()
+			var band_mesh := BoxMesh.new()
+			band_mesh.size = Vector3(0.18, 0.09, 0.92)
+			band.mesh = band_mesh
+			band.position = leaf.position + Vector3(0, -0.52 + float(band_index) * 0.52, 0)
+			band.rotation = leaf.rotation
+			band.material_override = _prop_material(Color(0.69, 0.52, 0.19))
+			root.add_child(band)
+	# Decorative portcullis teeth above the open passage.
+	for tooth_index: int in range(5):
+		var tooth := MeshInstance3D.new()
+		var tooth_mesh := PrismMesh.new()
+		tooth_mesh.size = Vector3(0.16, 0.46, 0.18)
+		tooth.mesh = tooth_mesh
+		tooth.position = centre + Vector3(0, 1.82, -0.78 + float(tooth_index) * 0.39)
+		tooth.rotation_degrees.z = 90.0
+		tooth.material_override = _prop_material(Color(0.18, 0.20, 0.24))
+		root.add_child(tooth)
 
 
 func _spawn_mission_units() -> void:
@@ -151,8 +210,10 @@ func _spawn_mission_five_units() -> void:
 	faulkner_unit = _spawn_enemy_profile("Faulkner / Solarus", "Генерал восточной армии • уровень 25", "solarus", _array_to_cell(enemies.get("faulkner", [3, 8])), "faulkner_solarus", "faulkner", FAULKNER_PORTRAIT, true)
 	_apply_unit_level(faulkner_unit, "solarus", 25, 48, 34, 42, 46)
 	faulkner_unit.set_meta("heals_remaining", 3)
+	faulkner_unit.set_meta("initial_castle_attacker", true)
 	duyere_unit = _spawn_enemy_profile("Duyere / Sarbelas", "Принц Восточного королевства • уровень 12", "sarbelas", _array_to_cell(enemies.get("duyere", [4, 10])), "duyere_sarbelas", "duyere", DUYERE_PORTRAIT, true)
 	_apply_unit_level(duyere_unit, "sarbelas", 12, 27, 29, 24, 28)
+	duyere_unit.set_meta("initial_castle_attacker", true)
 	for index: int in range((enemies.get("barbatos", []) as Array).size()):
 		var barbatos: Node3D = _spawn_enemy_profile(
 			"Barbatos %d" % (index + 1),
@@ -165,16 +226,17 @@ func _spawn_mission_five_units() -> void:
 			false
 		)
 		_apply_unit_level(barbatos, "barbatos", 12, 25, 18, 22, 24)
+		barbatos.set_meta("initial_castle_attacker", true)
 
 	var neutrals: Dictionary = map_data.get("neutral_starts", {}) as Dictionary
-	sadira_unit = _spawn_neutral_profile("Sadira / Sylpheed", "Сестра Duyere • нейтральный наблюдатель • уровень 8", "sylpheed", _array_to_cell(neutrals.get("sadira", [27, 9])), "sadira_sylpheed", SADIRA_PORTRAIT)
+	sadira_unit = _spawn_neutral_profile("Sadira / Sylpheed", "Сестра Duyere • нейтральный наблюдатель • уровень 8", "sylpheed", _array_to_cell(neutrals.get("sadira", [17, 17])), "sadira_sylpheed", SADIRA_PORTRAIT)
 	_apply_unit_level(sadira_unit, "sylpheed", 8, 23, 34, 20, 29)
 	sadira_unit.set_meta("passive_ability", "sylpheed_air_counter")
 	sadira_unit.set_meta("energy_restore_uses", 3)
-	franco_unit = _spawn_neutral_profile("Franco / Korbelan", "Телохранитель Sadira • нейтральный • уровень 25", "korbelan", _array_to_cell(neutrals.get("franco", [26, 7])), "franco_korbelan", FRANCO_PORTRAIT)
+	franco_unit = _spawn_neutral_profile("Franco / Korbelan", "Телохранитель Sadira • нейтральный • уровень 25", "korbelan", _array_to_cell(neutrals.get("franco", [15, 17])), "franco_korbelan", FRANCO_PORTRAIT)
 	_apply_unit_level(franco_unit, "korbelan", 25, 47, 25, 46, 43)
 	franco_unit.set_meta("passive_ability", "steel_armor")
-	halak_unit = _spawn_neutral_profile("Halak / Korbelan", "Телохранитель Sadira • нейтральный • уровень 25", "korbelan", _array_to_cell(neutrals.get("halak", [26, 11])), "halak_korbelan", HALAK_PORTRAIT)
+	halak_unit = _spawn_neutral_profile("Halak / Korbelan", "Телохранитель Sadira • нейтральный • уровень 25", "korbelan", _array_to_cell(neutrals.get("halak", [19, 17])), "halak_korbelan", HALAK_PORTRAIT)
 	_apply_unit_level(halak_unit, "korbelan", 25, 47, 25, 46, 43)
 	halak_unit.set_meta("passive_ability", "steel_armor")
 	mission_five_neutrals = [sadira_unit, franco_unit, halak_unit]
@@ -248,10 +310,129 @@ func _setup_player_party() -> void:
 func _begin_player_turn() -> void:
 	if mission_five_intro_pending:
 		return
+	if mission_number == 5 and _should_spawn_zakov_reinforcements():
+		if not zakov_reinforcements_spawning:
+			zakov_reinforcements_spawning = true
+			action_in_progress = true
+			phase = Phase.DIALOGUE
+			call_deferred("_spawn_zakov_reinforcements_async")
+		return
 	if mission_number == 5 and mission_five_aura_round != round_number:
 		mission_five_aura_round = round_number
 		_apply_serata_aura()
 	super._begin_player_turn()
+
+
+func _should_spawn_zakov_reinforcements() -> bool:
+	if mission_number != 5 or zakov_reinforcements_arrived or zakov_reinforcements_spawning or mission_five_resolution_started:
+		return false
+	if round_number >= SHARKING_REINFORCEMENT_ROUND:
+		return true
+	if faulkner_unit != null and is_instance_valid(faulkner_unit) and _is_alive(faulkner_unit):
+		var faulkner_stats: Dictionary = _stats(faulkner_unit)
+		if int(faulkner_stats.get("hp", 0)) <= int(float(faulkner_stats.get("max_hp", 1)) * 0.60):
+			return true
+	return _initial_assault_defeated()
+
+
+func _initial_assault_defeated() -> bool:
+	var found_initial: bool = false
+	for unit: Node3D in units:
+		if not bool(unit.get_meta("initial_castle_attacker", false)):
+			continue
+		found_initial = true
+		if _is_alive(unit):
+			return false
+	return found_initial
+
+
+func _spawn_zakov_reinforcements_async() -> void:
+	if zakov_reinforcements_arrived or mission_five_resolution_started:
+		zakov_reinforcements_spawning = false
+		return
+	zakov_reinforcements_arrived = true
+	_clear_highlights()
+	phase_label.text = "ПОДКРЕПЛЕНИЕ ВРАГА"
+	status_label.text = "К полю боя подходит Zakov на тяжёлом ATAC Sharking."
+	var starts: Dictionary = map_data.get("reinforcement_starts", {}) as Dictionary
+	zakov_unit = _spawn_enemy_profile(
+		"Zakov / Sharking",
+		"Генерал подкрепления • уровень 25 • силовая броня",
+		"sharking",
+		_array_to_cell(starts.get("zakov", [1, 9])),
+		"zakov_sharking",
+		"zakov",
+		ZAKOV_PORTRAIT,
+		true
+	)
+	_apply_unit_level(zakov_unit, "sharking", 25, 50, 28, 48, 48)
+	if zakov_unit != null:
+		var sharking_stats: Dictionary = _stats(zakov_unit)
+		sharking_stats["armor"] = 250
+		sharking_stats["max_armor"] = 250
+		sharking_stats["move_range"] = 10
+		sharking_stats["energy"] = 100
+		sharking_stats["max_energy"] = 100
+		zakov_unit.set_meta("stats", sharking_stats)
+		zakov_unit.set_meta("passive_ability", "sharking_front_reflect")
+		zakov_unit.set_meta("armor_regen", 50)
+		zakov_unit.set_meta("reinforcement_wave", true)
+		zakov_unit.set_meta("character_id", "zakov")
+		zakov_unit.set_meta("combat_profile", "zakov")
+		_refresh_hp_bar(zakov_unit)
+	zakov_captains.clear()
+	var captain_starts: Array = starts.get("captains", [[1, 6], [1, 12]]) as Array
+	for index: int in range(captain_starts.size()):
+		var captain: Node3D = _spawn_enemy_profile(
+			"Captain Soldier %d" % (index + 1),
+			"Элитный капитан Zakov • уровень 25",
+			"einlager",
+			_array_to_cell(captain_starts[index]),
+			"captain_einlager_25",
+			"captain_soldiers",
+			CAPTAIN_PORTRAIT,
+			true
+		)
+		_apply_unit_level(captain, "einlager", 25, 45, 28, 41, 44)
+		if captain != null:
+			captain.set_meta("reinforcement_wave", true)
+			zakov_captains.append(captain)
+	zakov_barbatos.clear()
+	var barbatos_starts: Array = starts.get("barbatos", [[0, 4], [0, 8], [0, 14]]) as Array
+	for index: int in range(barbatos_starts.size()):
+		var barbatos: Node3D = _spawn_enemy_profile(
+			"Barbatos подкрепления %d" % (index + 1),
+			"Штурмовой солдат Zakov • уровень 12",
+			"barbatos",
+			_array_to_cell(barbatos_starts[index]),
+			"imperial_soldier",
+			"imperial_soldier",
+			IMPERIAL_PORTRAIT,
+			false
+		)
+		_apply_unit_level(barbatos, "barbatos", 12, 25, 18, 22, 24)
+		if barbatos != null:
+			barbatos.set_meta("reinforcement_wave", true)
+			zakov_barbatos.append(barbatos)
+	_refresh_ui()
+	if not OS.has_feature("headless"):
+		await _show_dialogue("Zakov", "Вы слишком рано решили, что победили. Sharking разнесёт ваши ворота вместе с защитниками.", ZAKOV_PORTRAIT)
+		if _is_alive(faulkner_unit):
+			await _show_dialogue("Faulkner", "Наконец-то. Сломай их оборону и не оставь Bastion пути к отступлению.", FAULKNER_PORTRAIT)
+		await _show_dialogue("Bastion", "Ещё один генерал и пять машин. Всем занять позиции у ворот!", BASTION_PORTRAIT_V12)
+		await _show_dialogue("Kamorge", "Пусть подходит. У каждой брони есть предел — даже у Sharking.", KAMORGE_PORTRAIT)
+	zakov_reinforcements_spawning = false
+	action_in_progress = false
+	if mission_five_aura_round != round_number:
+		mission_five_aura_round = round_number
+		_apply_serata_aura()
+	super._begin_player_turn()
+
+
+func _all_enemies_defeated() -> bool:
+	if mission_number == 5 and not zakov_reinforcements_arrived:
+		return false
+	return super._all_enemies_defeated()
 
 
 func _request_castle_choice() -> void:
@@ -290,7 +471,7 @@ func _play_mission_five_intro() -> void:
 	await _show_dialogue("Bastion", "Мы только что вернули эти стены. Если отступим сейчас, людям снова некуда будет возвращаться.", BASTION_PORTRAIT_V12)
 	await _show_dialogue("Kamorge", "Faulkner двадцать пятого уровня. Он не даст нам времени восстановиться, но Eigol готов держать ворота.", KAMORGE_PORTRAIT)
 	await _show_dialogue("Faulkner", "Замок не принадлежит беглому королю. Отдайте Bastion и сложите оружие — иначе стены станут вашей могилой.", FAULKNER_PORTRAIT)
-	await _show_dialogue("Duyere", "На этот раз я не уйду первым. Sadira наблюдает с востока... хотя никогда не выбирает сторону.", DUYERE_PORTRAIT)
+	await _show_dialogue("Duyere", "На этот раз я не уйду первым. Sadira наблюдает справа от южной стены... хотя никогда не выбирает сторону.", DUYERE_PORTRAIT)
 	await _show_dialogue("Sadira", "Я пришла увидеть, ради чего брат снова рискует жизнью. Franco, Halak — не вмешиваться. Пока нас не тронут.", SADIRA_PORTRAIT)
 	await _show_dialogue("Franco", "Korbelan останется в боевой готовности. Любой, кто поднимет оружие на госпожу, станет нашей целью.", FRANCO_PORTRAIT)
 	await _show_dialogue("Halak", "И неважно, под каким знаменем он пришёл.", HALAK_PORTRAIT)
@@ -426,11 +607,72 @@ func _try_automatic_passive(defender: Node3D, attacker: Node3D, back_attack: boo
 				await _play_attack_animation(defender, attacker, counter_mode)
 				await _damage_target(attacker, maxi(1, _calculate_damage(defender, attacker, 0.95)))
 			return "avoided"
+	if passive == "sharking_front_reflect" and _is_front_attack(attacker, defender) and rng.randf() <= 0.70:
+		status_label.text = "Силовое поле Sharking отражает фронтальную атаку!"
+		await _animate_sharking_reflect(defender, attacker)
+		if _is_alive(attacker):
+			await _damage_target(attacker, maxi(1, _calculate_damage(defender, attacker, 0.70)))
+		return "avoided"
 	if passive == "steel_armor" and rng.randf() <= 0.60:
 		defender.set_meta("steel_armor_active", true)
 		status_label.text = "Стальная броня Korbelan снижает входящий урон вдвое."
 		_spawn_guard_flash(defender.global_position + Vector3(0, 1.0, 0), Color(0.80, 0.88, 1.0))
 	return await super._try_automatic_passive(defender, attacker, back_attack)
+
+
+func _is_front_attack(attacker: Node3D, defender: Node3D) -> bool:
+	if attacker == null or defender == null:
+		return false
+	var direction_to_attacker: Vector3 = (attacker.position - defender.position).normalized()
+	var defender_forward: Vector3 = -defender.global_transform.basis.z.normalized()
+	return defender_forward.dot(direction_to_attacker) > 0.42
+
+
+func _damage_target(target: Node3D, damage: int) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	var stats: Dictionary = _stats(target)
+	var armor: int = int(stats.get("armor", 0))
+	if armor > 0 and damage > 0:
+		var absorbed: int = mini(armor, damage)
+		stats["armor"] = armor - absorbed
+		target.set_meta("stats", stats)
+		_refresh_hp_bar(target)
+		_spawn_damage_label(target.global_position + Vector3(0, 2.65, 0), absorbed)
+		_spawn_guard_flash(target.global_position + Vector3(0, 1.0, 0), Color(0.18, 0.72, 1.0))
+		damage -= absorbed
+		status_label.text = "Броня Sharking поглощает %d урона. Осталось брони: %d." % [absorbed, int(stats.get("armor", 0))]
+		if damage <= 0:
+			return
+	await super._damage_target(target, damage)
+
+
+func _refresh_hp_bar(unit: Node3D) -> void:
+	if unit == null or not is_instance_valid(unit):
+		return
+	var label: Label3D = unit.get_node_or_null("HPBar") as Label3D
+	if label == null:
+		return
+	var stats: Dictionary = _stats(unit)
+	var armor: int = int(stats.get("armor", 0))
+	var max_armor: int = int(stats.get("max_armor", 0))
+	if max_armor > 0:
+		label.text = "БР %d | HP %d" % [armor, int(stats.get("hp", 0))]
+		label.modulate = Color(0.38, 0.85, 1.0) if armor > 0 else Color.WHITE
+		if int(stats.get("hp", 0)) <= int(stats.get("max_hp", 1)) / 3:
+			label.modulate = Color(1.0, 0.32, 0.24)
+		return
+	super._refresh_hp_bar(unit)
+
+
+func _refresh_ui() -> void:
+	super._refresh_ui()
+	if selected_unit == null or not is_instance_valid(selected_unit):
+		return
+	var stats: Dictionary = _stats(selected_unit)
+	var max_armor: int = int(stats.get("max_armor", 0))
+	if max_armor > 0:
+		equipment_label.text += "\nБроня силового поля: %d / %d (+50 каждый ход)" % [int(stats.get("armor", 0)), max_armor]
 
 
 func _calculate_damage(attacker: Node3D, target: Node3D, multiplier: float) -> int:
@@ -451,6 +693,7 @@ func _choose_ai_attack(unit: Node3D, target: Node3D) -> String:
 	var modes: Array[String] = CombatCatalog.attacks_for(unit)
 	var distance: int = _grid_distance(unit, target)
 	for preferred: String in [
+		"force_field_throw", "sharking_strong_slash", "sharking_slash",
 		"guillotine", "incinerate", "wind_strike", "sound_strike",
 		"slide", "ice_rain", "ultrasound", "spear_throw", "quicksand",
 		"desert_storm", "sticky_sandstorm", "bright_bomb", "earthquake",
@@ -473,6 +716,20 @@ func _choose_ai_attack(unit: Node3D, target: Node3D) -> String:
 
 
 func _run_smart_ai_turn(unit: Node3D) -> void:
+	if mission_number == 5 and str(unit.get_meta("model_slug", "")) == "sharking":
+		var last_regen_round: int = int(unit.get_meta("armor_regen_round", -1))
+		if last_regen_round != round_number:
+			unit.set_meta("armor_regen_round", round_number)
+			var sharking_stats: Dictionary = _stats(unit)
+			var max_armor: int = int(sharking_stats.get("max_armor", 250))
+			var before_armor: int = int(sharking_stats.get("armor", 0))
+			sharking_stats["armor"] = mini(max_armor, before_armor + int(unit.get_meta("armor_regen", 50)))
+			unit.set_meta("stats", sharking_stats)
+			_refresh_hp_bar(unit)
+			if int(sharking_stats["armor"]) > before_armor:
+				status_label.text = "Sharking восстанавливает %d брони." % (int(sharking_stats["armor"]) - before_armor)
+				_spawn_guard_flash(unit.global_position + Vector3(0, 1.0, 0), Color(0.20, 0.78, 1.0))
+				await get_tree().create_timer(0.22).timeout
 	if mission_number == 5 and unit == sadira_unit and neutral_group_activated:
 		var sadira_stats: Dictionary = _stats(unit)
 		var restore_uses: int = int(unit.get_meta("energy_restore_uses", 0))
@@ -518,8 +775,92 @@ func _play_attack_animation(attacker: Node3D, target: Node3D, mode: String) -> v
 			await _animate_incinerate(attacker, target)
 		"guillotine":
 			await _animate_guillotine(attacker, target)
+		"force_field_throw":
+			await _animate_force_field_throw(attacker, target)
+		"sharking_slash":
+			await super._play_attack_animation(attacker, target, "slash")
+		"sharking_strong_slash":
+			await super._play_attack_animation(attacker, target, "strong_slash")
 		_:
 			await super._play_attack_animation(attacker, target, mode)
+
+
+func _animate_force_field_throw(attacker: Node3D, target: Node3D) -> void:
+	_face_target(attacker, target)
+	status_label.text = "%s использует «Бросок силового поля»" % str(attacker.get_meta("label"))
+	var origin: Vector3 = attacker.global_position + Vector3(0, 1.10, 0)
+	var finish: Vector3 = target.global_position + Vector3(0, 1.05, 0)
+	var disc := MeshInstance3D.new()
+	var disc_mesh := CylinderMesh.new()
+	disc_mesh.top_radius = 0.43
+	disc_mesh.bottom_radius = 0.43
+	disc_mesh.height = 0.055
+	disc_mesh.radial_segments = 32
+	disc.mesh = disc_mesh
+	disc.global_position = origin
+	disc.look_at(finish, Vector3.UP)
+	disc.rotation_degrees.x += 90.0
+	disc.material_override = _effect_material(Color(0.14, 0.72, 1.0, 0.94))
+	add_child(disc)
+	for ring_index: int in range(3):
+		var ring := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = 0.24 + float(ring_index) * 0.08
+		torus.outer_radius = 0.29 + float(ring_index) * 0.08
+		torus.rings = 24
+		torus.ring_segments = 7
+		ring.mesh = torus
+		ring.global_position = origin
+		ring.rotation = disc.rotation
+		ring.material_override = _effect_material(Color(0.55, 0.94, 1.0, 0.86))
+		add_child(ring)
+		var ring_tween: Tween = create_tween()
+		ring_tween.tween_property(ring, "global_position", finish, 0.34 + float(ring_index) * 0.025)
+		ring_tween.parallel().tween_property(ring, "rotation_degrees:z", 720.0 * (1.0 if ring_index % 2 == 0 else -1.0), 0.34)
+		ring_tween.tween_property(ring, "scale", Vector3.ZERO, 0.08)
+		ring_tween.tween_callback(Callable(ring, "queue_free"))
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	tween.tween_property(disc, "global_position", finish, 0.34)
+	tween.parallel().tween_property(disc, "rotation_degrees:z", 900.0, 0.34)
+	tween.tween_callback(Callable(self, "_spawn_force_field_impact").bind(finish))
+	tween.tween_property(disc, "scale", Vector3.ZERO, 0.07)
+	tween.tween_callback(Callable(disc, "queue_free"))
+	await tween.finished
+
+
+func _spawn_force_field_impact(position: Vector3) -> void:
+	for index: int in range(14):
+		var angle: float = TAU * float(index) / 14.0
+		_spawn_attack_burst(position + Vector3(cos(angle) * 0.36, sin(angle * 2.0) * 0.18, sin(angle) * 0.36), Color(0.18, 0.72 + float(index % 3) * 0.08, 1.0), 0.34 + float(index % 4) * 0.06)
+	_spawn_guard_flash(position, Color(0.18, 0.78, 1.0))
+	_camera_shake(0.42, 0.20)
+
+
+func _animate_sharking_reflect(defender: Node3D, attacker: Node3D) -> void:
+	var centre: Vector3 = defender.global_position + Vector3(0, 1.0, 0)
+	for layer: int in range(3):
+		var shell := MeshInstance3D.new()
+		var sphere := SphereMesh.new()
+		sphere.radius = 0.58 + float(layer) * 0.10
+		sphere.height = sphere.radius * 2.0
+		sphere.radial_segments = 24
+		sphere.rings = 12
+		shell.mesh = sphere
+		shell.global_position = centre
+		shell.material_override = _effect_material(Color(0.12 + float(layer) * 0.08, 0.64, 1.0, 0.25))
+		add_child(shell)
+		shell.scale = Vector3.ONE * 0.25
+		var tween: Tween = create_tween()
+		tween.tween_interval(float(layer) * 0.035)
+		tween.tween_property(shell, "scale", Vector3.ONE * 1.15, 0.14)
+		tween.tween_property(shell, "scale", Vector3.ZERO, 0.18)
+		tween.tween_callback(Callable(shell, "queue_free"))
+	var reflected_finish: Vector3 = attacker.global_position + Vector3(0, 1.0, 0)
+	for index: int in range(7):
+		var spark_position: Vector3 = centre.lerp(reflected_finish, float(index) / 6.0)
+		_spawn_attack_burst(spark_position, Color(0.35, 0.88, 1.0), 0.22 + float(index) * 0.04)
+	_camera_shake(0.30, 0.14)
+	await get_tree().create_timer(0.36).timeout
 
 
 func _animate_sylpheed_air_dodge(defender: Node3D, attacker: Node3D) -> void:

@@ -208,6 +208,31 @@ const ATTACKS: Dictionary = {
 		"disable_chance": 0.45,
 		"disable_turns": 1,
 	},
+	"sharking_slash": {
+		"label": "Порез",
+		"fatigue": 0,
+		"energy": 20,
+		"range": 1,
+		"multiplier": 1.18,
+		"animation": "slash",
+	},
+	"sharking_strong_slash": {
+		"label": "Сильный порез",
+		"fatigue": 0,
+		"energy": 35,
+		"range": 1,
+		"multiplier": 1.85,
+		"animation": "strong_slash",
+	},
+	"force_field_throw": {
+		"label": "Бросок силового поля",
+		"fatigue": 0,
+		"energy": 45,
+		"range": 4,
+		"range_mode": "up_to",
+		"multiplier": 1.62,
+		"animation": "force_field_throw",
+	},
 }
 
 const LOADOUTS: Dictionary = {
@@ -232,6 +257,7 @@ const LOADOUTS: Dictionary = {
 	"galvas_serata": ["slash", "lunge", "strong_slash", "shoulder_bash", "ball_lightning", "bright_bomb"],
 	"kingdom_glaive": ["slash", "lunge", "long_lunge", "strong_slash"],
 	"zakov": ["slash", "lunge", "long_lunge", "strong_slash", "ball_lightning"],
+	"zakov_sharking": ["sharking_slash", "sharking_strong_slash", "force_field_throw"],
 	"imperial_soldier": ["slash", "lunge", "long_lunge"],
 	"captain_soldiers": [
 		"slash",
@@ -269,6 +295,8 @@ static func attacks_for(unit: Node3D) -> Array[String]:
 	var key: String = character_id if LOADOUTS.has(character_id) else profile
 	if character_id == "kamorge" and model_slug == "eigol":
 		key = "kamorge_eigol"
+	elif character_id == "zakov" and model_slug == "sharking":
+		key = "zakov_sharking"
 	if key.is_empty():
 		key = "imperial_soldier"
 	var values: Array = LOADOUTS.get(key, LOADOUTS["imperial_soldier"]) as Array

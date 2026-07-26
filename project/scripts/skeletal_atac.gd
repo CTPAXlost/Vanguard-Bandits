@@ -10,7 +10,7 @@ extends Node3D
 const SUPPORTED_SLUGS: Array[String] = [
 	"alba", "barbatos", "barazaph", "vedocorban", "cador", "solarus",
 	"sarbelas", "einlager", "eigol", "amphisia", "haurol", "toreadore",
-	"serata", "glaive", "sylpheed", "korbelan",
+	"serata", "glaive", "sylpheed", "korbelan", "sharking",
 ]
 const SAFE_AABB: AABB = AABB(Vector3(-2.4, -0.6, -1.0), Vector3(4.8, 4.6, 2.0))
 
@@ -212,18 +212,30 @@ func _build_original_skin() -> void:
 
 
 func _build_weapon_overlay() -> void:
-	# Original skins that already carry a large spear/scythe keep that exact weapon.
-	if slug in ["haurol", "toreadore", "sarbelas"]:
+	# These original skins already include their weapon in the artwork. Adding an
+	# extra sword made it float beside the wrist, so they keep the integral blade.
+	if slug in ["haurol", "toreadore", "sarbelas", "sylpheed", "sharking"]:
 		return
 	var path: String = "res://assets/atac_views/sword_level_1.png"
+	var pixel_size: float = 0.00116
+	var local_position := Vector3(0.015, 0.265, 0.012)
+	var local_rotation: float = -12.0
 	if slug == "solarus":
 		path = "res://assets/atac_views/weapons/black_red_sword.png"
+		pixel_size = 0.00104
+		local_position = Vector3(0.008, 0.235, 0.012)
+		local_rotation = -10.0
 	elif slug == "einlager":
 		path = "res://assets/atac_views/weapons/einlager_sword.png"
+		local_position = Vector3(0.010, 0.250, 0.012)
+		local_rotation = -11.0
+	elif slug == "korbelan":
+		local_position = Vector3(0.012, 0.278, 0.012)
+		local_rotation = -8.0
 	var weapon: Sprite3D = Sprite3D.new()
 	weapon.name = "RiggedWeapon"
 	weapon.texture = _shared_texture(path)
-	weapon.pixel_size = 0.00122 if slug != "solarus" else 0.00108
+	weapon.pixel_size = pixel_size
 	weapon.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	weapon.alpha_cut = SpriteBase3D.ALPHA_CUT_OPAQUE_PREPASS
 	weapon.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE
@@ -232,8 +244,10 @@ func _build_weapon_overlay() -> void:
 	weapon.double_sided = true
 	weapon.custom_aabb = SAFE_AABB
 	weapon.render_priority = 10
-	weapon.position = Vector3(0.30, -0.05, 0.012)
-	weapon.rotation_degrees.z = -28.0
+	# The grip of the vertical sword texture is below its centre. Positive local Y
+	# aligns that grip with hand_r, so the blade follows every skeletal animation.
+	weapon.position = local_position
+	weapon.rotation_degrees.z = local_rotation
 	_attachment("hand_r").add_child(weapon)
 	skin_sprites.append(weapon)
 

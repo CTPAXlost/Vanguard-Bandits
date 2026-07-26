@@ -1,0 +1,31 @@
+Vanguard Bandits Remaster 1.8.2
+
+Основные новые и изменённые файлы:
+- project/project.godot
+- project/scripts/campaign_battle_v18.gd
+- project/scripts/campaign_battle_v08.gd
+- project/scripts/combat_catalog.gd
+- project/scripts/campaign_state.gd
+- project/scripts/skeletal_atac.gd
+- project/scripts/mission5_smoke.gd
+- project/data/maps/mission_05.json
+- project/data/balance/level_01_units.json
+- project/assets/ui/portraits/sadira.png
+- project/assets/ui/portraits/franco.png
+- project/assets/ui/portraits/halak.png
+- project/assets/ui/portraits/zakov.png
+- project/assets/ui/portraits/captain_soldiers.png
+- project/assets/atac_views/sylpheed/*
+- project/assets/atac_views/korbelan/*
+- project/assets/atac_views/sharking/*
+- project/assets/atac_rigged/sylpheed/*
+- project/assets/atac_rigged/korbelan/*
+- project/assets/atac_rigged/sharking/*
+- tools/tests/test_v182_castle_reinforcement.py
+- .github/workflows/build-windows.yml
+- README.md
+- CHANGELOG.md
+- ИЗМЕНЕНИЯ_1.8.2.txt
+- VALIDATION_1.8.2.txt
+
+Архив предназначен для полной замены содержимого закрытого GitHub-репозитория. Необходимо загрузить также скрытую папку .github.

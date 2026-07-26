@@ -643,5 +643,73 @@
       "Гильотина",
       "Лечение"
     ]
+  },
+  "zakov_sharking": {
+    "level": 25,
+    "hp": 600,
+    "max_hp": 600,
+    "armor": 250,
+    "max_armor": 250,
+    "strength": 50,
+    "agility": 28,
+    "defense": 48,
+    "magic": 30,
+    "attack_skill": 48,
+    "weapon_power": 22,
+    "move_range": 10,
+    "weapon": "Силовые клинки Sharking",
+    "equipment": "Тяжёлая броня Sharking с силовым полем",
+    "equipment_bonus": {
+      "defense": 8
+    },
+    "amulet": "Ядро отражающего поля",
+    "amulet_bonus": {
+      "magic": 3
+    },
+    "fatigue": 0,
+    "max_fatigue": 100,
+    "energy": 100,
+    "max_energy": 100,
+    "atac_name": "Sharking",
+    "ability": "250 брони; +50 брони каждый ход; 70% шанс отразить фронтальную атаку",
+    "attacks": [
+      "Порез",
+      "Сильный порез",
+      "Бросок силового поля"
+    ]
+  },
+  "captain_einlager_25": {
+    "level": 25,
+    "hp": 545,
+    "max_hp": 545,
+    "strength": 45,
+    "agility": 28,
+    "defense": 41,
+    "magic": 24,
+    "attack_skill": 44,
+    "weapon_power": 21,
+    "move_range": 6,
+    "weapon": "Капитанский клинок III",
+    "equipment": "Элитная капитанская броня Einlager",
+    "equipment_bonus": {
+      "defense": 7
+    },
+    "amulet": "Печать подкрепления",
+    "amulet_bonus": {
+      "strength": 3
+    },
+    "fatigue": 0,
+    "max_fatigue": 100,
+    "energy": 100,
+    "max_energy": 100,
+    "atac_name": "Einlager",
+    "ability": "Элитный капитан подкрепления",
+    "attacks": [
+      "Порез",
+      "Выпад",
+      "Длинный выпад",
+      "Сильный порез",
+      "Шаровая молния"
+    ]
   }
 }

@@ -10,7 +10,7 @@ PROJECT = ROOT / "project"
 class Version17SkeletalVfxCleanupTests(unittest.TestCase):
     def test_project_version_header(self) -> None:
         project_text = (PROJECT / "project.godot").read_text(encoding="utf-8")
-        self.assertIn("1.8.1", project_text)
+        self.assertIn("1.8.2", project_text)
         self.assertIn("original ATAC skins on Skeleton3D", project_text)
 
     def test_every_campaign_atac_has_skeletal_renderer_support(self) -> None:
