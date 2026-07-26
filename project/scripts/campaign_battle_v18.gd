@@ -377,17 +377,23 @@ func _spawn_zakov_reinforcements_async() -> void:
 		zakov_unit.set_meta("passive_ability", "sharking_front_reflect")
 		zakov_unit.set_meta("armor_regen", 50)
 		zakov_unit.set_meta("reinforcement_wave", true)
+		zakov_unit.set_meta("reinforcement_role", "zakov_commander")
 		zakov_unit.set_meta("character_id", "zakov")
 		zakov_unit.set_meta("combat_profile", "zakov")
 		_refresh_hp_bar(zakov_unit)
+	# The wave composition is fixed by design. Do not derive the unit count from
+	# the JSON array length: malformed or stale map data must not silently remove
+	# one of Zakov's escorts and block the Windows build.
 	zakov_captains.clear()
-	var captain_starts: Array = starts.get("captains", [[1, 6], [1, 12]]) as Array
-	for index: int in range(captain_starts.size()):
+	var captain_defaults: Array = [[1, 6], [1, 12]]
+	var captain_starts: Array = starts.get("captains", captain_defaults) as Array
+	for index: int in range(2):
+		var raw_captain_cell: Variant = captain_starts[index] if index < captain_starts.size() else captain_defaults[index]
 		var captain: Node3D = _spawn_enemy_profile(
 			"Captain Soldier %d" % (index + 1),
 			"Элитный капитан Zakov • уровень 25",
 			"einlager",
-			_array_to_cell(captain_starts[index]),
+			_array_to_cell(raw_captain_cell),
 			"captain_einlager_25",
 			"captain_soldiers",
 			CAPTAIN_PORTRAIT,
@@ -396,15 +402,19 @@ func _spawn_zakov_reinforcements_async() -> void:
 		_apply_unit_level(captain, "einlager", 25, 45, 28, 41, 44)
 		if captain != null:
 			captain.set_meta("reinforcement_wave", true)
+			captain.set_meta("reinforcement_role", "zakov_captain")
+			captain.set_meta("reinforcement_index", index)
 			zakov_captains.append(captain)
 	zakov_barbatos.clear()
-	var barbatos_starts: Array = starts.get("barbatos", [[0, 4], [0, 8], [0, 14]]) as Array
-	for index: int in range(barbatos_starts.size()):
+	var barbatos_defaults: Array = [[0, 4], [0, 8], [0, 14]]
+	var barbatos_starts: Array = starts.get("barbatos", barbatos_defaults) as Array
+	for index: int in range(3):
+		var raw_barbatos_cell: Variant = barbatos_starts[index] if index < barbatos_starts.size() else barbatos_defaults[index]
 		var barbatos: Node3D = _spawn_enemy_profile(
 			"Barbatos подкрепления %d" % (index + 1),
 			"Штурмовой солдат Zakov • уровень 12",
 			"barbatos",
-			_array_to_cell(barbatos_starts[index]),
+			_array_to_cell(raw_barbatos_cell),
 			"imperial_soldier",
 			"imperial_soldier",
 			IMPERIAL_PORTRAIT,
@@ -413,6 +423,8 @@ func _spawn_zakov_reinforcements_async() -> void:
 		_apply_unit_level(barbatos, "barbatos", 12, 25, 18, 22, 24)
 		if barbatos != null:
 			barbatos.set_meta("reinforcement_wave", true)
+			barbatos.set_meta("reinforcement_role", "zakov_barbatos")
+			barbatos.set_meta("reinforcement_index", index)
 			zakov_barbatos.append(barbatos)
 	_refresh_ui()
 	if not OS.has_feature("headless"):

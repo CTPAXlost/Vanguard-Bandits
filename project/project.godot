@@ -1,11 +1,11 @@
-; Vanguard Bandits Remaster 1.8.2 — original ATAC skins on Skeleton3D, castle gates, Sharking reinforcements and targeted support magic
+; Vanguard Bandits Remaster 1.8.3 — original ATAC skins on Skeleton3D, deterministic Zakov reinforcement wave and corrected mission V runtime validation
 ; Engine target: Godot 4.6.3 stable
 
 config_version=5
 
 [application]
 config/name="Vanguard Bandits Remaster"
-config/version="1.8.2"
+config/version="1.8.3"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 run/max_fps=60

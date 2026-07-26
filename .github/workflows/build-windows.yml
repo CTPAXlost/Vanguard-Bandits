@@ -322,9 +322,11 @@ jobs:
           name: Vanguard-Bandits-Smoke-Logs
           path: |
             battle-smoke.log
+            movement-input-smoke.log
             mission3-smoke.log
             hub-smoke.log
             mission4-smoke.log
+            mission5-smoke.log
             story-smoke.log
             mission-select-smoke.log
             shop-smoke.log

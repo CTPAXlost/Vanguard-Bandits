@@ -69,10 +69,10 @@ func _run() -> void:
 	units_value = battle.get("units") as Array
 	for unit_value: Variant in units_value:
 		var unit: Node3D = unit_value as Node3D
-		if unit == null:
+		if unit == null or not is_instance_valid(unit):
 			continue
-		var label: String = str(unit.get_meta("label", ""))
-		if label.begins_with("Zakov / Sharking"):
+		var reinforcement_role: String = str(unit.get_meta("reinforcement_role", ""))
+		if reinforcement_role == "zakov_commander":
 			found_zakov = true
 			var stats: Dictionary = unit.get_meta("stats") as Dictionary
 			sharking_armor_ok = (
@@ -81,12 +81,17 @@ func _run() -> void:
 				and int(stats.get("max_armor", 0)) == 250
 				and int(stats.get("move_range", 0)) == 10
 			)
-		elif label.begins_with("Captain Soldier"):
+		elif reinforcement_role == "zakov_captain":
 			captain_count += 1
-		elif label.begins_with("Barbatos подкрепления"):
+		elif reinforcement_role == "zakov_barbatos":
 			reinforcement_barbatos_count += 1
-	if not found_zakov or captain_count != 2 or reinforcement_barbatos_count != 3:
-		_fail("Zakov reinforcement composition is incomplete")
+	var tracked_captains: Array = battle.get("zakov_captains") as Array
+	var tracked_barbatos: Array = battle.get("zakov_barbatos") as Array
+	if not found_zakov or captain_count != 2 or reinforcement_barbatos_count != 3 or tracked_captains.size() != 2 or tracked_barbatos.size() != 3:
+		_fail(
+			"Zakov reinforcement composition is incomplete: commander=%s captains=%d/%d barbatos=%d/%d"
+			% [str(found_zakov), captain_count, tracked_captains.size(), reinforcement_barbatos_count, tracked_barbatos.size()]
+		)
 		return
 	if not sharking_armor_ok:
 		_fail("Sharking armor or movement profile is invalid")
