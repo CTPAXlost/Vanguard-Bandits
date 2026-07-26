@@ -1155,9 +1155,9 @@ func _spawn_slash_effect(world_position: Vector3) -> void:
 
 func _spawn_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
 	var effect: Node3D = Node3D.new()
+	add_child(effect)
 	effect.position = world_position - direction * 0.42
 	effect.look_at(world_position + direction, Vector3.UP)
-	add_child(effect)
 	for index: int in range(6):
 		var streak: MeshInstance3D = MeshInstance3D.new()
 		var mesh: BoxMesh = BoxMesh.new()
@@ -1188,9 +1188,9 @@ func _spawn_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
 
 func _spawn_long_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
 	var effect: Node3D = Node3D.new()
+	add_child(effect)
 	effect.position = world_position - direction * 0.72
 	effect.look_at(world_position + direction, Vector3.UP)
-	add_child(effect)
 	for index: int in range(9):
 		var trail: MeshInstance3D = MeshInstance3D.new()
 		var trail_mesh: BoxMesh = BoxMesh.new()

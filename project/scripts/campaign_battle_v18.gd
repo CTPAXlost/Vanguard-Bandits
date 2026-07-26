@@ -315,12 +315,22 @@ func _begin_player_turn() -> void:
 			zakov_reinforcements_spawning = true
 			action_in_progress = true
 			phase = Phase.DIALOGUE
-			call_deferred("_spawn_zakov_reinforcements_async")
+			# Start the coroutine immediately. The old deferred string call could be
+			# skipped while the turn state changed in the same frame, leaving the
+			# entire Zakov wave absent both in-game and in the runtime smoke test.
+			_start_zakov_reinforcement_spawn()
 		return
 	if mission_number == 5 and mission_five_aura_round != round_number:
 		mission_five_aura_round = round_number
 		_apply_serata_aura()
 	super._begin_player_turn()
+
+
+func _start_zakov_reinforcement_spawn() -> void:
+	# Calling an async GDScript function starts it immediately and it continues
+	# after each await. In headless mode the dialogue awaits are skipped, so the
+	# complete six-unit wave is created in the same frame.
+	_spawn_zakov_reinforcements_async()
 
 
 func _should_spawn_zakov_reinforcements() -> bool:

@@ -57,11 +57,24 @@ func _run() -> void:
 	print("MISSION5_GATE_SMOKE_OK")
 	print("NORMALIZED_ATAC_SCALE_SMOKE_OK")
 
-	# Force the timed reinforcement trigger and wait for the deferred wave.
+	# Force the real timed trigger. Clear all intro/resolution gates explicitly,
+	# then verify the predicate before beginning the turn. This catches both a
+	# broken trigger and a broken wave composition instead of reporting 0/0 only.
+	battle.set("mission_five_intro_pending", false)
+	battle.set("mission_five_resolution_started", false)
+	battle.set("zakov_reinforcements_arrived", false)
+	battle.set("zakov_reinforcements_spawning", false)
 	battle.set("round_number", 4)
+	if not bool(battle.call("_should_spawn_zakov_reinforcements")):
+		_fail("round-four Zakov reinforcement trigger did not activate")
+		return
+	print("MISSION5_ZAKOV_TRIGGER_SMOKE_OK")
 	battle.call("_begin_player_turn")
-	for _frame: int in range(80):
+	for _frame: int in range(120):
 		await get_tree().process_frame
+	if not bool(battle.get("zakov_reinforcements_arrived")):
+		_fail("Zakov trigger activated but the reinforcement coroutine never started")
+		return
 	var found_zakov: bool = false
 	var captain_count: int = 0
 	var reinforcement_barbatos_count: int = 0
