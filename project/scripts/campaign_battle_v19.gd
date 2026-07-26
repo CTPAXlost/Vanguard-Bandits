@@ -1,0 +1,392 @@
+extends "res://scripts/campaign_battle_v18.gd"
+
+const MISSION_SIX_PATH := "res://data/maps/mission_06.json"
+const LOGAN_PORTRAIT := "res://assets/ui/portraits/logan.png"
+const CLAIRE_PORTRAIT := "res://assets/ui/portraits/claire.png"
+const SHION_PORTRAIT := "res://assets/ui/portraits/shion.png"
+const ALDEN_PORTRAIT := "res://assets/ui/portraits/alden.png"
+const DEVLIN_PORTRAIT := "res://assets/ui/portraits/devlin.png"
+const BARLOW_PORTRAIT := "res://assets/ui/portraits/barlow.png"
+
+var kingdom_choice := "south"
+var south_bots: Array[Node3D] = []
+var north_bots: Array[Node3D] = []
+var southern_reinforcement_spawned := false
+var alden_unit: Node3D
+var devlin_unit: Node3D
+var logan_unit: Node3D
+var devlin_clone: Node3D
+var mission_six_finished := false
+var mission_six_intro_pending := false
+var choice_dialog_done := false
+
+func _ready() -> void:
+	if CampaignState.current_mission == 6:
+		mission_six_intro_pending = true
+		if CampaignState.test_forced_branch in ["south", "north"]:
+			kingdom_choice = CampaignState.test_forced_branch
+		super._ready()
+	if mission_number != 6:
+		return
+	action_in_progress = true
+	phase = Phase.DIALOGUE
+	if not OS.has_feature("headless"):
+		await _show_dialogue("Bastion", "Kamorge погиб, но его выбор дал нам время. Zeira, проводите нас до Южного королевства.", BASTION_PORTRAIT_V12)
+		await _show_dialogue("Zeira", "Проведём. Ione и Reyna знают лесные тропы.", ZEIRA_PORTRAIT)
+		await _show_dialogue("Reyna", "Впереди армии Севера и Юга. Они уже сошлись в бою.", REYNA_PORTRAIT)
+		await _request_kingdom_choice()
+	_apply_kingdom_choice()
+	mission_six_intro_pending = false
+	action_in_progress = false
+	_begin_player_turn()
+
+func _load_first_mission() -> void:
+	if CampaignState.current_mission != 6:
+		super._load_first_mission()
+		return
+	mission_number = 6
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MISSION_SIX_PATH))
+	map_data = parsed as Dictionary
+	grid_width = int(map_data.get("width", 32))
+	grid_height = int(map_data.get("height", 18))
+	blocked_cells = {}
+	river_cells = {}
+	swamp_cells = {}
+	title_label.text = str(map_data.get("name","Глава VI — Война Севера и Юга"))
+	var parsed_balance: Variant = JSON.parse_string(FileAccess.get_file_as_string(BALANCE_PATH))
+	if parsed_balance is Dictionary:
+		balance_data = parsed_balance as Dictionary
+
+func _spawn_mission_units() -> void:
+	if mission_number != 6:
+		super._spawn_mission_units()
+		return
+	var p: Dictionary = map_data.get("player_starts",{})
+	player_unit = _spawn_campaign_hero("bastion","alba",_array_to_cell(p.get("bastion",[15,14])),"bastion_alba",BASTION_PORTRAIT_V12,"Наследник королевства • игрок")
+	andrew_unit = _spawn_campaign_hero("andrew","vedocorban",_array_to_cell(p.get("andrew",[14,15])),"andrew_vedocorban",ANDREW_PORTRAIT_V12,"Соратник Bastion • игрок")
+	zeira_unit_five = _spawn_campaign_hero("zeira","toreadore",_array_to_cell(p.get("zeira",[16,15])),"zeira_toreadore",ZEIRA_PORTRAIT,"Предводитель партизан • игрок")
+	ione_unit = _spawn_campaign_hero("ione","amphisia",_array_to_cell(p.get("ione",[13,14])),"ione_amphisia",IONE_PORTRAIT,"Разведчица • игрок")
+	reyna_unit = _spawn_campaign_hero("reyna","haurol",_array_to_cell(p.get("reyna",[17,14])),"reyna_haurol",REYNA_PORTRAIT,"Копейщица • игрок")
+	_spawn_south()
+	_spawn_north()
+
+func _spawn_south() -> void:
+	var s: Dictionary = map_data.get("south_starts",{})
+	logan_unit = _spawn_campaign_hero("logan","crimson",_array_to_cell(s.get("logan",[25,8])),"logan_crimson",LOGAN_PORTRAIT,"Король Южного королевства")
+	_apply_unit_level(logan_unit, "crimson", 25, 52, 34, 45, 48)
+	logan_unit.set_meta("passive_ability", "logan_reflect")
+	logan_unit.set_meta("max_move_actions", 2)
+	logan_unit.set_meta("double_turn", true)
+	logan_unit.set_meta("damage_magic_uses", 2)
+	var claire := _spawn_campaign_hero("claire","rahabar",_array_to_cell(s.get("claire",[27,7])),"claire_rahabar",CLAIRE_PORTRAIT,"Принцесса Юга")
+	_apply_unit_level(claire,"rahabar",15,32,31,29,33)
+	var shion := _spawn_campaign_hero("shion","rahabar",_array_to_cell(s.get("shion",[27,9])),"shion_rahabar",SHION_PORTRAIT,"Телохранитель Claire")
+	_apply_unit_level(shion,"rahabar",22,42,38,37,40)
+	for i in range((s.get("bots",[]) as Array).size()):
+		var u := _spawn_unit("Южный рыцарь %d / Rahabor"%(i+1),"Nordilian • Южное королевство","rahabar",_array_to_cell((s.get("bots",[]) as Array)[i]),false,false,"south","nordilian_rahabar")
+		_apply_unit_level(u, "rahabar", 10 + i % 6, 24 + i, 22 + i, 24 + i, 24 + i)
+		u.set_meta("portrait_path", "res://assets/ui/portraits/nordilian.png")
+		south_bots.append(u)
+
+func _spawn_north() -> void:
+	var n: Dictionary = map_data.get("north_starts",{})
+	alden_unit = _spawn_campaign_hero("alden","altagrave",_array_to_cell(n.get("alden",[6,8])),"alden_altagrave",ALDEN_PORTRAIT,"Король Северного королевства")
+	_apply_unit_level(alden_unit, "altagrave", 24, 48, 36, 45, 48)
+	alden_unit.set_meta("magic_immune", true)
+	alden_unit.set_meta("passive_ability", "alden_iceberg")
+	devlin_unit = _spawn_campaign_hero("devlin","snow_soldier",_array_to_cell(n.get("devlin",[4,7])),"devlin_snow_soldier",DEVLIN_PORTRAIT,"Генерал Севера")
+	_apply_unit_level(devlin_unit, "snow_soldier", 19, 38, 35, 37, 43)
+	devlin_unit.set_meta("clone_uses", 1)
+	var barlow := _spawn_campaign_hero("barlow","ratatosk",_array_to_cell(n.get("barlow",[4,9])),"barlow_ratatosk",BARLOW_PORTRAIT,"Верный друг Devlin")
+	_apply_unit_level(barlow,"ratatosk",14,31,29,33,34)
+	for i in range((n.get("bots",[]) as Array).size()):
+		var u := _spawn_unit("Северный боец %d / Ratatosk"%(i+1),"Matisse • Северное королевство","ratatosk",_array_to_cell((n.get("bots",[]) as Array)[i]),false,false,"north","matisse_ratatosk")
+		_apply_unit_level(u, "ratatosk", 10 + i % 6, 24 + i, 22 + i, 25 + i, 24 + i)
+		u.set_meta("portrait_path", "res://assets/ui/portraits/matisse.png")
+		north_bots.append(u)
+
+func _setup_player_party() -> void:
+	if mission_number != 6:
+		super._setup_player_party()
+		return
+	player_party.clear()
+	for u: Node3D in [player_unit, andrew_unit, zeira_unit_five, ione_unit, reyna_unit]:
+		if u != null:
+			u.set_meta("player", true)
+			u.set_meta("team", "ally")
+			player_party.append(u)
+
+func _request_kingdom_choice() -> void:
+	choice_dialog_done = false
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Выбор союзника"
+	dialog.dialog_text = "Кому помочь в войне королевств?"
+	dialog.ok_button_text = "Южному королевству"
+	dialog.add_button("Северному королевству", false, "north")
+	add_child(dialog)
+	dialog.confirmed.connect(_choose_south)
+	dialog.custom_action.connect(_choose_custom_kingdom)
+	dialog.canceled.connect(_choose_south)
+	dialog.popup_centered(Vector2i(540, 240))
+	while not choice_dialog_done:
+		await get_tree().process_frame
+	dialog.queue_free()
+
+
+func _choose_south() -> void:
+	kingdom_choice = "south"
+	choice_dialog_done = true
+
+
+func _choose_custom_kingdom(action: StringName) -> void:
+	if str(action) == "north":
+		kingdom_choice = "north"
+	choice_dialog_done = true
+
+func _apply_kingdom_choice() -> void:
+	for u: Node3D in units:
+		var team := str(u.get_meta("team"))
+		if team == "south":
+			u.set_meta("team", "ally" if kingdom_choice == "south" else "enemy")
+			u.set_meta("player", false)
+		elif team == "north":
+			u.set_meta("team", "ally" if kingdom_choice == "north" else "enemy")
+			u.set_meta("player", false)
+	var side_label := "Южному" if kingdom_choice == "south" else "Северному"
+	status_label.text = "Вы помогаете %s королевству. Отвергнутая сторона атакует и ваш отряд." % side_label
+
+func _begin_player_turn() -> void:
+	if mission_number == 6 and mission_six_intro_pending:
+		return
+	if mission_number == 6:
+		_apply_alden_aura()
+		_check_south_reinforcement()
+	super._begin_player_turn()
+
+
+func _apply_alden_aura() -> void:
+	if alden_unit == null or not _is_alive(alden_unit):
+		return
+	var team := str(alden_unit.get_meta("team"))
+	for u: Node3D in units:
+		if not _is_alive(u) or str(u.get_meta("team")) != team:
+			continue
+		var st := _stats(u)
+		st["hp"] = mini(int(st.get("max_hp", 1)), int(st.get("hp", 0)) + 50)
+		st["energy"] = mini(int(st.get("max_energy", 100)), int(st.get("energy", 0)) + 30)
+		u.set_meta("stats", st)
+		_refresh_hp_bar(u)
+
+
+func _check_south_reinforcement() -> void:
+	if southern_reinforcement_spawned:
+		return
+	for u: Node3D in south_bots:
+		if _is_alive(u):
+			return
+	southern_reinforcement_spawned = true
+	var cells: Array = map_data.get("south_reinforcements", [])
+	for i: int in range(cells.size()):
+		var team := "ally" if kingdom_choice == "south" else "enemy"
+		var u := _spawn_unit(
+			"Южная подмога %d / Rahabor" % (i + 1),
+			"Nordilian • резерв",
+			"rahabar",
+			_array_to_cell(cells[i]),
+			false, false, team, "nordilian_rahabar"
+		)
+		_apply_unit_level(u, "rahabar", 10 + i % 6, 25 + i, 23 + i, 25 + i, 25 + i)
+	status_label.text = "К Южному королевству прибыла подмога из шести Rahabor!"
+
+func _resolve_attack(attacker: Node3D, target: Node3D, mode: String) -> void:
+	if target == alden_unit and bool(target.get_meta("magic_immune", false)):
+		if mode in ["ball_lightning", "bright_bomb", "ice_rain", "frost", "storm_vortex"]:
+			status_label.text = "Altagrave невосприимчив к магии."
+			_spawn_guard_flash(target.global_position + Vector3(0, 1, 0), Color(0.5, 0.85, 1.0))
+			return
+	if mode == "devlin_combo":
+		status_label.text = "Комбо Snow Soldier невозможно заблокировать!"
+		var combo_damage: int = _calculate_damage(attacker, target, float(CombatCatalog.attack(mode).get("multiplier", 3.45)))
+		await _damage_target(target, combo_damage)
+	else:
+		await super._resolve_attack(attacker, target, mode)
+	if mode == "frost" and _is_alive(target):
+		var frost_data: Dictionary = CombatCatalog.attack(mode)
+		if rng.randf() <= float(frost_data.get("freeze_chance", 0.40)):
+			var turns: int = int(frost_data.get("freeze_turns", 2))
+			target.set_meta("frozen_turns", maxi(int(target.get_meta("frozen_turns", 0)), turns))
+			status_label.text = "%s заморожен морозом на %d хода!" % [str(target.get_meta("label")), turns]
+			_spawn_ice_lock_effect(target.global_position + Vector3(0, 1.0, 0))
+	if float(attacker.get_meta("logan_damage_boost", 1.0)) > 1.0:
+		attacker.set_meta("logan_damage_boost", 1.0)
+	if target == alden_unit and _is_alive(attacker) and rng.randf() <= 0.50:
+		status_label.text = "Ответная магия Alden: на атакующего падает айсберг!"
+		await _animate_ice_rain(alden_unit, attacker)
+		var retaliation: int = maxi(1, int(float(_stats(alden_unit).get("strength", 40)) * 2.0))
+		await _damage_target(attacker, retaliation)
+
+
+func _calculate_damage(attacker: Node3D, target: Node3D, multiplier: float) -> int:
+	var damage: int = super._calculate_damage(attacker, target, multiplier)
+	damage = maxi(1, int(round(float(damage) * float(attacker.get_meta("logan_damage_boost", 1.0)))))
+	return damage
+
+
+func _try_automatic_passive(defender: Node3D, attacker: Node3D, back_attack: bool) -> String:
+	if str(defender.get_meta("passive_ability", "")) == "logan_reflect" and rng.randf() <= 0.45:
+		status_label.text = "Crimson отражает атаку Logan!"
+		await _animate_sharking_reflect(defender, attacker)
+		return "avoided"
+	return await super._try_automatic_passive(defender, attacker, back_attack)
+
+func _run_smart_ai_turn(unit: Node3D) -> void:
+	if unit == devlin_unit and int(unit.get_meta("clone_uses", 0)) > 0 and devlin_clone == null:
+		var clone_cell: Vector2i = _first_free_adjacent_cell(unit)
+		if clone_cell.x >= 0:
+			unit.set_meta("clone_uses", 0)
+			devlin_clone = _spawn_unit(
+				"Клон Devlin / Snow Soldier", "Ледяной клон 60%",
+				"snow_soldier", clone_cell, false, false,
+				str(unit.get_meta("team")), "devlin_snow_soldier"
+			)
+			var clone_stats: Dictionary = _stats(unit).duplicate(true)
+			for key: String in ["hp", "max_hp", "strength", "agility", "defense", "attack_skill"]:
+				clone_stats[key] = maxi(1, int(float(clone_stats.get(key, 1)) * 0.60))
+			devlin_clone.set_meta("stats", clone_stats)
+			devlin_clone.set_meta("clone_of_devlin", true)
+			_refresh_hp_bar(devlin_clone)
+			status_label.text = "Devlin создаёт ледяного клона с 60% характеристик."
+			await get_tree().create_timer(0.4).timeout
+			return
+	if unit == logan_unit:
+		await _try_logan_damage_magic()
+		await super._run_smart_ai_turn(unit)
+		if _is_alive(unit) and _nearest_opponent(unit) != null:
+			status_label.text = "Crimson получает второй полноценный ход Logan."
+			await get_tree().create_timer(0.18).timeout
+			await super._run_smart_ai_turn(unit)
+		return
+	await super._run_smart_ai_turn(unit)
+
+
+func _first_free_adjacent_cell(unit: Node3D) -> Vector2i:
+	var origin: Vector2i = unit.get_meta("cell")
+	for delta: Vector2i in [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)]:
+		var candidate: Vector2i = origin + delta
+		if _cell_in_bounds(candidate) and not blocked_cells.has(candidate) and _unit_at(candidate) == null:
+			return candidate
+	return Vector2i(-1, -1)
+
+
+func _try_logan_damage_magic() -> void:
+	var uses: int = int(logan_unit.get_meta("damage_magic_uses", 0)) if logan_unit != null else 0
+	if uses <= 0 or round_number not in [1, 4]:
+		return
+	var team: String = str(logan_unit.get_meta("team"))
+	var target: Node3D = logan_unit
+	var best_strength: int = int(_stats(logan_unit).get("strength", 0))
+	for candidate: Node3D in units:
+		if not _is_alive(candidate) or str(candidate.get_meta("team")) != team:
+			continue
+		var strength: int = int(_stats(candidate).get("strength", 0))
+		if strength > best_strength:
+			target = candidate
+			best_strength = strength
+	target.set_meta("logan_damage_boost", 2.0)
+	logan_unit.set_meta("damage_magic_uses", uses - 1)
+	status_label.text = "Logan удваивает урон %s для следующей атаки." % str(target.get_meta("label"))
+	_spawn_guard_flash(target.global_position + Vector3(0, 1.1, 0), Color(1.0, 0.20, 0.16))
+	await get_tree().create_timer(0.35).timeout
+
+
+func _choose_ai_attack(unit: Node3D, target: Node3D) -> String:
+	var modes := CombatCatalog.attacks_for(unit)
+	var distance := _grid_distance(unit, target)
+	for mode: String in [
+		"evil_heart", "storm_vortex", "devlin_combo", "bright_bomb",
+		"rocket_shot", "ice_rain", "frost", "precise_shot",
+		"ball_lightning", "strong_slash", "long_lunge", "lunge", "slash"
+	]:
+		if not modes.has(mode):
+			continue
+		var attack_data := CombatCatalog.attack(mode)
+		var attack_range := int(attack_data.get("range", 1))
+		var cost := int(CombatCatalog.resource_cost(mode).get("energy", 0))
+		if distance <= attack_range and _can_spend_energy(unit, cost):
+			return mode
+	return super._choose_ai_attack(unit, target)
+
+func _play_attack_animation(attacker: Node3D, target: Node3D, mode: String) -> void:
+	match mode:
+		"evil_heart":
+			await _animate_strong_slash(attacker, target)
+			_spawn_heavy_arc(target.global_position + Vector3(0, 1.0, 0), Color(0.85, 0.02, 0.08))
+			_camera_shake(0.55, 0.24)
+		"frost":
+			await _animate_ice_rain(attacker, target)
+		"storm_vortex":
+			await _animate_tornado(attacker, target)
+		"shot", "precise_shot":
+			await _animate_northern_shot(attacker, target, mode == "precise_shot")
+		"rocket_shot":
+			await _animate_bright_bomb(attacker, target)
+		"ice_punch", "ice_kick":
+			await _animate_shoulder_bash(attacker, target)
+			_spawn_ice_lock_effect(target.global_position + Vector3(0, 0.8, 0))
+		"devlin_combo":
+			await _animate_devlin_combo(attacker, target)
+		_:
+			await super._play_attack_animation(attacker, target, mode)
+
+
+func _animate_northern_shot(attacker: Node3D, target: Node3D, precise: bool) -> void:
+	_face_target(attacker, target)
+	status_label.text = "%s выполняет %s" % [str(attacker.get_meta("label")), "точный выстрел" if precise else "выстрел"]
+	var projectile := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.055 if precise else 0.075
+	mesh.height = mesh.radius * 2.0
+	projectile.mesh = mesh
+	projectile.material_override = _effect_material(Color(0.55, 0.90, 1.0, 0.98))
+	projectile.global_position = attacker.global_position + Vector3(0, 1.15, 0)
+	add_child(projectile)
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_IN)
+	tween.tween_property(projectile, "global_position", target.global_position + Vector3(0, 1.0, 0), 0.16 if precise else 0.23)
+	await tween.finished
+	_spawn_attack_burst(target.global_position + Vector3(0, 1.0, 0), Color(0.45, 0.85, 1.0), 1.0 if precise else 0.72)
+	projectile.queue_free()
+
+
+func _animate_devlin_combo(attacker: Node3D, target: Node3D) -> void:
+	status_label.text = "%s применяет неотражаемое комбо!" % str(attacker.get_meta("label"))
+	await _animate_shoulder_bash(attacker, target)
+	_spawn_ice_lock_effect(target.global_position + Vector3(0, 0.8, 0))
+	await _animate_northern_shot(attacker, target, true)
+	await _animate_bright_bomb(attacker, target)
+	_camera_shake(0.70, 0.30)
+
+
+func _show_victory() -> void:
+	if mission_number != 6:
+		await super._show_victory()
+		return
+	if mission_six_finished:
+		return
+	mission_six_finished = true
+	phase = Phase.VICTORY
+	phase_label.text = "СОЮЗ ЗАКЛЮЧЁН"
+	status_label.text = "Выбранное королевство принимает Bastion как союзника."
+	CampaignState.complete_mission(6, kingdom_choice)
+	call_deferred("_return_to_campaign_hub")
+
+
+func _show_defeat() -> void:
+	if mission_number != 6:
+		await super._show_defeat()
+		return
+	if mission_six_finished:
+		return
+	mission_six_finished = true
+	phase = Phase.DEFEAT
+	phase_label.text = "ОТРЯД РАЗБИТ"
+	status_label.text = "Путь к союзу придётся начать заново."

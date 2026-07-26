@@ -168,6 +168,7 @@ func _refresh_items() -> void:
 		item_list.add_item("%s — %s • склад: %d" % [str(data.get("name", item_id)), buy_text, owned], icon)
 		item_ids.append(item_id)
 	if item_ids.is_empty():
+		message_label.text = "Ошибка каталога: предметы не загрузились."
 		return
 	var index: int = item_ids.find(previous)
 	if index < 0:

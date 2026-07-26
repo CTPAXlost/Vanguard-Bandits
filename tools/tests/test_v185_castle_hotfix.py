@@ -15,8 +15,8 @@ class V185CastleHotfixTests(unittest.TestCase):
             for z in data["castle"]["gate_z"]:
                 self.assertNotIn((x, z), blocked)
         source = (PROJECT / "scripts/campaign_battle_v18.gd").read_text(encoding="utf-8")
-        self.assertIn("half_span_world", source)
-        self.assertIn("OpenGateLeafLeft", source)
+        self.assertIn("deliberately completely open", source)
+        self.assertNotIn("OpenGateLeafLeft", source)
 
     def test_neutral_observers_are_on_visible_open_field(self):
         data = json.loads((PROJECT / "data/maps/mission_05.json").read_text(encoding="utf-8"))

@@ -1,0 +1,139 @@
+{
+  "version": "1.9.0",
+  "slug": "snow_soldier",
+  "source": "res://assets/atac_views/snow_soldier/front.png",
+  "pixel_size": 0.00225,
+  "source_size": [
+    505,
+    895
+  ],
+  "alpha_bbox": [
+    0,
+    0,
+    505,
+    895
+  ],
+  "parts": [
+    {
+      "name": "head",
+      "bone": "head",
+      "texture": "res://assets/atac_rigged/snow_soldier/head.png",
+      "position": [
+        0.0,
+        1.03,
+        0.003
+      ],
+      "priority": 1
+    },
+    {
+      "name": "torso",
+      "bone": "chest",
+      "texture": "res://assets/atac_rigged/snow_soldier/torso.png",
+      "position": [
+        0.0,
+        1.03,
+        0.0032500000000000003
+      ],
+      "priority": 2
+    },
+    {
+      "name": "pelvis",
+      "bone": "pelvis",
+      "texture": "res://assets/atac_rigged/snow_soldier/pelvis.png",
+      "position": [
+        0.0,
+        1.03,
+        0.0035
+      ],
+      "priority": 3
+    },
+    {
+      "name": "upper_arm_l",
+      "bone": "upper_arm_l",
+      "texture": "res://assets/atac_rigged/snow_soldier/upper_arm_l.png",
+      "position": [
+        0.0,
+        1.03,
+        0.00375
+      ],
+      "priority": 4
+    },
+    {
+      "name": "lower_arm_l",
+      "bone": "lower_arm_l",
+      "texture": "res://assets/atac_rigged/snow_soldier/lower_arm_l.png",
+      "position": [
+        0.0,
+        1.03,
+        0.004
+      ],
+      "priority": 5
+    },
+    {
+      "name": "upper_arm_r",
+      "bone": "upper_arm_r",
+      "texture": "res://assets/atac_rigged/snow_soldier/upper_arm_r.png",
+      "position": [
+        0.0,
+        1.03,
+        0.00425
+      ],
+      "priority": 6
+    },
+    {
+      "name": "lower_arm_r",
+      "bone": "lower_arm_r",
+      "texture": "res://assets/atac_rigged/snow_soldier/lower_arm_r.png",
+      "position": [
+        0.0,
+        1.03,
+        0.0045000000000000005
+      ],
+      "priority": 7
+    },
+    {
+      "name": "upper_leg_l",
+      "bone": "upper_leg_l",
+      "texture": "res://assets/atac_rigged/snow_soldier/upper_leg_l.png",
+      "position": [
+        0.0,
+        1.03,
+        0.00475
+      ],
+      "priority": 8
+    },
+    {
+      "name": "lower_leg_l",
+      "bone": "lower_leg_l",
+      "texture": "res://assets/atac_rigged/snow_soldier/lower_leg_l.png",
+      "position": [
+        0.0,
+        1.03,
+        0.005
+      ],
+      "priority": 9
+    },
+    {
+      "name": "upper_leg_r",
+      "bone": "upper_leg_r",
+      "texture": "res://assets/atac_rigged/snow_soldier/upper_leg_r.png",
+      "position": [
+        0.0,
+        1.03,
+        0.00525
+      ],
+      "priority": 10
+    },
+    {
+      "name": "lower_leg_r",
+      "bone": "lower_leg_r",
+      "texture": "res://assets/atac_rigged/snow_soldier/lower_leg_r.png",
+      "position": [
+        0.0,
+        1.03,
+        0.0055
+      ],
+      "priority": 11
+    }
+  ]
+}

@@ -10,7 +10,7 @@ PROJECT = ROOT / "project"
 class CastleDefenseV18Tests(unittest.TestCase):
     def test_battle_scene_uses_v18_controller(self):
         scene = (PROJECT / "scenes/BattlePrototype.tscn").read_text(encoding="utf-8")
-        self.assertIn("campaign_battle_v18.gd", scene)
+        self.assertIn("campaign_battle_v19.gd", scene)
 
     def test_mission_three_movement_lock_is_released(self):
         script = (PROJECT / "scripts/campaign_battle_v08.gd").read_text(encoding="utf-8")

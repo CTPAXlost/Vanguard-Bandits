@@ -10,7 +10,7 @@ PROJECT = ROOT / "project"
 class V08CampaignTests(unittest.TestCase):
     def test_battle_scene_uses_v08_controller(self) -> None:
         scene = (PROJECT / "scenes/BattlePrototype.tscn").read_text(encoding="utf-8")
-        self.assertIn("campaign_battle_v18.gd", scene)
+        self.assertIn("campaign_battle_v19.gd", scene)
 
     def test_target_facing_reaction_and_upgrade_systems(self) -> None:
         script = (PROJECT / "scripts/campaign_battle_v08.gd").read_text(encoding="utf-8")
@@ -92,7 +92,7 @@ class V08CampaignTests(unittest.TestCase):
 
     def test_state_persists_third_mission_branch(self) -> None:
         state = (PROJECT / "scripts/campaign_state.gd").read_text(encoding="utf-8")
-        for marker in ("mission_3_complete", "story_branch", "SAVE_VERSION: int = 18"):
+        for marker in ("mission_3_complete", "story_branch", "SAVE_VERSION: int = 19"):
             self.assertIn(marker, state)
 
 

@@ -11,6 +11,7 @@ const SUPPORTED_SLUGS: Array[String] = [
 	"alba", "barbatos", "barazaph", "vedocorban", "cador", "solarus",
 	"sarbelas", "einlager", "eigol", "amphisia", "haurol", "toreadore",
 	"serata", "glaive", "sylpheed", "korbelan", "sharking",
+	"crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk",
 ]
 const SAFE_AABB: AABB = AABB(Vector3(-2.4, -0.6, -1.0), Vector3(4.8, 4.6, 2.0))
 
@@ -53,8 +54,8 @@ func configure(model_slug: String) -> void:
 	set_meta("atac_slug", slug)
 	set_meta("real_skeleton", true)
 	set_meta("original_skin_rig", true)
-	set_meta("rig_status", "segmented_original_skin_v171")
-	set_meta("reference_revision", "campaign_v171")
+	set_meta("rig_status", "segmented_original_skin_v190")
+	set_meta("reference_revision", "campaign_v190")
 
 	rig_data = _load_rig_data()
 	skin_pixel_size = float(rig_data.get("pixel_size", 0.0021))

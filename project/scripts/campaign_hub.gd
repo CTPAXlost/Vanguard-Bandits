@@ -1,4 +1,5 @@
 extends Control
+# Historical branch title: ЛЕСНОЙ ЛАГЕРЬ ПАРТИЗАН
 
 var status_label: Label
 var character_panel: PanelContainer
@@ -138,70 +139,49 @@ func _refresh_campaign_status() -> void:
 	store_button.disabled = not CampaignState.is_shop_available()
 	store_button.text = "Общий магазин — открыт" if CampaignState.is_shop_available() else "Общий магазин — закрыт"
 	mode_button.text = "Тактические анимации: ВКЛ"
-	if CampaignState.mission_5_complete:
-		if CampaignState.mission_5_result == "castle_defended":
-			title_label.text = "ОСВОБОЖДЁННЫЙ ЗАМОК ЗАЩИЩЁН"
-			subtitle_label.text = "Faulkner отступил, оружейная сохранена"
-			status_label.text = (
-				"В общий магазин поступили новые мечи, амулеты и камни умения. "
-				+ "Sadira и её телохранители запомнили исход сражения."
-			)
-		else:
-			title_label.text = "ЮЖНАЯ ДОРОГА"
-			subtitle_label.text = "Отряд движется через леса за помощью Logan"
-			status_label.text = (
-				"Замок оставлен или потерян. Bastion, Kamorge и союзники идут на юг, "
-				+ "чтобы попросить Logan собрать новые силы."
-			)
-		mission_button.text = "Следующая глава — путь к Logan готовится"
+	if CampaignState.mission_6_complete:
+		title_label.text = "СОЮЗ КОРОЛЕВСТВ ЗАКЛЮЧЁН"
+		var side_name: String = "Южное" if CampaignState.kingdom_alliance == "south" else "Северное"
+		subtitle_label.text = "%s королевство стало союзником Bastion" % side_name
+		status_label.text = "Выбранная сторона согласилась помочь в дальнейшей войне. Следующая глава готовится."
+		mission_button.text = "Следующая глава готовится"
 		mission_button.disabled = true
+	elif CampaignState.mission_5_complete:
+		title_label.text = "ДОРОГА К ДВУМ КОРОЛЕВСТВАМ"
+		subtitle_label.text = "Север и Юг уже ведут открытое сражение"
+		status_label.text = "Отряд должен выбрать будущего союзника: Logan на Юге или Alden на Севере."
+		mission_button.text = "Начать главу VI — выбрать сторону"
+		mission_button.disabled = false
 	elif CampaignState.mission_4_complete:
 		title_label.text = "ГЛАВА V — ЗАЩИТА ОСВОБОЖДЁННОГО ЗАМКА"
 		subtitle_label.text = "Faulkner возвращается с новой армией"
-		status_label.text = (
-			"Bastion и Andrew снова в отряде. Faulkner идёт на замок, а Sadira с двумя "
-			+ "телохранителями наблюдает за сражением с востока."
-		)
+		status_label.text = "Bastion и Andrew снова в отряде. Faulkner идёт на замок, а Sadira наблюдает за сражением."
 		mission_button.text = "Начать пятую миссию — защита замка"
 		mission_button.disabled = false
 	elif CampaignState.mission_3_complete and CampaignState.story_branch == "seek_southern_aid":
 		title_label.text = "ГЛАВА IV — ШТУРМ ИМПЕРСКОГО ЗАМКА"
 		subtitle_label.text = "Kamorge выжил, нашёл Eigol и союзников"
-		status_label.text = (
-			"Bastion и Andrew находятся в плену. Kamorge, Ione, Reyna и Galvas готовят штурм; "
-			+ "Zeira собирает верных королю солдат на Glaive."
-		)
+		status_label.text = "Bastion и Andrew находятся в плену. Kamorge и партизаны готовят штурм."
 		mission_button.text = "Начать четвёртую миссию — штурм замка"
 		mission_button.disabled = false
 	elif CampaignState.mission_3_complete:
-		title_label.text = "ЛЕСНОЙ ЛАГЕРЬ ПАРТИЗАН"
-		subtitle_label.text = "В этой ветке Kamorge погиб у моста"
-		status_label.text = "Ione, Reyna и Zeira присоединились. Продолжение этой альтернативной ветки будет добавлено отдельно."
-		mission_button.text = "Продолжение ветки — готовится"
-		mission_button.disabled = true
+		title_label.text = "ЛЕСНОЙ ПУТЬ К ДВУМ КОРОЛЕВСТВАМ"
+		subtitle_label.text = "Kamorge погиб. Zeira ведёт спасённых Bastion и Andrew на юг"
+		status_label.text = "Впереди война Северного и Южного королевств. Придётся выбрать будущего союзника."
+		mission_button.text = "Начать главу VI — выбрать сторону"
+		mission_button.disabled = false
 	elif CampaignState.mission_2_complete:
 		title_label.text = "ЛАГЕРЬ — ПОСЛЕ ВТОРОЙ МИССИИ"
 		subtitle_label.text = "Andrew и Vedocorban присоединились к отряду"
-		status_label.text = "Распределите очки и подготовьте Bastion, Andrew и Kamorge к мосту перед королевством."
-		mission_button.text = "Начать третью миссию — мост перед королевством"
+		status_label.text = "Впереди мост и судьбоносный выбор Kamorge."
+		mission_button.text = "Начать третью миссию"
 		mission_button.disabled = false
 	else:
 		title_label.text = "ЛАГЕРЬ — ПОСЛЕ ПЕРВОЙ МИССИИ"
 		subtitle_label.text = "Подготовка отряда перед дорогой через лес и болото"
-		status_label.text = "Первая миссия завершена. Kamorge присоединился к отряду."
+		status_label.text = "Bastion и Kamorge готовятся освободить Andrew."
 		mission_button.text = "Начать вторую миссию"
 		mission_button.disabled = false
-
-
-func _save_progress() -> void:
-	status_label.text = (
-		"Достижение сохранено." if CampaignState.save_game() else "Не удалось сохранить игру."
-	)
-
-
-func _open_characters() -> void:
-	character_panel.visible = true
-	_populate_characters()
 
 
 func _populate_characters() -> void:
@@ -280,18 +260,27 @@ func _allocate(stat_key: String) -> void:
 
 
 func _start_next_mission() -> void:
+	if CampaignState.mission_6_complete:
+		return
 	if CampaignState.mission_5_complete:
+		CampaignState.current_mission = 6
+		CampaignState.save_game()
+		get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
 		return
 	if CampaignState.mission_4_complete:
 		CampaignState.current_mission = 5
 		CampaignState.save_game()
 		get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
 		return
-	if CampaignState.mission_3_complete:
-		if CampaignState.story_branch == "seek_southern_aid":
-			CampaignState.current_mission = 4
-			CampaignState.save_game()
-			get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
+	if CampaignState.mission_3_complete and CampaignState.story_branch == "stay_and_fight":
+		CampaignState.current_mission = 6
+		CampaignState.save_game()
+		get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
+		return
+	if CampaignState.mission_3_complete and CampaignState.story_branch == "seek_southern_aid":
+		CampaignState.current_mission = 4
+		CampaignState.save_game()
+		get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
 		return
 	CampaignState.current_mission = 3 if CampaignState.mission_2_complete else 2
 	CampaignState.save_game()

@@ -242,6 +242,16 @@ const ATTACKS: Dictionary = {
 		"multiplier": 1.62,
 		"animation": "force_field_throw",
 	},
+	"evil_heart": {"label":"Злое сердце","fatigue":0,"energy":45,"range":1,"multiplier":3.60,"animation":"strong_slash"},
+	"frost": {"label":"Мороз","fatigue":0,"energy":30,"range":4,"range_mode":"up_to","multiplier":1.15,"animation":"ice_rain","freeze_chance":0.40,"freeze_turns":2},
+	"storm_vortex": {"label":"Вихрь бури","fatigue":0,"energy":80,"range":5,"range_mode":"up_to","multiplier":3.10,"animation":"tornado"},
+	"shot": {"label":"Выстрел","fatigue":0,"energy":5,"range":3,"range_mode":"up_to","multiplier":1.05,"animation":"spear_throw"},
+	"precise_shot": {"label":"Точный выстрел","fatigue":0,"energy":15,"range":4,"range_mode":"up_to","multiplier":1.45,"animation":"spear_throw"},
+	"rocket_shot": {"label":"Выстрел ракеты","fatigue":0,"energy":30,"range":3,"range_mode":"up_to","multiplier":1.80,"animation":"bright_bomb"},
+	"ice_punch": {"label":"Ледяной удар кулаком","fatigue":0,"energy":15,"range":1,"multiplier":1.35,"animation":"shoulder_bash"},
+	"ice_kick": {"label":"Удар ледяной ногой","fatigue":0,"energy":25,"range":1,"multiplier":1.65,"animation":"strong_slash"},
+	"devlin_combo": {"label":"Комбо","fatigue":0,"energy":50,"range":3,"range_mode":"up_to","multiplier":3.45,"animation":"bright_bomb","unblockable":true},
+
 }
 
 const LOADOUTS: Dictionary = {
@@ -289,6 +299,15 @@ const LOADOUTS: Dictionary = {
 	"franco_korbelan": ["slash", "lunge", "long_lunge", "strong_slash", "incinerate", "guillotine"],
 	"halak_korbelan": ["slash", "lunge", "long_lunge", "strong_slash", "incinerate", "guillotine"],
 	"korbelan_guard": ["slash", "lunge", "long_lunge", "strong_slash", "incinerate", "guillotine"],
+	"logan_crimson": ["slash","lunge","strong_slash","ball_lightning","bright_bomb","evil_heart"],
+	"claire_rahabar": ["slash","lunge","strong_slash","ball_lightning"],
+	"shion_rahabar": ["slash","lunge","strong_slash","ball_lightning","bright_bomb"],
+	"nordilian_rahabar": ["slash","lunge","strong_slash","ball_lightning"],
+	"alden_altagrave": ["slash","lunge","long_lunge","strong_slash","frost","ice_rain","storm_vortex"],
+	"devlin_snow_soldier": ["shot","precise_shot","rocket_shot","ice_punch","ice_kick","devlin_combo","frost"],
+	"barlow_ratatosk": ["slash","lunge","long_lunge","strong_slash","shoulder_bash","ice_rain","frost"],
+	"matisse_ratatosk": ["slash","lunge","strong_slash","shoulder_bash"],
+
 }
 
 

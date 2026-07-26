@@ -112,70 +112,10 @@ func _build_defense_castle_geometry() -> void:
 	_create_castle_gate("DefenseCastleGateEast", east_x, gate_z_values, false)
 
 
-func _create_castle_gate(gate_name: String, gate_x: int, gate_z_values: Array, opens_west: bool) -> void:
-	var root := Node3D.new()
-	root.name = gate_name
-	add_child(root)
-	var z_values: Array[int] = []
-	for raw_z: Variant in gate_z_values:
-		z_values.append(int(raw_z))
-	if z_values.is_empty():
-		z_values = [8, 9]
-	z_values.sort()
-	var min_gate_z: int = z_values[0]
-	var max_gate_z: int = z_values[z_values.size() - 1]
-	var centre_z: float = (float(min_gate_z) + float(max_gate_z)) * 0.5
-	var centre: Vector3 = _cell_to_world(Vector2i(gate_x, roundi(centre_z)))
-	centre.z += (centre_z - round(centre_z)) * TILE_SIZE
-	var half_span_world: float = maxf(0.95, (float(max_gate_z - min_gate_z + 1) * TILE_SIZE) * 0.5)
-	var post_offset_x: float = -0.34 if opens_west else 0.34
-	for z_position: float in [
-		_cell_to_world(Vector2i(gate_x, min_gate_z)).z - TILE_SIZE * 0.45,
-		_cell_to_world(Vector2i(gate_x, max_gate_z)).z + TILE_SIZE * 0.45
-	]:
-		var post := MeshInstance3D.new()
-		var post_mesh := BoxMesh.new()
-		post_mesh.size = Vector3(0.42, 2.34, 0.42)
-		post.mesh = post_mesh
-		post.position = Vector3(centre.x + post_offset_x, 1.17, z_position)
-		post.material_override = _prop_material(Color(0.34, 0.36, 0.43))
-		root.add_child(post)
-	var lintel := MeshInstance3D.new()
-	var lintel_mesh := BoxMesh.new()
-	lintel_mesh.size = Vector3(0.60, 0.42, half_span_world * 2.0 + 0.36)
-	lintel.mesh = lintel_mesh
-	lintel.position = centre + Vector3(post_offset_x, 2.18, 0)
-	lintel.material_override = _prop_material(Color(0.50, 0.42, 0.29))
-	root.add_child(lintel)
-	for side: int in [-1, 1]:
-		var leaf := MeshInstance3D.new()
-		leaf.name = "OpenGateLeafLeft" if side < 0 else "OpenGateLeafRight"
-		var leaf_mesh := BoxMesh.new()
-		leaf_mesh.size = Vector3(0.12, 1.72, maxf(0.74, half_span_world - 0.10))
-		leaf.mesh = leaf_mesh
-		var x_offset: float = -0.86 if opens_west else 0.86
-		leaf.position = centre + Vector3(x_offset, 0.88, float(side) * half_span_world * 0.55)
-		leaf.rotation_degrees.y = float(side) * (68.0 if opens_west else -68.0)
-		leaf.material_override = _prop_material(Color(0.22, 0.105, 0.045))
-		root.add_child(leaf)
-		for band_index: int in range(3):
-			var band := MeshInstance3D.new()
-			var band_mesh := BoxMesh.new()
-			band_mesh.size = Vector3(0.14, 0.09, maxf(0.78, half_span_world - 0.06))
-			band.mesh = band_mesh
-			band.position = leaf.position + Vector3(0, -0.52 + float(band_index) * 0.52, 0)
-			band.rotation = leaf.rotation
-			band.material_override = _prop_material(Color(0.69, 0.52, 0.19))
-			root.add_child(band)
-	for tooth_index: int in range(7):
-		var tooth := MeshInstance3D.new()
-		var tooth_mesh := PrismMesh.new()
-		tooth_mesh.size = Vector3(0.14, 0.42, 0.18)
-		tooth.mesh = tooth_mesh
-		tooth.position = centre + Vector3(post_offset_x, 1.82, lerpf(-half_span_world * 0.78, half_span_world * 0.78, float(tooth_index) / 6.0))
-		tooth.rotation_degrees.z = 90.0
-		tooth.material_override = _prop_material(Color(0.18, 0.20, 0.24))
-		root.add_child(tooth)
+func _create_castle_gate(_gate_name: String, _gate_x: int, _gate_z_values: Array, _opens_west: bool) -> void:
+	# The castle passage is deliberately completely open: no leaves, posts, lintel,
+	# teeth or invisible blockers are created in the traversable gate cells.
+	return
 
 
 func _spawn_mission_units() -> void:

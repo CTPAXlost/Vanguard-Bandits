@@ -232,6 +232,25 @@ jobs:
           grep -q "NORMALIZED_ATAC_SCALE_SMOKE_OK" mission5-smoke.log
           exit "$STATUS"
 
+
+      - name: Runtime smoke test for war of two kingdoms
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/Mission6Smoke.tscn --quit-after 1800 2>&1 | tee mission6-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Cannot get node|Nonexistent function|MISSION6_SMOKE_FAILED" mission6-smoke.log; then
+            echo "Mission 6 smoke test found a runtime/script error." >&2
+            exit 1
+          fi
+          grep -q "MISSION6_SOUTH_BRANCH_OK" mission6-smoke.log
+          grep -q "MISSION6_NORTH_BRANCH_OK" mission6-smoke.log
+          grep -q "MISSION6_SMOKE_OK" mission6-smoke.log
+          exit "$STATUS"
+
       - name: Runtime smoke test for tactical ATAC visibility
         shell: bash
         run: |
@@ -328,6 +347,7 @@ jobs:
             hub-smoke.log
             mission4-smoke.log
             mission5-smoke.log
+            mission6-smoke.log
             story-smoke.log
             mission-select-smoke.log
             shop-smoke.log

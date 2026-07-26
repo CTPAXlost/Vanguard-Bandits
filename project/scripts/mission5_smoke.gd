@@ -51,9 +51,15 @@ func _run() -> void:
 			% [str(found_sadira), str(found_franco), str(found_halak), str(found_faulkner), str(neutral_positions_ok), str(equal_scale_ok)]
 		)
 		return
-	if battle.get_node_or_null("DefenseCastleGateWest") == null or battle.get_node_or_null("DefenseCastleGateEast") == null:
-		_fail("visible castle gates were not created")
+	if battle.get_node_or_null("DefenseCastleGateWest") != null or battle.get_node_or_null("DefenseCastleGateEast") != null:
+		_fail("gate decoration still blocks the completely open passages")
 		return
+	var blocked_value: Dictionary = battle.get("blocked_cells") as Dictionary
+	for gate_x: int in [10, 22]:
+		for gate_z: int in [7, 8, 9, 10]:
+			if blocked_value.has(Vector2i(gate_x, gate_z)):
+				_fail("castle passage contains a blocked gate cell")
+				return
 	print("MISSION5_DEFENSE_SMOKE_OK")
 	print("MISSION5_NEUTRAL_GROUP_SMOKE_OK")
 	print("MISSION5_NEUTRAL_POSITION_SMOKE_OK")

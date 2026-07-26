@@ -1,18 +1,22 @@
 extends Node
 
 const SAVE_PATH: String = "user://vanguard_campaign_save.json"
-const SAVE_VERSION: int = 18
+const SAVE_VERSION: int = 19
 const MISSION_COMPLETION_REWARDS: Dictionary = {
 	1: 200,
 	2: 300,
 	3: 500,
 	4: 800,
 	5: 1200,
+	6: 1500,
 }
 const STANDARD_ATAC_REWARD: int = 25
 const COMMANDER_ATAC_REWARD: int = 50
 const ELITE_ATAC_REWARD: int = 75
-const ELITE_ATACS: Array[String] = ["solarus", "sarbelas", "einlager", "eigol", "toreadore", "serata", "sylpheed", "korbelan", "sharking"]
+const ELITE_ATACS: Array[String] = [
+	"solarus", "sarbelas", "einlager", "eigol", "toreadore", "serata",
+	"sylpheed", "korbelan", "sharking", "crimson", "altagrave", "snow_soldier",
+]
 const SHOP_ITEMS: Dictionary = {
 	"steel_sword_i": {
 		"name": "Стальной меч I",
@@ -211,6 +215,12 @@ const ATAC_DATA: Dictionary = {
 		"name": "Sharking", "base_hp": 360, "hp_per_level": 10, "move_range": 10,
 		"equipment": "Тяжёлая броня Sharking с регенерирующим силовым полем",
 	},
+	"crimson": {"name":"Crimson","base_hp":390,"hp_per_level":11,"move_range":8,"equipment":"Королевская броня Crimson"},
+	"rahabar": {"name":"Rahabor","base_hp":270,"hp_per_level":9,"move_range":7,"equipment":"Южная броня Rahabor"},
+	"altagrave": {"name":"Altagrave","base_hp":380,"hp_per_level":11,"move_range":7,"equipment":"Ледяная броня Altagrave"},
+	"snow_soldier": {"name":"Snow Soldier","base_hp":300,"hp_per_level":9,"move_range":7,"equipment":"Стрелковая броня Snow Soldier"},
+	"ratatosk": {"name":"Ratatosk","base_hp":285,"hp_per_level":8,"move_range":6,"equipment":"Северная броня Ratatosk"},
+
 }
 
 var current_mission: int = 1
@@ -221,6 +231,8 @@ var mission_3_complete: bool = false
 var mission_4_complete: bool = false
 var mission_5_complete: bool = false
 var mission_5_result: String = ""
+var mission_6_complete: bool = false
+var kingdom_alliance: String = ""
 var southern_route_pending: bool = false
 var prison_seen: bool = false
 var story_branch: String = ""
@@ -294,6 +306,12 @@ func _default_characters() -> Dictionary:
 		"halak": _character_entry(
 			"Halak", "res://assets/ui/portraits/halak.png", 25, "korbelan"
 		),
+		"logan": _character_entry("Logan", "res://assets/ui/portraits/logan.png", 25, "crimson"),
+		"claire": _character_entry("Claire", "res://assets/ui/portraits/claire.png", 15, "rahabar"),
+		"shion": _character_entry("Shion", "res://assets/ui/portraits/shion.png", 22, "rahabar"),
+		"alden": _character_entry("Alden", "res://assets/ui/portraits/alden.png", 24, "altagrave"),
+		"devlin": _character_entry("Devlin", "res://assets/ui/portraits/devlin.png", 19, "snow_soldier"),
+		"barlow": _character_entry("Barlow", "res://assets/ui/portraits/barlow.png", 14, "ratatosk"),
 	}
 
 
@@ -305,6 +323,8 @@ func reset_campaign() -> void:
 	mission_4_complete = false
 	mission_5_complete = false
 	mission_5_result = ""
+	mission_6_complete = false
+	kingdom_alliance = ""
 	southern_route_pending = false
 	prison_seen = false
 	story_branch = ""
@@ -333,6 +353,8 @@ func save_game() -> bool:
 		"mission_4_complete": mission_4_complete,
 		"mission_5_complete": mission_5_complete,
 		"mission_5_result": mission_5_result,
+		"mission_6_complete": mission_6_complete,
+		"kingdom_alliance": kingdom_alliance,
 		"southern_route_pending": southern_route_pending,
 		"prison_seen": prison_seen,
 		"story_branch": story_branch,
@@ -371,6 +393,8 @@ func load_game() -> bool:
 	mission_4_complete = bool(data.get("mission_4_complete", false))
 	mission_5_complete = bool(data.get("mission_5_complete", false))
 	mission_5_result = str(data.get("mission_5_result", ""))
+	mission_6_complete = bool(data.get("mission_6_complete", false))
+	kingdom_alliance = str(data.get("kingdom_alliance", ""))
 	southern_route_pending = bool(data.get("southern_route_pending", false))
 	prison_seen = bool(data.get("prison_seen", false))
 	story_branch = str(data.get("story_branch", ""))
@@ -443,7 +467,7 @@ func _migrate_story_state(loaded_version: int) -> void:
 		kamorge_alive = false
 		kamorge_lost_atac = true
 		partisans_joined = true
-		current_mission = maxi(current_mission, 5)
+		current_mission = maxi(current_mission, 6)
 	elif story_branch == "seek_southern_aid":
 		kamorge_alive = true
 		kamorge_lost_atac = true
@@ -518,8 +542,8 @@ func _award_mission_completion_once(mission_id: int) -> Dictionary:
 
 
 func prepare_mission_for_test(mission_id: int, forced_branch: String = "") -> void:
-	var safe_mission: int = clampi(mission_id, 1, 5)
-	test_forced_branch = forced_branch if forced_branch in ["stay_and_fight", "seek_southern_aid", "defend_castle", "leave_castle"] else ""
+	var safe_mission: int = clampi(mission_id, 1, 6)
+	test_forced_branch = forced_branch if forced_branch in ["stay_and_fight", "seek_southern_aid", "defend_castle", "leave_castle", "south", "north"] else ""
 	if safe_mission >= 2:
 		mission_1_complete = true
 		unlock_character("kamorge")
@@ -575,6 +599,22 @@ func prepare_mission_for_test(mission_id: int, forced_branch: String = "") -> vo
 		var kamorge_data_five: Dictionary = characters["kamorge"] as Dictionary
 		kamorge_data_five["atac"] = "eigol"
 		characters["kamorge"] = kamorge_data_five
+	if safe_mission == 6:
+		mission_3_complete = true
+		mission_4_complete = false
+		mission_5_complete = false
+		mission_6_complete = false
+		story_branch = "stay_and_fight"
+		kamorge_alive = false
+		kamorge_lost_atac = true
+		partisans_joined = true
+		shop_unlocked = true
+		kingdom_alliance = ""
+		mark_character_unavailable("kamorge")
+		for character_id: String in ["bastion", "andrew", "ione", "reyna", "zeira"]:
+			unlock_character(character_id)
+		for atac_id: String in ["alba", "vedocorban", "amphisia", "haurol", "toreadore"]:
+			unlock_atac(atac_id)
 	current_mission = safe_mission
 	save_game()
 
@@ -605,6 +645,13 @@ func _rebuild_unlocks_from_progress() -> void:
 	if mission_5_complete and mission_5_result == "castle_defended":
 		shop_unlocked = true
 		for atac_id: String in ["sylpheed", "korbelan"]:
+			unlock_atac(atac_id)
+	if mission_6_complete:
+		var alliance_characters: Array[String] = ["logan", "claire", "shion"] if kingdom_alliance == "south" else ["alden", "devlin", "barlow"]
+		var alliance_atacs: Array[String] = ["crimson", "rahabar"] if kingdom_alliance == "south" else ["altagrave", "snow_soldier", "ratatosk"]
+		for character_id: String in alliance_characters:
+			unlock_character(character_id)
+		for atac_id: String in alliance_atacs:
 			unlock_atac(atac_id)
 	if not kamorge_alive:
 		mark_character_unavailable("kamorge")
@@ -644,6 +691,7 @@ func complete_mission(mission_id: int, branch: String = "") -> Dictionary:
 			for atac_id: String in ["amphisia", "haurol", "toreadore"]:
 				_remove_atac(atac_id)
 		elif story_branch == "stay_and_fight":
+			current_mission = 6
 			kamorge_alive = false
 			partisans_joined = true
 			mark_character_unavailable("kamorge")
@@ -673,6 +721,17 @@ func complete_mission(mission_id: int, branch: String = "") -> Dictionary:
 		if mission_5_result == "castle_defended":
 			for atac_id: String in ["sylpheed", "korbelan"]:
 				unlock_atac(atac_id)
+	elif mission_id == 6:
+		mission_6_complete = true
+		kingdom_alliance = branch if branch in ["south", "north"] else "south"
+		current_mission = 7
+		var chosen_characters: Array[String] = ["logan", "claire", "shion"] if kingdom_alliance == "south" else ["alden", "devlin", "barlow"]
+		var chosen_atacs: Array[String] = ["crimson", "rahabar"] if kingdom_alliance == "south" else ["altagrave", "snow_soldier", "ratatosk"]
+		for character_id: String in chosen_characters:
+			unlock_character(character_id)
+		for atac_id: String in chosen_atacs:
+			unlock_atac(atac_id)
+
 	save_game()
 	return coin_result
 
@@ -850,7 +909,8 @@ func toggle_arena_battles() -> bool:
 
 
 func is_shop_available() -> bool:
-	return shop_unlocked or mission_3_complete
+	# The common store is always visible once the hub can be opened.
+	return true
 
 
 func is_item_available(item_id: String) -> bool:
