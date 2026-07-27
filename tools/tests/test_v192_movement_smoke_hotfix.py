@@ -15,7 +15,7 @@ class V192MovementSmokeHotfixTests(unittest.TestCase):
         self.assertNotIn("_initialise_fixture_fallback", text)
 
     def test_project_version(self):
-        self.assertIn('config/version="1.9.5"', PROJECT.read_text(encoding="utf-8"))
+        self.assertIn('config/version="1.9.6"', PROJECT.read_text(encoding="utf-8"))
 
 if __name__ == "__main__":
     unittest.main()

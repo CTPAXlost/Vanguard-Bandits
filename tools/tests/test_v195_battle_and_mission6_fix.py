@@ -71,7 +71,7 @@ class V195BattleAndMission6FixTests(unittest.TestCase):
 
     def test_version(self):
         project = (PROJECT / "project.godot").read_text(encoding="utf-8")
-        self.assertIn('config/version="1.9.5"', project)
+        self.assertIn('config/version="1.9.6"', project)
 
 if __name__ == "__main__":
     unittest.main()

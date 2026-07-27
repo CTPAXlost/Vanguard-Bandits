@@ -1,8 +1,8 @@
-# Vanguard Bandits Remaster 1.9.5
+# Vanguard Bandits Remaster 1.9.6
 
 Закрытый фанатский прототип тактической RPG на Godot 4.6.3 для Windows.
 
-## Главное в версии 1.9.5
+## Главное в версии 1.9.6
 
 ### Глава V
 

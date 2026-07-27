@@ -123,10 +123,14 @@ func _ready() -> void:
 	status_label.text = "Загрузка ATAC..."
 	_spawn_mission_units()
 	battle_initialized = player_unit != null and is_instance_valid(player_unit) and not units.is_empty()
+	# battle_prototype.gd is the base class; mission_number is declared only by
+	# campaign_battle.gd. Referencing that subclass member here made the base
+	# script fail to parse and broke the entire v19 -> v18 -> ... inheritance chain.
+	var ready_mission: int = int(CampaignState.current_mission)
 	if battle_initialized:
-		print("BATTLE_READY_OK mission=%d units=%d" % [mission_number, units.size()])
+		print("BATTLE_READY_OK mission=%d units=%d" % [ready_mission, units.size()])
 	else:
-		push_error("BATTLE_READY_FAILED mission=%d units=%d player=%s" % [mission_number, units.size(), str(player_unit)])
+		push_error("BATTLE_READY_FAILED mission=%d units=%d player=%s" % [ready_mission, units.size(), str(player_unit)])
 	_begin_player_turn()
 
 

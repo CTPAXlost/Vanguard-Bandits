@@ -1,0 +1,11 @@
+Vanguard Bandits Remaster 1.9.6
+
+Исправлена реальная причина падения GitHub runtime-smoke:
+- battle_prototype.gd (базовый класс) обращался к mission_number, который объявлен только в наследнике campaign_battle.gd;
+- из-за этого не компилировался базовый скрипт, а Godot показывал вторичную ошибку «Could not resolve class campaign_battle_v18.gd»;
+- вывод BATTLE_READY теперь использует CampaignState.current_mission и не зависит от поля наследника.
+
+Добавлена отдельная строгая проверка всей цепочки боевых скриптов:
+battle_prototype -> campaign_battle -> v08 -> v12 -> v18 -> v19.
+
+Сохранены все изменения 1.9.5: миссии I–VI, обе стороны войны Севера и Юга, магазин, открытые проходы замка, новые персонажи, ATAC, атаки и подкрепление Юга.

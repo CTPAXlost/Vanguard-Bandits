@@ -1,0 +1,12 @@
+Vanguard Bandits Remaster 1.9.6 — проверка исправления загрузки боя
+
+Причина падения GitHub Actions из logs_82015792876.zip:
+- BattlePrototype загружал campaign_battle_v19.gd.
+- Цепочка наследования не компилировалась и Godot сообщал, что не может разрешить campaign_battle_v18.gd.
+- Настоящая ошибка находилась в базовом battle_prototype.gd: базовый класс обращался к mission_number, объявленному только в дочернем campaign_battle.gd.
+
+Исправление:
+- диагностический BATTLE_READY использует CampaignState.current_mission и больше не зависит от поля дочернего класса;
+- добавлен отдельный обязательный runtime parse-smoke всей цепочки battle_prototype -> campaign_battle -> v08 -> v12 -> v18 -> v19;
+- оба GitHub workflow запускают эту проверку до загрузки BattlePrototype.tscn;
+- continue-on-error не используется.

@@ -206,3 +206,8 @@
 - Added keyboard-facing controls, a target list, and safe move undo.
 - Unified tactical attack presentation for player, allied AI, enemy AI, and counterattacks.
 - Added per-skill color, focus, impact, and particle presentation while preserving unique skill effects.
+
+## 1.9.6 — Исправление цепочки загрузки боя
+- Убрано обращение базового `battle_prototype.gd` к полю `mission_number`, объявленному только в наследнике.
+- Исправлен parse error всей цепочки `campaign_battle_v19 -> v18 -> v12 -> v08`.
+- Добавлен обязательный `script_chain_smoke` для прямой компиляции всех слоёв боя до запуска сцен.

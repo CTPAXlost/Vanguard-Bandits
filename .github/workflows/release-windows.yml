@@ -92,6 +92,22 @@ jobs:
           GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
           "$GODOT" --headless --path project --import --quit-after 300
 
+      - name: Runtime parse test for battle script chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project --script res://scripts/script_chain_smoke.gd 2>&1 | tee script-chain-smoke.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|SCRIPT_CHAIN_SMOKE_FAILED" script-chain-smoke.log; then
+            echo "Battle script chain failed to compile." >&2
+            exit 1
+          fi
+          grep -q "SCRIPT_CHAIN_SMOKE_OK layers=6" script-chain-smoke.log
+          exit "$STATUS"
+
       - name: Runtime smoke test for battle scene
         shell: bash
         run: |
