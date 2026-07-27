@@ -47,7 +47,7 @@ class V196ScriptChainFixTests(unittest.TestCase):
 
     def test_version(self):
         text = (PROJECT / "project.godot").read_text(encoding="utf-8")
-        self.assertIn('config/version="1.9.10"', text)
+        self.assertIn('config/version="1.9.11"', text)
 
 
 if __name__ == "__main__":

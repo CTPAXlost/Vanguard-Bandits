@@ -285,6 +285,17 @@ func _start_next_mission() -> void:
 	get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
 
 
+func _save_progress() -> void:
+	CampaignState.save_game()
+	_set_status("Прогресс кампании сохранён.")
+
+
+func _open_characters() -> void:
+	character_panel.visible = true
+	_populate_characters()
+	_set_status("Открыта настройка персонажей и ATAC.")
+
+
 func _open_shop() -> void:
 	if not CampaignState.is_shop_available():
 		status_label.text = "Магазин ещё закрыт."

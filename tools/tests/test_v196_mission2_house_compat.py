@@ -42,7 +42,7 @@ def test_all_house_records_have_a_supported_shape() -> None:
 
 def test_release_version_is_196() -> None:
     project = (PROJECT / "project.godot").read_text(encoding="utf-8")
-    assert 'config/version="1.9.10"' in project
+    assert 'config/version="1.9.11"' in project
 
 
 def load_tests(loader: unittest.TestLoader, tests: unittest.TestSuite, pattern: str | None) -> unittest.TestSuite:

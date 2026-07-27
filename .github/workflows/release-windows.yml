@@ -101,6 +101,25 @@ jobs:
           exit "$STATUS"
 
 
+      - name: Compile every GDScript through Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT="godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64"
+          set +e
+          "$GODOT" --headless --path project res://scenes/AllScriptsCompileSmoke.tscn --quit-after 1800 2>&1 | tee all-scripts-compile.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if [ "$STATUS" -ne 0 ]; then
+            echo "Godot could not compile every GDScript." >&2
+            exit "$STATUS"
+          fi
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid access|Failed to load script|Compilation failed|ALL_GDSCRIPT_COMPILE_FAILED" all-scripts-compile.log; then
+            echo "Full GDScript compilation found a blocking error." >&2
+            exit 1
+          fi
+          grep -Fq "ALL_GDSCRIPT_COMPILE_OK" all-scripts-compile.log
+
       - name: Blocking boot smoke for missions 1-6
         shell: bash
         run: |

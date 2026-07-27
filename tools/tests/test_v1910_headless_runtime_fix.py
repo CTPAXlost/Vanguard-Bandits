@@ -12,7 +12,7 @@ def read(relative: str) -> str:
 
 class V1910HeadlessRuntimeFixTests(unittest.TestCase):
     def test_release_version_is_1910(self) -> None:
-        self.assertIn('config/version="1.9.10"', read("project/project.godot"))
+        self.assertIn('config/version="1.9.11"', read("project/project.godot"))
 
     def test_headless_detection_uses_display_server_not_os_feature(self) -> None:
         v18 = read("project/scripts/campaign_battle_v18.gd")
