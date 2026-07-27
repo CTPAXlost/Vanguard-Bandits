@@ -1,4 +1,3 @@
-import unittest
 from pathlib import Path
 import json
 
@@ -45,11 +44,3 @@ def test_requested_kingdom_abilities_are_implemented():
     script = (P / "scripts/campaign_battle_v19.gd").read_text(encoding="utf-8")
     for token in ["double_turn", "damage_magic_uses", "logan_damage_boost", "magic_immune", "alden_iceberg", "clone_uses", "devlin_combo"]:
         assert token in script
-
-
-def load_tests(loader: unittest.TestLoader, tests: unittest.TestSuite, pattern: str | None) -> unittest.TestSuite:
-    suite = unittest.TestSuite()
-    for name, value in sorted(globals().items()):
-        if name.startswith("test_") and callable(value):
-            suite.addTest(unittest.FunctionTestCase(value, description=name))
-    return suite

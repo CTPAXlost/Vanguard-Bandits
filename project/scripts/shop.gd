@@ -156,9 +156,13 @@ func _refresh_items() -> void:
 	var previous: String = selected_item_id
 	item_list.clear()
 	item_ids.clear()
-	for item_id_value: Variant in CampaignState.SHOP_ITEMS.keys():
+	var catalog_ids: Array = CampaignState.SHOP_ITEMS.keys()
+	catalog_ids.sort()
+	for item_id_value: Variant in catalog_ids:
 		var item_id: String = str(item_id_value)
-		if not CampaignState.is_item_available(item_id) and CampaignState.get_inventory_count(item_id) <= 0:
+		var catalog_entry_available: bool = CampaignState.is_item_available(item_id)
+		if not catalog_entry_available:
+			push_error("SHOP_CATALOG_FAILED: unknown item %s" % item_id)
 			continue
 		var data: Dictionary = CampaignState.SHOP_ITEMS[item_id] as Dictionary
 		var owned: int = CampaignState.get_inventory_count(item_id)
@@ -169,7 +173,12 @@ func _refresh_items() -> void:
 		item_ids.append(item_id)
 	if item_ids.is_empty():
 		message_label.text = "Ошибка каталога: предметы не загрузились."
+		push_error("SHOP_CATALOG_FAILED: catalog is empty")
 		return
+	if item_ids.size() != CampaignState.SHOP_ITEMS.size():
+		push_error("SHOP_CATALOG_FAILED: shown=%d expected=%d" % [item_ids.size(), CampaignState.SHOP_ITEMS.size()])
+		return
+	print("SHOP_CATALOG_OK items=%d" % item_ids.size())
 	var index: int = item_ids.find(previous)
 	if index < 0:
 		index = 0

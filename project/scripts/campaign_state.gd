@@ -1,7 +1,7 @@
 extends Node
 
 const SAVE_PATH: String = "user://vanguard_campaign_save.json"
-const SAVE_VERSION: int = 20
+const SAVE_VERSION: int = 19
 const MISSION_COMPLETION_REWARDS: Dictionary = {
 	1: 200,
 	2: 300,
@@ -473,10 +473,7 @@ func _migrate_story_state(loaded_version: int) -> void:
 		kamorge_lost_atac = true
 		partisans_joined = mission_4_complete
 		if mission_5_complete:
-			# Mission VI belongs only to the branch where Kamorge died.
-			# The surviving-Kamorge route remains at its completed chapter until its
-			# own continuation is implemented.
-			current_mission = 5
+			current_mission = maxi(current_mission, 6)
 		else:
 			current_mission = 5 if mission_4_complete else 4
 		shop_unlocked = true
@@ -719,8 +716,7 @@ func complete_mission(mission_id: int, branch: String = "") -> Dictionary:
 		mission_5_complete = true
 		mission_5_result = branch if branch in ["castle_defended", "castle_lost", "left_castle"] else "castle_lost"
 		southern_route_pending = mission_5_result != "castle_defended"
-		# Do not route the surviving-Kamorge storyline into Mission VI.
-		current_mission = 5
+		current_mission = 6
 		shop_unlocked = true
 		if mission_5_result == "castle_defended":
 			for atac_id: String in ["sylpheed", "korbelan"]:

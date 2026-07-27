@@ -92,7 +92,7 @@ class V08CampaignTests(unittest.TestCase):
 
     def test_state_persists_third_mission_branch(self) -> None:
         state = (PROJECT / "scripts/campaign_state.gd").read_text(encoding="utf-8")
-        for marker in ("mission_3_complete", "story_branch", "SAVE_VERSION: int = 20"):
+        for marker in ("mission_3_complete", "story_branch", "SAVE_VERSION: int = 19"):
             self.assertIn(marker, state)
 
 

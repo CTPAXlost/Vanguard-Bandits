@@ -251,17 +251,8 @@ const ATTACKS: Dictionary = {
 	"ice_punch": {"label":"Ледяной удар кулаком","fatigue":0,"energy":15,"range":1,"multiplier":1.35,"animation":"shoulder_bash"},
 	"ice_kick": {"label":"Удар ледяной ногой","fatigue":0,"energy":25,"range":1,"multiplier":1.65,"animation":"strong_slash"},
 	"devlin_combo": {"label":"Комбо","fatigue":0,"energy":50,"range":3,"range_mode":"up_to","multiplier":3.45,"animation":"bright_bomb","unblockable":true},
-	"iceberg": {"label":"Айсберг","fatigue":0,"energy":50,"range":5,"range_mode":"up_to","multiplier":2.20,"animation":"ice_rain","magic":true},
 
 }
-
-const MAGIC_ATTACKS: Array[String] = [
-	"ball_lightning", "bright_bomb", "fire_rain", "earthquake",
-	"desert_whirl", "quicksand", "desert_storm", "sticky_sandstorm",
-	"healing_ban", "ice_rain", "ultrasound", "sound_strike",
-	"wind_strike", "incinerate", "force_field_throw", "evil_heart",
-	"frost", "storm_vortex", "iceberg",
-]
 
 const LOADOUTS: Dictionary = {
 	"bastion": ["slash", "lunge", "long_lunge"],
@@ -312,7 +303,7 @@ const LOADOUTS: Dictionary = {
 	"claire_rahabar": ["slash","lunge","strong_slash","ball_lightning"],
 	"shion_rahabar": ["slash","lunge","strong_slash","ball_lightning","bright_bomb"],
 	"nordilian_rahabar": ["slash","lunge","strong_slash","ball_lightning"],
-	"alden_altagrave": ["slash","lunge","long_lunge","strong_slash","frost","ice_rain","iceberg","storm_vortex"],
+	"alden_altagrave": ["slash","lunge","long_lunge","strong_slash","frost","ice_rain","storm_vortex"],
 	"devlin_snow_soldier": ["shot","precise_shot","rocket_shot","ice_punch","ice_kick","devlin_combo","frost"],
 	"barlow_ratatosk": ["slash","lunge","long_lunge","strong_slash","shoulder_bash","ice_rain","frost"],
 	"matisse_ratatosk": ["slash","lunge","strong_slash","shoulder_bash"],
@@ -343,11 +334,6 @@ static func attacks_for(unit: Node3D) -> Array[String]:
 		result.append(str(value))
 	return result
 
-
-
-
-static func is_magic(mode: String) -> bool:
-	return MAGIC_ATTACKS.has(mode) or bool(attack(mode).get("magic", false))
 
 static func resource_cost(mode: String, counterattack: bool = false) -> Dictionary:
 	var data: Dictionary = attack(mode)

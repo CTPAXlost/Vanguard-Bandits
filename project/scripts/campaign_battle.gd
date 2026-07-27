@@ -16,9 +16,7 @@ var andrew_joined: bool = false
 
 func _ready() -> void:
 	mission_number = maxi(1, CampaignState.current_mission)
-	# Every inherited campaign layer must finish booting before mission-specific
-	# dialogue or turn logic continues. Several chapters use awaited intros.
-	await super._ready()
+	super._ready()
 	if mission_number == 2:
 		action_in_progress = true
 		phase = Phase.DIALOGUE

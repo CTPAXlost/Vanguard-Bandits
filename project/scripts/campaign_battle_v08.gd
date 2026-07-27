@@ -69,7 +69,7 @@ func _ready() -> void:
 	mission_four_intro_pending = CampaignState.current_mission == 4
 	_build_v08_interface()
 	battle_arena = null
-	await super._ready()
+	super._ready()
 	ability_button.visible = false
 	defend_button.visible = false
 	dodge_button.visible = false

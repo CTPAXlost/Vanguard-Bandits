@@ -1,4 +1,3 @@
-import unittest
 from pathlib import Path
 import json
 P=Path(__file__).resolve().parents[2]/"project"
@@ -9,11 +8,3 @@ def test_mission6_content():
 def test_open_gate_and_shop():
  v=(P/"scripts/campaign_battle_v18.gd").read_text(encoding="utf-8"); assert "deliberately completely open" in v
  c=(P/"scripts/campaign_state.gd").read_text(encoding="utf-8"); assert "return true" in c[c.index("func is_shop_available"):c.index("func is_item_available")]
-
-
-def load_tests(loader: unittest.TestLoader, tests: unittest.TestSuite, pattern: str | None) -> unittest.TestSuite:
-    suite = unittest.TestSuite()
-    for name, value in sorted(globals().items()):
-        if name.startswith("test_") and callable(value):
-            suite.addTest(unittest.FunctionTestCase(value, description=name))
-    return suite

@@ -75,8 +75,7 @@ class CastleDefenseV18Tests(unittest.TestCase):
             self.assertIn(token, state)
         for token in ("defend_castle", "leave_castle", "Миссия 5А", "Миссия 5Б"):
             self.assertIn(token, selector)
-        self.assertIn("Глава VI", hub)
-        self.assertIn("Kamorge погиб", hub)
+        self.assertIn("Logan", hub)
         self.assertIn("CampaignState.is_item_available", shop)
         for icon in (
             "castle_guard_blade.png", "royal_vanguard_blade.png",

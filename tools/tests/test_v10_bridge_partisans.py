@@ -25,7 +25,7 @@ class V10BridgePartisanTests(unittest.TestCase):
     def test_state_version_levels_and_unlocks(self) -> None:
         state = (PROJECT / "scripts/campaign_state.gd").read_text(encoding="utf-8")
         for marker in (
-            "SAVE_VERSION: int = 20",
+            "SAVE_VERSION: int = 19",
             '"ione"',
             '"reyna"',
             '"zeira"',
