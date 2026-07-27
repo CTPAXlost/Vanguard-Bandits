@@ -98,9 +98,9 @@ class V195BattleAndMission6FixTests(unittest.TestCase):
     def test_version(self):
         project = (PROJECT / "project.godot").read_text(encoding="utf-8")
         presets = (PROJECT / "export_presets.cfg").read_text(encoding="utf-8")
-        self.assertIn('config/version="1.9.13"', project)
-        self.assertEqual(presets.count('application/file_version="1.9.13.0"'), 2)
-        self.assertEqual(presets.count('application/product_version="1.9.13.0"'), 2)
+        self.assertIn('config/version="1.9.14"', project)
+        self.assertEqual(presets.count('application/file_version="1.9.14.0"'), 2)
+        self.assertEqual(presets.count('application/product_version="1.9.14.0"'), 2)
 
 
 if __name__ == "__main__":

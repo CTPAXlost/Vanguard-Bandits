@@ -11,7 +11,7 @@ def read(relative: str) -> str:
 
 
 def test_release_version_is_198() -> None:
-    assert 'config/version="1.9.13"' in read("project/project.godot")
+    assert 'config/version="1.9.14"' in read("project/project.godot")
 
 
 def test_mission_six_finalizer_is_independent_from_parent_ready_completion() -> None:

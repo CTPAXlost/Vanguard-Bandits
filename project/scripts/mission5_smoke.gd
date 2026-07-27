@@ -56,10 +56,11 @@ func _run() -> void:
 		return
 	var blocked_value: Dictionary = battle.get("blocked_cells") as Dictionary
 	for gate_x: int in [10, 22]:
-		for gate_z: int in [7, 8, 9, 10]:
-			if blocked_value.has(Vector2i(gate_x, gate_z)):
-				_fail("castle passage contains a blocked gate cell")
-				return
+		for corridor_x: int in range(gate_x - 1, gate_x + 2):
+			for gate_z: int in [6, 7, 8, 9, 10, 11]:
+				if blocked_value.has(Vector2i(corridor_x, gate_z)):
+					_fail("castle passage contains a blocked corridor cell")
+					return
 	print("MISSION5_DEFENSE_SMOKE_OK")
 	print("MISSION5_NEUTRAL_GROUP_SMOKE_OK")
 	print("MISSION5_NEUTRAL_POSITION_SMOKE_OK")

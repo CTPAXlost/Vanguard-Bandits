@@ -9,11 +9,12 @@ PROJECT = ROOT / "project"
 class V185CastleHotfixTests(unittest.TestCase):
     def test_gate_is_wide_and_cells_are_passable(self):
         data = json.loads((PROJECT / "data/maps/mission_05.json").read_text(encoding="utf-8"))
-        self.assertEqual(data["castle"]["gate_z"], [7, 8, 9, 10])
+        self.assertEqual(data["castle"]["gate_z"], [6, 7, 8, 9, 10, 11])
         blocked = {tuple(cell) for cell in data["blocked_cells"]}
-        for x in (data["castle"]["west_wall_x"], data["castle"]["east_wall_x"]):
-            for z in data["castle"]["gate_z"]:
-                self.assertNotIn((x, z), blocked)
+        for wall_x in (data["castle"]["west_wall_x"], data["castle"]["east_wall_x"]):
+            for x in range(wall_x - 1, wall_x + 2):
+                for z in data["castle"]["gate_z"]:
+                    self.assertNotIn((x, z), blocked)
         source = (PROJECT / "scripts/campaign_battle_v18.gd").read_text(encoding="utf-8")
         self.assertIn("deliberately completely open", source)
         self.assertNotIn("OpenGateLeafLeft", source)

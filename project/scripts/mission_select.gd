@@ -4,6 +4,7 @@ const BATTLE_SCENE: String = "res://scenes/BattlePrototype.tscn"
 
 var wallet_label: Label
 var details_label: Label
+var mission_button_count: int = 0
 
 
 func _ready() -> void:
@@ -17,21 +18,36 @@ func _build_interface() -> void:
 	background.color = Color(0.025, 0.045, 0.075)
 	add_child(background)
 
-	var center: CenterContainer = CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+	var safe_margin: MarginContainer = MarginContainer.new()
+	safe_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	safe_margin.add_theme_constant_override("margin_left", 24)
+	safe_margin.add_theme_constant_override("margin_right", 24)
+	safe_margin.add_theme_constant_override("margin_top", 20)
+	safe_margin.add_theme_constant_override("margin_bottom", 20)
+	add_child(safe_margin)
 	var panel: PanelContainer = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(1100, 980)
-	center.add_child(panel)
-	var margin: MarginContainer = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 44)
-	margin.add_theme_constant_override("margin_right", 44)
-	margin.add_theme_constant_override("margin_top", 34)
-	margin.add_theme_constant_override("margin_bottom", 34)
-	panel.add_child(margin)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.custom_minimum_size = Vector2(760, 560)
+	safe_margin.add_child(panel)
+	var panel_margin: MarginContainer = MarginContainer.new()
+	panel_margin.add_theme_constant_override("margin_left", 26)
+	panel_margin.add_theme_constant_override("margin_right", 26)
+	panel_margin.add_theme_constant_override("margin_top", 22)
+	panel_margin.add_theme_constant_override("margin_bottom", 22)
+	panel.add_child(panel_margin)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.name = "MissionScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel_margin.add_child(scroll)
 	var box: VBoxContainer = VBoxContainer.new()
+	box.name = "MissionList"
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 13)
-	margin.add_child(box)
+	scroll.add_child(box)
 
 	var title: Label = Label.new()
 	title.text = "ВЫБОР МИССИИ — РЕЖИМ ТЕСТИРОВАНИЯ"
@@ -132,12 +148,15 @@ func _build_interface() -> void:
 	back.custom_minimum_size = Vector2(0, 50)
 	back.pressed.connect(_go_back)
 	box.add_child(back)
+	print("MISSION_SELECT_OK buttons=%d scroll=true" % mission_button_count)
 
 
 func _add_mission_button(parent: VBoxContainer, title: String, description: String, mission_id: int, forced_branch: String) -> void:
+	mission_button_count += 1
 	var button: Button = Button.new()
 	button.text = "%s\n%s" % [title, description]
-	button.custom_minimum_size = Vector2(0, 105)
+	button.custom_minimum_size = Vector2(0, 94)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.pressed.connect(func(): _launch_mission(mission_id, forced_branch))
 	parent.add_child(button)

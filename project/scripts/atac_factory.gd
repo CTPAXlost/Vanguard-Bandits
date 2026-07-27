@@ -4,6 +4,9 @@ extends RefCounted
 const MultiViewAtac = preload("res://scripts/multiview_atac.gd")
 const RealModelAtac = preload("res://scripts/real_model_atac.gd")
 const SkeletalAtac = preload("res://scripts/skeletal_atac.gd")
+const FULL_BODY_TACTICAL_SLUGS: Array[String] = [
+	"crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk",
+]
 
 
 static func create_atac(slug: String, render_context: String = "auto") -> Node3D:
@@ -12,6 +15,10 @@ static func create_atac(slug: String, render_context: String = "auto") -> Node3D
 	# segmented into articulated layers on a real Skeleton3D. The guarded
 	# multiview fallback remains only for unknown slugs.
 	if render_context == "tactical":
+		# Mission-VI machines use clean, transparent full-body views. Their former
+		# segmented rigs visibly cut shoulders, legs and weapons into floating parts.
+		if normalized in FULL_BODY_TACTICAL_SLUGS:
+			return _create_multiview(normalized)
 		if SkeletalAtac.supports(normalized):
 			var skeletal_root: SkeletalAtac = SkeletalAtac.new()
 			skeletal_root.configure(normalized)

@@ -63,7 +63,7 @@ func _check_branch(branch: String) -> void:
 	var labels: Dictionary = {}
 	var south_count: int = 0
 	var north_count: int = 0
-	var new_rigs: int = 0
+	var full_body_rigs: int = 0
 	for value: Variant in units:
 		var unit: Node3D = value as Node3D
 		if unit == null:
@@ -77,13 +77,13 @@ func _check_branch(branch: String) -> void:
 		var slug: String = str(unit.get_meta("model_slug", ""))
 		if slug in ["crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk"]:
 			var visual: Node3D = unit.get_node_or_null("ATACVisual") as Node3D
-			if visual != null and bool(visual.get_meta("real_skeleton", false)):
-				new_rigs += 1
+			if visual != null and bool(visual.get_meta("multiview_2_5d", false)):
+				full_body_rigs += 1
 	if south_count != 6 or north_count != 6:
 		_fail("kingdom bot composition is incomplete: south=%d north=%d" % [south_count, north_count])
 		return
-	if new_rigs < 17:
-		_fail("new kingdom ATACs are not using articulated skins: %d/17" % new_rigs)
+	if full_body_rigs != 18:
+		_fail("kingdom ATACs are not using complete full-body views: %d/18" % full_body_rigs)
 		return
 	for required: String in ["Logan / Crimson", "Claire / Rahabor", "Shion / Rahabor", "Alden / Altagrave", "Devlin / Snow Soldier", "Barlow / Ratatosk"]:
 		if not labels.has(required):

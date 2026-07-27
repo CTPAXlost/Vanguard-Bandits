@@ -1,6 +1,22 @@
 extends Control
 
+const SHOP_ICONS: Dictionary = {
+	"steel_sword_i": preload("res://assets/ui/shop/steel_sword_i.png"),
+	"improved_sword_ii": preload("res://assets/ui/shop/improved_sword_ii.png"),
+	"royal_sword_iii": preload("res://assets/ui/shop/royal_sword_iii.png"),
+	"copper_amulet": preload("res://assets/ui/shop/copper_amulet.png"),
+	"unity_amulet": preload("res://assets/ui/shop/unity_amulet.png"),
+	"opal_skill_stone": preload("res://assets/ui/shop/opal_skill_stone.png"),
+	"castle_guard_blade": preload("res://assets/ui/shop/castle_guard_blade.png"),
+	"royal_vanguard_blade": preload("res://assets/ui/shop/royal_vanguard_blade.png"),
+	"castle_oath_amulet": preload("res://assets/ui/shop/castle_oath_amulet.png"),
+	"wind_guard_amulet": preload("res://assets/ui/shop/wind_guard_amulet.png"),
+	"ruby_skill_stone": preload("res://assets/ui/shop/ruby_skill_stone.png"),
+	"sapphire_skill_stone": preload("res://assets/ui/shop/sapphire_skill_stone.png"),
+}
+
 var wallet_label: Label
+var stock_title: Label
 var item_list: ItemList
 var details_label: Label
 var item_preview: TextureRect
@@ -60,8 +76,8 @@ func _build_interface() -> void:
 	left.custom_minimum_size = Vector2(510, 0)
 	left.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	columns.add_child(left)
-	var stock_title: Label = Label.new()
-	stock_title.text = "Товары и общий склад"
+	stock_title = Label.new()
+	stock_title.text = "Товары и общий склад — 12 позиций"
 	stock_title.add_theme_font_size_override("font_size", 23)
 	left.add_child(stock_title)
 	item_list = ItemList.new()
@@ -168,7 +184,9 @@ func _refresh_items() -> void:
 		var owned: int = CampaignState.get_inventory_count(item_id)
 		var buy_text: String = "%d монет" % int(data.get("price", 0)) if bool(data.get("buyable", true)) else "только продажа"
 		var icon_path: String = str(data.get("icon", ""))
-		var icon: Texture2D = (load(icon_path) as Texture2D) if not icon_path.is_empty() else null
+		var icon: Texture2D = SHOP_ICONS.get(item_id, null) as Texture2D
+		if icon == null and not icon_path.is_empty():
+			push_error("SHOP_CATALOG_FAILED: icon is not preloaded for %s" % item_id)
 		item_list.add_item("%s — %s • склад: %d" % [str(data.get("name", item_id)), buy_text, owned], icon)
 		item_ids.append(item_id)
 	if item_ids.is_empty():
@@ -178,6 +196,10 @@ func _refresh_items() -> void:
 	if item_ids.size() != CampaignState.SHOP_ITEMS.size():
 		push_error("SHOP_CATALOG_FAILED: shown=%d expected=%d" % [item_ids.size(), CampaignState.SHOP_ITEMS.size()])
 		return
+	stock_title.text = "Товары и общий склад — %d позиций" % item_ids.size()
+	if message_label.text.is_empty():
+		message_label.text = "Все предметы загружены: изображения, цена и количество на складе отображаются в каталоге."
+		message_label.modulate = Color(0.62, 0.90, 1.0)
 	print("SHOP_CATALOG_OK items=%d" % item_ids.size())
 	var index: int = item_ids.find(previous)
 	if index < 0:
@@ -209,7 +231,9 @@ func _on_item_selected(index: int) -> void:
 	selected_item_id = item_ids[index]
 	var data: Dictionary = CampaignState.SHOP_ITEMS[selected_item_id] as Dictionary
 	var icon_path: String = str(data.get("icon", ""))
-	item_preview.texture = (load(icon_path) as Texture2D) if not icon_path.is_empty() else null
+	item_preview.texture = SHOP_ICONS.get(selected_item_id, null) as Texture2D
+	if item_preview.texture == null and not icon_path.is_empty():
+		push_error("SHOP_CATALOG_FAILED: preview icon is missing for %s" % selected_item_id)
 	details_label.text = "%s\n\nЦена продажи: %d монет." % [str(data.get("description", "")), CampaignState.get_sell_price(selected_item_id)]
 	inventory_label.text = "Свободно на общем складе: %d" % CampaignState.get_inventory_count(selected_item_id)
 

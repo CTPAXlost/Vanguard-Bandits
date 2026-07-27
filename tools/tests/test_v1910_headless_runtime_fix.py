@@ -12,7 +12,7 @@ def read(relative: str) -> str:
 
 class V1910HeadlessRuntimeFixTests(unittest.TestCase):
     def test_release_version_is_1910(self) -> None:
-        self.assertIn('config/version="1.9.13"', read("project/project.godot"))
+        self.assertIn('config/version="1.9.14"', read("project/project.godot"))
 
     def test_headless_detection_uses_display_server_not_os_feature(self) -> None:
         v18 = read("project/scripts/campaign_battle_v18.gd")
@@ -20,14 +20,15 @@ class V1910HeadlessRuntimeFixTests(unittest.TestCase):
         self.assertNotIn('OS.has_feature("headless")', v18 + v19)
         self.assertIn('DisplayServer.get_name().to_lower() == "headless"', v18)
         self.assertIn('OS.get_environment("VBR_SMOKE_MISSION") != ""', v18)
-        self.assertIn('CampaignState.test_forced_branch != ""', v18)
+        detection = v18[v18.index("func _is_headless_or_smoke_runtime") : v18.index("func _ready")]
+        self.assertNotIn("test_forced_branch", detection)
 
     def test_mission_six_automated_boot_skips_all_ui_waits(self) -> None:
         script = read("project/scripts/campaign_battle_v19.gd")
         finalizer = script[script.index("func _finalize_mission_six_boot") : script.index("func _load_first_mission")]
         self.assertIn("if not _is_headless_or_smoke_runtime():", finalizer)
         self.assertIn("else:", finalizer)
-        self.assertIn('kingdom_choice = CampaignState.test_forced_branch', finalizer)
+        self.assertIn('kingdom_choice = mission_six_forced_choice', finalizer)
         self.assertIn('MISSION6_BOOT_FINALIZED branch=%s', finalizer)
         self.assertLess(finalizer.index("mission_six_intro_pending = false"), finalizer.index("_begin_player_turn()"))
 

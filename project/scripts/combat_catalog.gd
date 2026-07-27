@@ -246,6 +246,7 @@ const ATTACKS: Dictionary = {
 	"frost": {"label":"Мороз","fatigue":0,"energy":30,"range":4,"range_mode":"up_to","multiplier":1.15,"animation":"ice_rain","freeze_chance":0.40,"freeze_turns":2},
 	"storm_vortex": {"label":"Вихрь бури","fatigue":0,"energy":80,"range":5,"range_mode":"up_to","multiplier":3.10,"animation":"tornado"},
 	"shot": {"label":"Выстрел","fatigue":0,"energy":5,"range":3,"range_mode":"up_to","multiplier":1.05,"animation":"spear_throw"},
+	"punch": {"label":"Удар кулаком","fatigue":0,"energy":0,"range":1,"multiplier":1.00,"animation":"shoulder_bash"},
 	"precise_shot": {"label":"Точный выстрел","fatigue":0,"energy":15,"range":4,"range_mode":"up_to","multiplier":1.45,"animation":"spear_throw"},
 	"rocket_shot": {"label":"Выстрел ракеты","fatigue":0,"energy":30,"range":3,"range_mode":"up_to","multiplier":1.80,"animation":"bright_bomb"},
 	"ice_punch": {"label":"Ледяной удар кулаком","fatigue":0,"energy":15,"range":1,"multiplier":1.35,"animation":"shoulder_bash"},
@@ -313,7 +314,7 @@ const LOADOUTS: Dictionary = {
 	"shion_rahabar": ["slash","lunge","strong_slash","ball_lightning","bright_bomb"],
 	"nordilian_rahabar": ["slash","lunge","strong_slash","ball_lightning"],
 	"alden_altagrave": ["slash","lunge","long_lunge","strong_slash","frost","ice_rain","iceberg","storm_vortex"],
-	"devlin_snow_soldier": ["shot","precise_shot","rocket_shot","ice_punch","ice_kick","devlin_combo","frost"],
+	"devlin_snow_soldier": ["shot","precise_shot","rocket_shot","punch","ice_punch","ice_kick","devlin_combo","frost"],
 	"barlow_ratatosk": ["slash","lunge","long_lunge","strong_slash","shoulder_bash","ice_rain","frost"],
 	"matisse_ratatosk": ["slash","lunge","strong_slash","shoulder_bash"],
 

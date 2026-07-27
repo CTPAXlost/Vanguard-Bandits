@@ -22,6 +22,7 @@ var mission_six_intro_pending := false
 var choice_dialog_done := false
 var mission_six_boot_started := false
 var mission_six_boot_finalized := false
+var mission_six_forced_choice: String = ""
 
 func _ready() -> void:
 	if CampaignState.current_mission == 6 and CampaignState.kamorge_alive and CampaignState.test_forced_branch not in ["south", "north"]:
@@ -34,7 +35,11 @@ func _ready() -> void:
 	if CampaignState.current_mission == 6:
 		mission_six_intro_pending = true
 		if CampaignState.test_forced_branch in ["south", "north"]:
-			kingdom_choice = CampaignState.test_forced_branch
+			mission_six_forced_choice = CampaignState.test_forced_branch
+			kingdom_choice = mission_six_forced_choice
+			# Consume only the test/replay selector value. It chooses the branch but
+			# must not suppress dialogue in a normal Windows playthrough.
+			CampaignState.test_forced_branch = ""
 		# Start chapter-VI finalisation independently from the inherited async
 		# _ready() chain.  In 1.9.7 the inherited coroutine could finish its
 		# synchronous map/unit boot yet never resume this override, leaving the
@@ -63,22 +68,62 @@ func _finalize_mission_six_boot() -> void:
 	action_in_progress = true
 	phase = Phase.DIALOGUE
 	if not _is_headless_or_smoke_runtime():
-		await _show_dialogue("Bastion", "Kamorge погиб, но его выбор дал нам время. Zeira, проводите нас до Южного королевства.", BASTION_PORTRAIT_V12)
-		await _show_dialogue("Zeira", "Проведём. Ione и Reyna знают лесные тропы.", ZEIRA_PORTRAIT)
-		await _show_dialogue("Reyna", "Впереди армии Севера и Юга. Они уже сошлись в бою.", REYNA_PORTRAIT)
-		await _request_kingdom_choice()
+		await _play_mission_six_intro()
+		if mission_six_forced_choice in ["south", "north"]:
+			kingdom_choice = mission_six_forced_choice
+		else:
+			await _request_kingdom_choice()
 	else:
 		# CI and runtime smokes must never wait for UI input. The branch was
-		# prepared by CampaignState before the battle scene entered the tree.
-		if CampaignState.test_forced_branch in ["south", "north"]:
-			kingdom_choice = CampaignState.test_forced_branch
+		# captured before the inherited ready chain entered the battle scene.
+		if mission_six_forced_choice in ["south", "north"]:
+			kingdom_choice = mission_six_forced_choice
 	_apply_kingdom_choice()
+	if not _is_headless_or_smoke_runtime():
+		await _play_mission_six_choice_dialogue()
 	mission_six_intro_pending = false
 	action_in_progress = false
 	mission_six_boot_finalized = true
 	print("MISSION6_BOOT_FINALIZED branch=%s units=%d party=%d" % [kingdom_choice, units.size(), player_party.size()])
 	mission_six_boot_started = false
 	_begin_player_turn()
+
+
+func _play_mission_six_intro() -> void:
+	await _show_dialogue("Zeira", "Здесь нас не найдут до рассвета. Ione, проверь северную тропу. Reyna, останься у реки.", ZEIRA_PORTRAIT)
+	await _show_dialogue("Andrew", "Мы обязаны вам жизнью. Без вас имперцы закончили бы начатое у моста.", ANDREW_PORTRAIT_V12)
+	await _show_dialogue("Ione", "На дороге тихо, но на юге поднимается дым. Там движется целая армия.", IONE_PORTRAIT)
+	await _show_dialogue("Bastion", "Kamorge погиб, спасая нас. Я не позволю, чтобы его смерть оказалась напрасной.", BASTION_PORTRAIT_V12)
+	await _show_dialogue("Bastion", "Zeira, помоги провести нас до Южного королевства. Король Logan знал союзников моего отца. Нам нужны люди и безопасный путь.", BASTION_PORTRAIT_V12)
+	await _show_dialogue("Zeira", "Я не служу королям, Bastion. Но сейчас у нас общий враг. Мы с Ione и Reyna доведём вас до границы.", ZEIRA_PORTRAIT)
+	await _show_dialogue("Reyna", "Тогда идём сейчас. Через старый лес быстрее, а тяжёлые ATAC империи там не пройдут.", REYNA_PORTRAIT)
+	await _show_dialogue("Ione", "Стойте. Это не имперцы. На равнине сражаются Северное и Южное королевства.", IONE_PORTRAIT)
+	await _show_dialogue("Logan", "Crimson, вперёд! Северяне не получат эту границу и не приблизятся к землям моей дочери.", LOGAN_PORTRAIT)
+	await _show_dialogue("Claire", "Отец, их слишком много. Южные рыцари долго не удержат центр.", CLAIRE_PORTRAIT)
+	await _show_dialogue("Shion", "Rahabor прикроет вас, госпожа. Пока я стою, ни один северный клинок вас не коснётся.", SHION_PORTRAIT)
+	await _show_dialogue("Alden", "Logan снова называет захват защитой. Altagrave положит конец этой войне сегодня.", ALDEN_PORTRAIT)
+	await _show_dialogue("Devlin", "Северный строй держать. Snow Soldier берёт центр, Ratatosk обходят южан с фланга.", DEVLIN_PORTRAIT)
+	await _show_dialogue("Barlow", "Я рядом, Devlin. Но к полю подошёл ещё один отряд. Они не несут знамён ни Севера, ни Юга.", BARLOW_PORTRAIT)
+	await _show_dialogue("Andrew", "Обе стороны заметили нас. Пройти незамеченными уже не получится.", ANDREW_PORTRAIT_V12)
+	await _show_dialogue("Bastion", "Тогда решим сейчас. Тот, кому мы поможем, станет нашим будущим союзником. Отвергнутая сторона объявит врагами и нас.", BASTION_PORTRAIT_V12)
+
+
+func _play_mission_six_choice_dialogue() -> void:
+	if kingdom_choice == "south":
+		await _show_dialogue("Bastion", "Мы поддержим Южное королевство. Logan, примите наш отряд в бой.", BASTION_PORTRAIT_V12)
+		await _show_dialogue("Logan", "Сражайся рядом с Crimson и докажи свои слова, Bastion. Выстоим — поговорим о союзе и военной помощи.", LOGAN_PORTRAIT)
+		await _show_dialogue("Claire", "Южные рыцари, освободите им место. Сегодня они сражаются рядом с нами.", CLAIRE_PORTRAIT)
+		await _show_dialogue("Shion", "Я прикрою Claire. Не мешайте моей линии атаки — и Rahabor прикроет вашу.", SHION_PORTRAIT)
+		await _show_dialogue("Alden", "Вы выбрали сторону Logan. С этого мгновения Север считает ваш отряд противником.", ALDEN_PORTRAIT)
+		await _show_dialogue("Devlin", "Цели подтверждены: южная армия и отряд Bastion. Никого не выпускать с поля.", DEVLIN_PORTRAIT)
+	else:
+		await _show_dialogue("Bastion", "Мы поддержим Северное королевство. Alden, примите наш отряд в бой.", BASTION_PORTRAIT_V12)
+		await _show_dialogue("Alden", "Север помнит тех, кто приходит в тяжёлый час. Победим — обсудим союз и помощь твоему королевству.", ALDEN_PORTRAIT)
+		await _show_dialogue("Devlin", "Отряд Bastion входит в северный строй. Snow Soldier и Ratatosk не атакуют новых союзников.", DEVLIN_PORTRAIT)
+		await _show_dialogue("Barlow", "Хорошо. Держитесь рядом, и мы прорвём южный центр вместе.", BARLOW_PORTRAIT)
+		await _show_dialogue("Logan", "Ты пришёл просить помощи и поднял оружие против Юга. Crimson ответит за это без пощады.", LOGAN_PORTRAIT)
+		await _show_dialogue("Claire", "Отец, они сделали выбор. Южным рыцарям придётся остановить и их.", CLAIRE_PORTRAIT)
+		await _show_dialogue("Shion", "Все, кто угрожает Claire, становятся моими целями. Даже наследник павшего королевства.", SHION_PORTRAIT)
 
 func _load_first_mission() -> void:
 	if CampaignState.current_mission != 6:
@@ -306,6 +351,11 @@ func _resolve_attack(attacker: Node3D, target: Node3D, mode: String) -> void:
 		attacker.set_meta("logan_damage_boost", 1.0)
 	if target == alden_unit:
 		await _try_alden_iceberg_retaliation(attacker)
+	# Reinforcements must appear immediately when the original six Rahabor are
+	# destroyed. Waiting until the next player turn could incorrectly finish the
+	# battle first when the royal leaders had already fallen.
+	if mission_number == 6 and not southern_reinforcement_spawned:
+		_check_south_reinforcement()
 
 
 func _try_alden_iceberg_retaliation(attacker: Node3D) -> void:
@@ -402,8 +452,9 @@ func _choose_ai_attack(unit: Node3D, target: Node3D) -> String:
 	var distance := _grid_distance(unit, target)
 	for mode: String in [
 		"evil_heart", "storm_vortex", "iceberg", "devlin_combo", "bright_bomb",
-		"rocket_shot", "ice_rain", "frost", "precise_shot",
-		"ball_lightning", "strong_slash", "long_lunge", "lunge", "slash"
+		"rocket_shot", "ice_rain", "frost", "precise_shot", "shot",
+		"ice_kick", "ice_punch", "punch", "ball_lightning",
+		"strong_slash", "long_lunge", "lunge", "slash"
 	]:
 		if not modes.has(mode):
 			continue
@@ -428,7 +479,7 @@ func _play_attack_animation(attacker: Node3D, target: Node3D, mode: String) -> v
 			await _animate_northern_shot(attacker, target, mode == "precise_shot")
 		"rocket_shot":
 			await _animate_bright_bomb(attacker, target)
-		"ice_punch", "ice_kick":
+		"punch", "ice_punch", "ice_kick":
 			await _animate_shoulder_bash(attacker, target)
 			_spawn_ice_lock_effect(target.global_position + Vector3(0, 0.8, 0))
 		"devlin_combo":
@@ -474,6 +525,15 @@ func _show_victory() -> void:
 	phase = Phase.VICTORY
 	phase_label.text = "СОЮЗ ЗАКЛЮЧЁН"
 	status_label.text = "Выбранное королевство принимает Bastion как союзника."
+	if not _is_headless_or_smoke_runtime():
+		if kingdom_choice == "south":
+			await _show_dialogue("Logan", "Ты сдержал слово, Bastion. Южное королевство признаёт твой отряд союзником. Когда позовёшь, мы обсудим войска и путь через наши земли.", LOGAN_PORTRAIT)
+			await _show_dialogue("Claire", "Сегодня мы выжили вместе. Надеюсь, следующий раз встретимся не на поле боя.", CLAIRE_PORTRAIT)
+			await _show_dialogue("Bastion", "Спасибо. Союз с Югом станет первым шагом к освобождению моего королевства.", BASTION_PORTRAIT_V12)
+		else:
+			await _show_dialogue("Alden", "Ты доказал верность выбором и оружием. Северное королевство признаёт твой отряд союзником и выслушает просьбу о военной помощи.", ALDEN_PORTRAIT)
+			await _show_dialogue("Devlin", "Наши армии ещё не друзья, но с этого дня у них общий противник.", DEVLIN_PORTRAIT)
+			await _show_dialogue("Bastion", "Спасибо. Союз с Севером станет первым шагом к освобождению моего королевства.", BASTION_PORTRAIT_V12)
 	CampaignState.complete_mission(6, kingdom_choice)
 	call_deferred("_return_to_campaign_hub")
 

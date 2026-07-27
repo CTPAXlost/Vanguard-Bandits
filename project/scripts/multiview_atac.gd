@@ -23,6 +23,11 @@ const SUPPORTED_SLUGS: Array[String] = [
 	"glaive",
 	"sylpheed",
 	"korbelan",
+	"crimson",
+	"rahabar",
+	"altagrave",
+	"snow_soldier",
+	"ratatosk",
 ]
 
 var slug: String = "alba"
@@ -163,12 +168,17 @@ func _pixel_size() -> float:
 		return 0.00188
 	if slug in ["barbatos", "barazaph", "vedocorban"]:
 		return 0.00218
+	if slug in ["crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk"]:
+		return 0.00205
 	return 0.00216
 
 
 func _build_weapons() -> void:
 	# These sheets already contain their original weapon in every view.
-	if slug in ["cador", "amphisia", "haurol", "toreadore", "serata", "glaive"]:
+	if slug in [
+		"cador", "amphisia", "haurol", "toreadore", "serata", "glaive",
+		"crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk",
+	]:
 		return
 	var primary_path: String = "res://assets/atac_views/sword_level_1.png"
 	var primary_scale: float = 0.00155

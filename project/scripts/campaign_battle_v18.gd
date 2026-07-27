@@ -28,12 +28,13 @@ func _is_headless_or_smoke_runtime() -> bool:
 	# The official editor does not expose a reliable feature flag for --headless in this path.
 	# official editor build used by GitHub Actions. DisplayServer is the actual
 	# runtime source of truth; the explicit smoke variables also cover tests that
-	# instantiate BattlePrototype inside a headless parent scene.
+	# instantiate BattlePrototype inside a headless parent scene. A forced story
+	# branch is deliberately NOT a smoke flag: replaying a branch must retain all
+	# of its dialogue and only automate the already selected decision.
 	return (
 		DisplayServer.get_name().to_lower() == "headless"
 		or OS.get_environment("VBR_SMOKE_MISSION") != ""
 		or OS.get_environment("VBR_SMOKE_BRANCH") != ""
-		or CampaignState.test_forced_branch != ""
 	)
 
 
@@ -74,12 +75,25 @@ func _load_first_mission() -> void:
 	grid_width = int(map_data.get("width", 30))
 	grid_height = int(map_data.get("height", 18))
 	blocked_cells = _cell_set(map_data.get("blocked_cells", []))
+	_open_castle_passages()
 	river_cells = {}
 	swamp_cells = {}
 	title_label.text = str(map_data.get("name", "Глава V — Защита замка"))
 	var parsed_balance: Variant = JSON.parse_string(FileAccess.get_file_as_string(BALANCE_PATH))
 	if parsed_balance is Dictionary:
 		balance_data = parsed_balance as Dictionary
+
+
+func _open_castle_passages() -> void:
+	# Keep a genuinely empty three-cell corridor through both entrances. This is
+	# applied after loading JSON so an old save/map cannot reintroduce hidden
+	# collision cells, posts or decorative blockers in either passage.
+	var castle: Dictionary = map_data.get("castle", {}) as Dictionary
+	var gate_z_values: Array = castle.get("gate_z", [6, 7, 8, 9, 10, 11]) as Array
+	for wall_x: int in [int(castle.get("west_wall_x", 10)), int(castle.get("east_wall_x", 22))]:
+		for x: int in range(wall_x - 1, wall_x + 2):
+			for gate_z_value: Variant in gate_z_values:
+				blocked_cells.erase(Vector2i(x, int(gate_z_value)))
 
 
 func _build_map() -> void:

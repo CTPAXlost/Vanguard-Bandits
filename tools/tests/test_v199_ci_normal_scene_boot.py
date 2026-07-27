@@ -14,7 +14,7 @@ def read(path: Path) -> str:
 
 class V199CINormalSceneBootTests(unittest.TestCase):
     def test_release_version_is_199(self) -> None:
-        self.assertIn('config/version="1.9.13"', read(ROOT / "project/project.godot"))
+        self.assertIn('config/version="1.9.14"', read(ROOT / "project/project.godot"))
 
     def test_obsolete_standalone_script_chain_smoke_is_removed(self) -> None:
         self.assertFalse((ROOT / "project/scripts/script_chain_smoke.gd").exists())
