@@ -18,7 +18,7 @@ def read(relative: str) -> str:
 def test_release_and_save_versions_are_current() -> None:
     project = read("project/project.godot")
     state = read("project/scripts/campaign_state.gd")
-    assert 'config/version="1.9.11"' in project
+    assert 'config/version="1.9.12"' in project
     assert "const SAVE_VERSION: int = 20" in state
 
 

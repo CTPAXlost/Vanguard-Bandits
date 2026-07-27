@@ -49,25 +49,30 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			dragging = event.pressed
-			last_mouse = event.position
-		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+		var mouse_button: InputEventMouseButton = event as InputEventMouseButton
+		if mouse_button.button_index == MOUSE_BUTTON_LEFT:
+			dragging = mouse_button.pressed
+			last_mouse = mouse_button.position
+		elif mouse_button.button_index == MOUSE_BUTTON_WHEEL_UP and mouse_button.pressed:
 			camera_distance = max(1.45, camera_distance - 0.42)
 			_apply_zoom()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+		elif mouse_button.button_index == MOUSE_BUTTON_WHEEL_DOWN and mouse_button.pressed:
 			camera_distance = min(10.5, camera_distance + 0.42)
 			_apply_zoom()
 	elif event is InputEventMouseMotion and dragging:
-		var delta_mouse := event.position - last_mouse
+		var mouse_motion: InputEventMouseMotion = event as InputEventMouseMotion
+		var delta_mouse: Vector2 = mouse_motion.position - last_mouse
 		pivot.rotate_y(-delta_mouse.x * 0.008)
 		pivot.rotate_x(-delta_mouse.y * 0.005)
 		pivot.rotation.x = clamp(pivot.rotation.x, deg_to_rad(-26.0), deg_to_rad(26.0))
-		last_mouse = event.position
-	elif event is InputEventKey and event.pressed:
-		if event.keycode == KEY_LEFT:
+		last_mouse = mouse_motion.position
+	elif event is InputEventKey:
+		var key_event: InputEventKey = event as InputEventKey
+		if not key_event.pressed:
+			return
+		if key_event.keycode == KEY_LEFT:
 			_change_model(-1)
-		elif event.keycode == KEY_RIGHT:
+		elif key_event.keycode == KEY_RIGHT:
 			_change_model(1)
 
 

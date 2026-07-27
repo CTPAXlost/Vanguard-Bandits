@@ -37,7 +37,8 @@ class FullGDScriptCompileGateTests(unittest.TestCase):
         self.assertTrue((ROOT / "project/scenes/AllScriptsCompileSmoke.tscn").is_file())
         script = (ROOT / "project/scripts/all_scripts_compile_smoke.gd").read_text(encoding="utf-8")
         self.assertIn("ALL_GDSCRIPT_COMPILE_OK", script)
-        self.assertIn("load(script_path)", script)
+        self.assertIn("ResourceLoader.load(", script)
+        self.assertIn("script.can_instantiate()", script)
 
     def test_both_workflows_run_compile_gate_before_missions(self) -> None:
         for workflow in (ROOT / ".github/workflows").glob("*.yml"):

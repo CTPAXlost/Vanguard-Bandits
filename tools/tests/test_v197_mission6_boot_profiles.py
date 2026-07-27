@@ -14,7 +14,7 @@ def read(relative: str) -> str:
 
 
 def test_release_version_is_197() -> None:
-    assert 'config/version="1.9.11"' in read("project/project.godot")
+    assert 'config/version="1.9.12"' in read("project/project.godot")
 
 
 def test_mission_six_balance_profiles_are_real_and_complete() -> None:
