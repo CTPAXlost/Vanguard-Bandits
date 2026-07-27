@@ -20,6 +20,8 @@ var devlin_clone: Node3D
 var mission_six_finished := false
 var mission_six_intro_pending := false
 var choice_dialog_done := false
+var mission_six_boot_started := false
+var mission_six_boot_finalized := false
 
 func _ready() -> void:
 	if CampaignState.current_mission == 6 and CampaignState.kamorge_alive and CampaignState.test_forced_branch not in ["south", "north"]:
@@ -33,11 +35,30 @@ func _ready() -> void:
 		mission_six_intro_pending = true
 		if CampaignState.test_forced_branch in ["south", "north"]:
 			kingdom_choice = CampaignState.test_forced_branch
-	# Critical boot fix: the previous build called the parent only for mission 6,
-	# leaving missions 1-5 without map, HUD or units. Await the complete inherited
-	# initialisation chain so chapter-specific coroutines cannot race one another.
+		# Start chapter-VI finalisation independently from the inherited async
+		# _ready() chain.  In 1.9.7 the inherited coroutine could finish its
+		# synchronous map/unit boot yet never resume this override, leaving the
+		# intro lock permanently enabled.  The deferred finaliser waits for the
+		# real BattlePrototype state and therefore cannot race unit creation.
+		call_deferred("_finalize_mission_six_boot")
+	# Keep the inherited chapter initialisation intact.  The independent
+	# finaliser above guarantees mission VI is unlocked even if an inherited
+	# coroutine does not propagate completion back to this override.
 	await super._ready()
-	if mission_number != 6:
+	if mission_number == 6:
+		call_deferred("_finalize_mission_six_boot")
+
+
+func _finalize_mission_six_boot() -> void:
+	if mission_six_boot_started or mission_six_boot_finalized:
+		return
+	mission_six_boot_started = true
+	# Wait for the normal BattlePrototype lifecycle to create the map and all
+	# five controllable heroes.  This is state-based, not a fixed delay.
+	while is_inside_tree() and (mission_number != 6 or units.is_empty() or player_party.size() != 5):
+		await get_tree().process_frame
+	if not is_inside_tree() or mission_number != 6:
+		mission_six_boot_started = false
 		return
 	action_in_progress = true
 	phase = Phase.DIALOGUE
@@ -46,9 +67,13 @@ func _ready() -> void:
 		await _show_dialogue("Zeira", "Проведём. Ione и Reyna знают лесные тропы.", ZEIRA_PORTRAIT)
 		await _show_dialogue("Reyna", "Впереди армии Севера и Юга. Они уже сошлись в бою.", REYNA_PORTRAIT)
 		await _request_kingdom_choice()
+	elif CampaignState.test_forced_branch in ["south", "north"]:
+		kingdom_choice = CampaignState.test_forced_branch
 	_apply_kingdom_choice()
 	mission_six_intro_pending = false
 	action_in_progress = false
+	mission_six_boot_finalized = true
+	mission_six_boot_started = false
 	_begin_player_turn()
 
 func _load_first_mission() -> void:

@@ -45,18 +45,36 @@ func _ready() -> void:
 			(units_value as Array).size(),
 			(party_value as Array).size(),
 		])
-		get_tree().quit()
+		await _clean_shutdown(battle, 0)
 		return
 
 	var units_value: Variant = battle.get("units")
 	var party_value: Variant = battle.get("player_party")
-	_fail("normal scene boot timed out; actual=%s units=%s party=%s" % [
+	_fail("normal scene boot timed out; actual=%s units=%s party=%s intro_pending=%s choice=%s boot_started=%s boot_finalized=%s action=%s phase=%s" % [
 		str(battle.get("mission_number")),
 		str((units_value as Array).size() if units_value is Array else -1),
 		str((party_value as Array).size() if party_value is Array else -1),
+		str(battle.get("mission_six_intro_pending")),
+		str(battle.get("kingdom_choice")),
+		str(battle.get("mission_six_boot_started")),
+		str(battle.get("mission_six_boot_finalized")),
+		str(battle.get("action_in_progress")),
+		str(battle.get("phase")),
 	])
 
 
 func _fail(message: String) -> void:
 	push_error("MISSION_BOOT_SMOKE_FAILED: mission=%d branch=%s; %s" % [expected_mission, forced_branch, message])
-	get_tree().quit(1)
+	var battle: Node = get_node_or_null("BattlePrototype")
+	await _clean_shutdown(battle, 1)
+
+
+func _clean_shutdown(battle: Node, exit_code: int) -> void:
+	# Free the instantiated battle and allow renderer deletion queues to flush
+	# before quitting.  Immediate quit in 1.9.7 left RID/ObjectDB leak errors in
+	# every otherwise successful smoke log.
+	if battle != null and is_instance_valid(battle):
+		battle.queue_free()
+	for _frame: int in range(3):
+		await get_tree().process_frame
+	get_tree().quit(exit_code)

@@ -22,7 +22,10 @@ func _check_branch(branch: String) -> void:
 
 	# Use only the normal BattlePrototype scene lifecycle. No test fixture may call
 	# private setup methods to conceal a broken _ready chain.
-	await _wait_for_mission_six(battle, 900)
+	var ready: bool = await _wait_for_mission_six(battle, 1200, branch)
+	if not ready:
+		_fail("mission six normal lifecycle timed out for %s" % branch)
+		return
 	var units_value: Variant = battle.get("units")
 
 	if int(battle.get("mission_number")) != 6:
@@ -157,7 +160,7 @@ func _check_branch(branch: String) -> void:
 		await get_tree().process_frame
 
 
-func _wait_for_mission_six(battle: Node, frames: int) -> void:
+func _wait_for_mission_six(battle: Node, frames: int, branch: String) -> bool:
 	for _frame: int in range(frames):
 		await get_tree().process_frame
 		var units_value: Variant = battle.get("units")
@@ -172,7 +175,8 @@ func _wait_for_mission_six(battle: Node, frames: int) -> void:
 			continue
 		if str(battle.get("kingdom_choice")) != branch:
 			continue
-		return
+		return true
+	return false
 
 
 func _fail(message: String) -> void:
