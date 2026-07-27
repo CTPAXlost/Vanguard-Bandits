@@ -143,6 +143,9 @@ jobs:
               exit 1
             fi
             grep -Fq "BATTLE_READY_OK mission=${mission}" "$log"
+            if [ "$mission" = "6" ]; then
+              grep -Fq "MISSION6_BOOT_FINALIZED branch=${branch}" "$log"
+            fi
             grep -Fq "MISSION_BOOT_SMOKE_OK mission=${mission} branch=${branch}" "$log"
           done
 

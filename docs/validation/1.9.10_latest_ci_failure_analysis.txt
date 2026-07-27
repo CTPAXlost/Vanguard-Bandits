@@ -1,0 +1,30 @@
+Vanguard Bandits Remaster 1.9.10 — разбор logs_82037651950.zip
+
+Подтверждено свежим GitHub Actions:
+- Godot 4.6.3 импортировал проект без блокирующей parse/compile ошибки.
+- Нормальный жизненный цикл BattlePrototype успешно загрузил миссии 1, 2, обе ветки 3, миссии 4 и 5.
+- Миссия 6 создала карту, 23 юнита и полный отряд из 5 героев.
+- Остановка произошла после входа в Phase.DIALOGUE: mission_six_intro_pending=true, boot_started=true, boot_finalized=false.
+
+Причина:
+Официальный editor binary Godot 4.6.3, запущенный с аргументом --headless, в этом пути не дал ожидаемого результата через OS.has_feature("headless"). Код считал CI обычным графическим запуском, вошёл в сюжетные диалоги и ждал нажатия кнопки, которого в headless нет.
+
+Исправление 1.9.10:
+- headless определяется через DisplayServer.get_name() == "headless";
+- учитываются VBR_SMOKE_MISSION, VBR_SMOKE_BRANCH и CampaignState.test_forced_branch;
+- исправлены все аналогичные проверки миссий V и VI;
+- mission VI обязана вывести MISSION6_BOOT_FINALIZED для south и north;
+- workflow блокируется, если маркер не появился;
+- smoke, import и Windows export не отключены, continue-on-error отсутствует.
+
+Локально выполнено:
+- 198 Python-тестов: OK;
+- 44 Python-файла: синтаксис OK;
+- 36 JSON: OK;
+- 524 PNG: целостность OK;
+- 360 буквальных runtime res:// ссылок: проверены;
+- 2 workflow YAML: OK;
+- 38 shell-блоков workflow: bash -n OK.
+
+Ограничение среды:
+В локальном контейнере нет Godot 4.6.3 и нет сетевого доступа для его загрузки. Поэтому изменённый архив должен получить окончательное подтверждение настоящим GitHub Actions. Блокирующие этапы специально сохранены.

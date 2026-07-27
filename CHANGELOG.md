@@ -1,13 +1,9 @@
-# 1.9.9 — исправление ложного падения цепочки боя и строгая CI-проверка
+# Vanguard Bandits Remaster 1.9.10
 
-- Разобран `logs_82025695480.zip`: сборка останавливалась на standalone-запуске `script_chain_smoke.gd`, где Godot не поднимал autoload-имя `CampaignState`.
-- Удалён неверный `--script` smoke; компиляция и запуск цепочки теперь проверяются через нормальную сцену `MissionBootSmoke.tscn`.
-- Обязательный boot-smoke запускает миссии I–VI, включая обе ветки III и обе стороны VI.
-- Импорт и Windows-export получают отдельные блокирующие логи и проверку кода возврата.
-- Ошибки тестов не скрываются; `continue-on-error` отсутствует.
-- В 1.9.9 объединены исправления текущей загруженной 1.9.6 с исправлениями 1.9.7/1.9.8: `BATTLE_READY_OK`, полный магазин, legacy-дома миссии II, восемь профилей главы VI, пять управляемых героев и независимый финализатор главы.
-- Оба workflow теперь выполняют одинаковый полный набор проверок переходов, перемещения, миссий, магазина, моделей, очистки уничтоженных ATAC, сюжетной сцены и Windows-export.
-- Пройдено 194 Python-теста; статическая проверка завершена без ошибок.
+- Fixed the confirmed Mission VI CI deadlock: `--headless` is now detected through `DisplayServer.get_name()` instead of the unreliable `OS.has_feature("headless")`.
+- Applied the same reliable non-interactive detection to every Mission V/Vl dialogue path used by runtime smoke tests.
+- Added the blocking `MISSION6_BOOT_FINALIZED` marker for both south and north branches.
+- Kept Godot import, all runtime smokes, and Windows export blocking.
 
 # 1.9.8 — устранение зависания миссии VI и усиление runtime-smoke
 

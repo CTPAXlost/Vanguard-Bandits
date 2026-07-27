@@ -24,6 +24,19 @@ var zakov_captains: Array[Node3D] = []
 var zakov_barbatos: Array[Node3D] = []
 
 
+func _is_headless_or_smoke_runtime() -> bool:
+	# The official editor does not expose a reliable feature flag for --headless in this path.
+	# official editor build used by GitHub Actions. DisplayServer is the actual
+	# runtime source of truth; the explicit smoke variables also cover tests that
+	# instantiate BattlePrototype inside a headless parent scene.
+	return (
+		DisplayServer.get_name().to_lower() == "headless"
+		or OS.get_environment("VBR_SMOKE_MISSION") != ""
+		or OS.get_environment("VBR_SMOKE_BRANCH") != ""
+		or CampaignState.test_forced_branch != ""
+	)
+
+
 func _ready() -> void:
 	mission_five_intro_pending = CampaignState.current_mission == 5
 	await super._ready()
@@ -32,13 +45,13 @@ func _ready() -> void:
 	action_in_progress = true
 	phase = Phase.DIALOGUE
 	_clear_highlights()
-	if not OS.has_feature("headless"):
+	if not _is_headless_or_smoke_runtime():
 		await _play_mission_five_intro()
 	var forced_choice: String = CampaignState.test_forced_branch
 	CampaignState.test_forced_branch = ""
 	if forced_choice == "leave_castle":
 		mission_five_choice_result = "leave_castle"
-	elif forced_choice == "defend_castle" or OS.has_feature("headless"):
+	elif forced_choice == "defend_castle" or _is_headless_or_smoke_runtime():
 		mission_five_choice_result = "defend_castle"
 	else:
 		await _request_castle_choice()
@@ -383,7 +396,7 @@ func _spawn_zakov_reinforcements_async() -> void:
 			barbatos.set_meta("reinforcement_index", index)
 			zakov_barbatos.append(barbatos)
 	_refresh_ui()
-	if not OS.has_feature("headless"):
+	if not _is_headless_or_smoke_runtime():
 		await _show_dialogue("Zakov", "Вы слишком рано решили, что победили. Sharking разнесёт ваши ворота вместе с защитниками.", ZAKOV_PORTRAIT)
 		if _is_alive(faulkner_unit):
 			await _show_dialogue("Faulkner", "Наконец-то. Сломай их оборону и не оставь Bastion пути к отступлению.", FAULKNER_PORTRAIT)
@@ -451,7 +464,7 @@ func _leave_castle_before_battle() -> void:
 	_set_action_buttons(true)
 	phase_label.text = "ОТРЯД ПОКИДАЕТ ЗАМОК"
 	status_label.text = "Герои сохраняют силы и уходят через южную лесную дорогу."
-	if not OS.has_feature("headless"):
+	if not _is_headless_or_smoke_runtime():
 		await _show_dialogue("Galvas", "Мне тяжело снова оставить собственный замок. Но мёртвый король никому не поможет.", GALVAS_PORTRAIT)
 		await _show_dialogue("Bastion", "На юге живёт Logan. Если старые клятвы ещё что-то значат, он даст нам людей и безопасный путь.", BASTION_PORTRAIT_V12)
 		await _show_dialogue("Kamorge", "Тогда идём лесами. Вернёмся сюда с армией, которую Faulkner уже не сможет раздавить.", KAMORGE_PORTRAIT)
@@ -554,7 +567,7 @@ func _activate_neutral_group(attacker: Node3D) -> void:
 			mat.emission_enabled = true
 			mat.emission = mat.albedo_color * 0.75
 			ring.material_override = mat
-	if not OS.has_feature("headless"):
+	if not _is_headless_or_smoke_runtime():
 		await _show_dialogue("Sadira", "Вы сделали свой выбор. Sylpheed поднимается в воздух — теперь мы вступаем в бой против того, кто ударил первым.", SADIRA_PORTRAIT)
 		await _show_dialogue("Franco", "Korbelan, режим стальной брони. Защитить Sadira.", FRANCO_PORTRAIT)
 		await _show_dialogue("Halak", "Гильотины готовы. Никто не уйдёт безнаказанным.", HALAK_PORTRAIT)
@@ -1023,7 +1036,7 @@ func _show_victory() -> void:
 	phase_label.text = "ЗАМОК ЗАЩИЩЁН"
 	phase_label.modulate = Color(0.44, 1.0, 0.58)
 	status_label.text = "Армия Faulkner разбита. Оружейная и торговые склады сохранены."
-	if not OS.has_feature("headless"):
+	if not _is_headless_or_smoke_runtime():
 		await _show_dialogue("Bastion", "Эти стены больше не тюрьма. Сегодня они стали домом для тех, кто ещё верит в возвращение королевства.", BASTION_PORTRAIT_V12)
 		await _show_dialogue("Galvas", "Оружейная уцелела. В общий магазин поступят редкие мечи, амулеты и камни умения защитников замка.", GALVAS_PORTRAIT)
 		await _show_dialogue("Kamorge", "Faulkner отступил, но не исчез. В следующий раз он приведёт больше людей. Мы должны использовать эту победу.", KAMORGE_PORTRAIT)
@@ -1045,7 +1058,7 @@ func _show_defeat() -> void:
 	phase_label.text = "ЗАМОК ПОТЕРЯН"
 	phase_label.modulate = Color(1.0, 0.35, 0.30)
 	status_label.text = "Выжившие отступают в лес и двигаются на юг за помощью Logan."
-	if not OS.has_feature("headless"):
+	if not _is_headless_or_smoke_runtime():
 		await _show_dialogue("Andrew", "Западные ворота пали. Если останемся, Faulkner окружит нас во внутреннем дворе.", ANDREW_PORTRAIT_V12)
 		await _show_dialogue("Bastion", "В лес. Потом на юг. Logan знал моего отца и хранит старые связи — он наша следующая надежда.", BASTION_PORTRAIT_V12)
 		await _show_dialogue("Galvas", "Замок можно вернуть. Людей — нет. Отступаем и просим Logan собрать южные отряды.", GALVAS_PORTRAIT)

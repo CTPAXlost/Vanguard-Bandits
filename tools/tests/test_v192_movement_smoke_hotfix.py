@@ -14,7 +14,7 @@ class V192MovementSmokeHotfixTests(unittest.TestCase):
         self.assertIn("not reachable.is_empty()", text)
 
     def test_project_version(self):
-        self.assertIn('config/version="1.9.9"', PROJECT.read_text(encoding="utf-8"))
+        self.assertIn('config/version="1.9.10"', PROJECT.read_text(encoding="utf-8"))
 
 if __name__ == "__main__":
     unittest.main()

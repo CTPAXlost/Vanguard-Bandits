@@ -62,17 +62,21 @@ func _finalize_mission_six_boot() -> void:
 		return
 	action_in_progress = true
 	phase = Phase.DIALOGUE
-	if not OS.has_feature("headless"):
+	if not _is_headless_or_smoke_runtime():
 		await _show_dialogue("Bastion", "Kamorge погиб, но его выбор дал нам время. Zeira, проводите нас до Южного королевства.", BASTION_PORTRAIT_V12)
 		await _show_dialogue("Zeira", "Проведём. Ione и Reyna знают лесные тропы.", ZEIRA_PORTRAIT)
 		await _show_dialogue("Reyna", "Впереди армии Севера и Юга. Они уже сошлись в бою.", REYNA_PORTRAIT)
 		await _request_kingdom_choice()
-	elif CampaignState.test_forced_branch in ["south", "north"]:
-		kingdom_choice = CampaignState.test_forced_branch
+	else:
+		# CI and runtime smokes must never wait for UI input. The branch was
+		# prepared by CampaignState before the battle scene entered the tree.
+		if CampaignState.test_forced_branch in ["south", "north"]:
+			kingdom_choice = CampaignState.test_forced_branch
 	_apply_kingdom_choice()
 	mission_six_intro_pending = false
 	action_in_progress = false
 	mission_six_boot_finalized = true
+	print("MISSION6_BOOT_FINALIZED branch=%s units=%d party=%d" % [kingdom_choice, units.size(), player_party.size()])
 	mission_six_boot_started = false
 	_begin_player_turn()
 
