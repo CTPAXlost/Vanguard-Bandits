@@ -117,6 +117,10 @@ const SHOP_ITEMS: Dictionary = {
 	},
 }
 const UNIQUE_ATACS: Array[String] = ["toreadore"]
+const SOUTH_ALLIANCE_CHARACTERS: Array[String] = ["logan", "claire", "shion"]
+const SOUTH_ALLIANCE_ATACS: Array[String] = ["crimson", "rahabar"]
+const NORTH_ALLIANCE_CHARACTERS: Array[String] = ["alden", "devlin", "barlow"]
+const NORTH_ALLIANCE_ATACS: Array[String] = ["altagrave", "snow_soldier", "ratatosk"]
 
 const ATAC_DATA: Dictionary = {
 	"alba": {
@@ -650,12 +654,7 @@ func _rebuild_unlocks_from_progress() -> void:
 		for atac_id: String in ["sylpheed", "korbelan"]:
 			unlock_atac(atac_id)
 	if mission_6_complete:
-		var alliance_characters: Array[String] = ["logan", "claire", "shion"] if kingdom_alliance == "south" else ["alden", "devlin", "barlow"]
-		var alliance_atacs: Array[String] = ["crimson", "rahabar"] if kingdom_alliance == "south" else ["altagrave", "snow_soldier", "ratatosk"]
-		for character_id: String in alliance_characters:
-			unlock_character(character_id)
-		for atac_id: String in alliance_atacs:
-			unlock_atac(atac_id)
+		_unlock_kingdom_alliance(kingdom_alliance)
 	if not kamorge_alive:
 		mark_character_unavailable("kamorge")
 	if kamorge_lost_atac:
@@ -729,15 +728,23 @@ func complete_mission(mission_id: int, branch: String = "") -> Dictionary:
 		mission_6_complete = true
 		kingdom_alliance = branch if branch in ["south", "north"] else "south"
 		current_mission = 7
-		var chosen_characters: Array[String] = ["logan", "claire", "shion"] if kingdom_alliance == "south" else ["alden", "devlin", "barlow"]
-		var chosen_atacs: Array[String] = ["crimson", "rahabar"] if kingdom_alliance == "south" else ["altagrave", "snow_soldier", "ratatosk"]
-		for character_id: String in chosen_characters:
-			unlock_character(character_id)
-		for atac_id: String in chosen_atacs:
-			unlock_atac(atac_id)
+		_unlock_kingdom_alliance(kingdom_alliance)
 
 	save_game()
 	return coin_result
+
+
+func _unlock_kingdom_alliance(alliance: String) -> void:
+	if alliance == "south":
+		for character_id: String in SOUTH_ALLIANCE_CHARACTERS:
+			unlock_character(character_id)
+		for atac_id: String in SOUTH_ALLIANCE_ATACS:
+			unlock_atac(atac_id)
+	elif alliance == "north":
+		for character_id: String in NORTH_ALLIANCE_CHARACTERS:
+			unlock_character(character_id)
+		for atac_id: String in NORTH_ALLIANCE_ATACS:
+			unlock_atac(atac_id)
 
 
 func mark_character_unavailable(character_id: String) -> void:

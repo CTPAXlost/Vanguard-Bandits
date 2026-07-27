@@ -1,0 +1,13 @@
+logs_82060482271.zip analysis
+
+The workflow reached Mission6Smoke after successful Godot import, GDScript compile gate, mission boot tests I-VI, battle, movement, mission selector, campaign hub, mission IV and mission V runtime tests.
+
+Failure:
+SCRIPT ERROR: Trying to assign an array of type "Array" to a variable of type "Array[String]".
+at res://scripts/campaign_state.gd:732
+
+Root cause:
+A ternary expression containing two array literals evaluates to an untyped Array. It was assigned to a local Array[String]. The same pattern also existed in the save rebuild path.
+
+Fix:
+Use typed constants and a shared _unlock_kingdom_alliance() function. No ternary-array assignment remains.

@@ -12,9 +12,9 @@ class ModelGalleryCompileFixTests(unittest.TestCase):
     def test_release_version_is_1912(self) -> None:
         project = (ROOT / "project/project.godot").read_text(encoding="utf-8")
         presets = (ROOT / "project/export_presets.cfg").read_text(encoding="utf-8")
-        self.assertIn('config/version="1.9.12"', project)
-        self.assertEqual(2, presets.count('application/file_version="1.9.12.0"'))
-        self.assertEqual(2, presets.count('application/product_version="1.9.12.0"'))
+        self.assertIn('config/version="1.9.13"', project)
+        self.assertEqual(2, presets.count('application/file_version="1.9.13.0"'))
+        self.assertEqual(2, presets.count('application/product_version="1.9.13.0"'))
 
     def test_mouse_events_are_explicitly_cast_before_typed_properties(self) -> None:
         source = MODEL_GALLERY.read_text(encoding="utf-8")
