@@ -1,0 +1,27 @@
+Vanguard Bandits Remaster 1.9.9
+
+Реальная ошибка из logs_82025695480.zip:
+GitHub Actions запускал project/scripts/script_chain_smoke.gd через standalone-команду Godot --script. В этом запуске имя проектного autoload CampaignState не было доступно цепочке боевых скриптов, поэтому тест выдавал Identifier not found: CampaignState, хотя предыдущий полноценный импорт проекта завершился успешно.
+
+Исправлено:
+- standalone script_chain_smoke удалён;
+- цепочка BattlePrototype -> campaign_battle -> v08 -> v12 -> v18 -> v19 проверяется через обычную сцену MissionBootSmoke.tscn;
+- отдельно запускаются миссии 1, 2, обе ветки 3, миссии 4 и 5, обе стороны миссии 6;
+- каждый запуск обязан вывести BATTLE_READY_OK и MISSION_BOOT_SMOKE_OK;
+- сохранены исправления домов миссии II, полного отряда миссии VI, команд ИИ, balance-профилей, южной подмоги и финализатора вступления;
+- магазин обязан вывести SHOP_CATALOG_OK items=12;
+- импорт Godot, все runtime-smoke и Windows-export блокирующие;
+- continue-on-error отсутствует;
+- логи импорта, runtime-smoke и экспорта сохраняются как artifacts при любом результате.
+
+Локальная проверка:
+- 194 Python-теста: OK;
+- 43 Python-файла: синтаксис OK;
+- 36 JSON-файлов: OK;
+- 524 PNG: целостность OK;
+- 355 статических res://-ссылок: OK;
+- оба YAML workflow: OK;
+- 19 shell-блоков в каждом workflow: bash -n OK.
+
+Ограничение среды проверки:
+исполняемый Godot 4.6.3 в локальном контейнере отсутствует, поэтому окончательный фактический runtime и Windows-export выполняются блокирующим GitHub Actions. Архив не содержит обходов этих проверок.

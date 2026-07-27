@@ -20,33 +20,60 @@ var devlin_clone: Node3D
 var mission_six_finished := false
 var mission_six_intro_pending := false
 var choice_dialog_done := false
-var mission_six_choice_forced := false
+var mission_six_boot_started := false
+var mission_six_boot_finalized := false
 
 func _ready() -> void:
-	# Parent initialisation is mandatory for every mission. In 1.9.4 it was
-	# accidentally called only for mission VI, so missions I-V created no map or
-	# units and appeared to hang on battle loading.
-	mission_six_intro_pending = CampaignState.current_mission == 6
-	if mission_six_intro_pending and CampaignState.test_forced_branch in ["south", "north"]:
-		kingdom_choice = CampaignState.test_forced_branch
-		mission_six_choice_forced = true
-		CampaignState.test_forced_branch = ""
-	super._ready()
-	if mission_number != 6:
+	if CampaignState.current_mission == 6 and CampaignState.kamorge_alive and CampaignState.test_forced_branch not in ["south", "north"]:
+		# Mission VI is exclusive to the branch where Kamorge died. Repair old
+		# saves that were incorrectly routed here by version 1.9.4.
+		CampaignState.current_mission = 5
+		CampaignState.save_game()
+		call_deferred("_return_to_campaign_hub")
+		return
+	if CampaignState.current_mission == 6:
+		mission_six_intro_pending = true
+		if CampaignState.test_forced_branch in ["south", "north"]:
+			kingdom_choice = CampaignState.test_forced_branch
+		# Start chapter-VI finalisation independently from the inherited async
+		# _ready() chain.  In 1.9.7 the inherited coroutine could finish its
+		# synchronous map/unit boot yet never resume this override, leaving the
+		# intro lock permanently enabled.  The deferred finaliser waits for the
+		# real BattlePrototype state and therefore cannot race unit creation.
+		call_deferred("_finalize_mission_six_boot")
+	# Keep the inherited chapter initialisation intact.  The independent
+	# finaliser above guarantees mission VI is unlocked even if an inherited
+	# coroutine does not propagate completion back to this override.
+	await super._ready()
+	if mission_number == 6:
+		call_deferred("_finalize_mission_six_boot")
+
+
+func _finalize_mission_six_boot() -> void:
+	if mission_six_boot_started or mission_six_boot_finalized:
+		return
+	mission_six_boot_started = true
+	# Wait for the normal BattlePrototype lifecycle to create the map and all
+	# five controllable heroes.  This is state-based, not a fixed delay.
+	while is_inside_tree() and (mission_number != 6 or units.is_empty() or player_party.size() != 5):
+		await get_tree().process_frame
+	if not is_inside_tree() or mission_number != 6:
+		mission_six_boot_started = false
 		return
 	action_in_progress = true
 	phase = Phase.DIALOGUE
 	if not OS.has_feature("headless"):
 		await _show_dialogue("Bastion", "Kamorge погиб, но его выбор дал нам время. Zeira, проводите нас до Южного королевства.", BASTION_PORTRAIT_V12)
 		await _show_dialogue("Zeira", "Проведём. Ione и Reyna знают лесные тропы.", ZEIRA_PORTRAIT)
-		await _show_dialogue("Ione", "Лес выведет нас к границе. Но дальше придётся пройти между двумя армиями.", IONE_PORTRAIT)
-		await _show_dialogue("Andrew", "Тогда держимся вместе. После плена я не собираюсь снова терять отряд.", ANDREW_PORTRAIT_V12)
 		await _show_dialogue("Reyna", "Впереди армии Севера и Юга. Они уже сошлись в бою.", REYNA_PORTRAIT)
-		if not mission_six_choice_forced:
-			await _request_kingdom_choice()
+		await _request_kingdom_choice()
+	elif CampaignState.test_forced_branch in ["south", "north"]:
+		kingdom_choice = CampaignState.test_forced_branch
 	_apply_kingdom_choice()
 	mission_six_intro_pending = false
 	action_in_progress = false
+	mission_six_boot_finalized = true
+	mission_six_boot_started = false
 	_begin_player_turn()
 
 func _load_first_mission() -> void:
@@ -55,10 +82,14 @@ func _load_first_mission() -> void:
 		return
 	mission_number = 6
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MISSION_SIX_PATH))
-	map_data = parsed as Dictionary if parsed is Dictionary else {"width": 32, "height": 18}
+	if parsed is Dictionary:
+		map_data = parsed as Dictionary
+	else:
+		push_error("Mission VI map is missing or invalid: %s" % MISSION_SIX_PATH)
+		map_data = {"name": "Глава VI — Война Севера и Юга", "width": 32, "height": 18, "player_starts": {}, "south_starts": {"bots": []}, "north_starts": {"bots": []}, "south_reinforcements": []}
 	grid_width = int(map_data.get("width", 32))
 	grid_height = int(map_data.get("height", 18))
-	blocked_cells = _cell_set(map_data.get("blocked_cells", []))
+	blocked_cells = {}
 	river_cells = {}
 	swamp_cells = {}
 	title_label.text = str(map_data.get("name","Глава VI — Война Севера и Юга"))
@@ -78,25 +109,25 @@ func _spawn_mission_units() -> void:
 	reyna_unit = _spawn_campaign_hero("reyna","haurol",_array_to_cell(p.get("reyna",[17,14])),"reyna_haurol",REYNA_PORTRAIT,"Копейщица • игрок")
 	_spawn_south()
 	_spawn_north()
-	# Mission VI must build the controllable party before the parent turn logic
-	# runs. Without this, the first turn treated the party as defeated.
+	# Mission VI bypasses the inherited chapter-specific spawn branches, so the
+	# five controllable heroes must be registered here before the first turn.
 	_setup_player_party()
 
 func _spawn_south() -> void:
 	var s: Dictionary = map_data.get("south_starts",{})
 	logan_unit = _spawn_campaign_hero("logan","crimson",_array_to_cell(s.get("logan",[25,8])),"logan_crimson",LOGAN_PORTRAIT,"Король Южного королевства")
+	_prepare_kingdom_ai_unit(logan_unit, "south")
 	_apply_unit_level(logan_unit, "crimson", 25, 52, 34, 45, 48)
-	_set_kingdom_identity(logan_unit, "south")
 	logan_unit.set_meta("passive_ability", "logan_reflect")
 	logan_unit.set_meta("max_move_actions", 2)
 	logan_unit.set_meta("double_turn", true)
 	logan_unit.set_meta("damage_magic_uses", 2)
 	var claire := _spawn_campaign_hero("claire","rahabar",_array_to_cell(s.get("claire",[27,7])),"claire_rahabar",CLAIRE_PORTRAIT,"Принцесса Юга")
+	_prepare_kingdom_ai_unit(claire, "south")
 	_apply_unit_level(claire,"rahabar",15,32,31,29,33)
-	_set_kingdom_identity(claire, "south")
 	var shion := _spawn_campaign_hero("shion","rahabar",_array_to_cell(s.get("shion",[27,9])),"shion_rahabar",SHION_PORTRAIT,"Телохранитель Claire")
+	_prepare_kingdom_ai_unit(shion, "south")
 	_apply_unit_level(shion,"rahabar",22,42,38,37,40)
-	_set_kingdom_identity(shion, "south")
 	for i in range((s.get("bots",[]) as Array).size()):
 		var u := _spawn_unit("Южный рыцарь %d / Rahabor"%(i+1),"Nordilian • Южное королевство","rahabar",_array_to_cell((s.get("bots",[]) as Array)[i]),false,false,"south","nordilian_rahabar")
 		_apply_unit_level(u, "rahabar", 10 + i % 6, 24 + i, 22 + i, 24 + i, 24 + i)
@@ -106,30 +137,53 @@ func _spawn_south() -> void:
 func _spawn_north() -> void:
 	var n: Dictionary = map_data.get("north_starts",{})
 	alden_unit = _spawn_campaign_hero("alden","altagrave",_array_to_cell(n.get("alden",[6,8])),"alden_altagrave",ALDEN_PORTRAIT,"Король Северного королевства")
+	_prepare_kingdom_ai_unit(alden_unit, "north")
 	_apply_unit_level(alden_unit, "altagrave", 24, 48, 36, 45, 48)
-	_set_kingdom_identity(alden_unit, "north")
 	alden_unit.set_meta("magic_immune", true)
 	alden_unit.set_meta("passive_ability", "alden_iceberg")
 	devlin_unit = _spawn_campaign_hero("devlin","snow_soldier",_array_to_cell(n.get("devlin",[4,7])),"devlin_snow_soldier",DEVLIN_PORTRAIT,"Генерал Севера")
+	_prepare_kingdom_ai_unit(devlin_unit, "north")
 	_apply_unit_level(devlin_unit, "snow_soldier", 19, 38, 35, 37, 43)
-	_set_kingdom_identity(devlin_unit, "north")
 	devlin_unit.set_meta("clone_uses", 1)
 	var barlow := _spawn_campaign_hero("barlow","ratatosk",_array_to_cell(n.get("barlow",[4,9])),"barlow_ratatosk",BARLOW_PORTRAIT,"Верный друг Devlin")
+	_prepare_kingdom_ai_unit(barlow, "north")
 	_apply_unit_level(barlow,"ratatosk",14,31,29,33,34)
-	_set_kingdom_identity(barlow, "north")
 	for i in range((n.get("bots",[]) as Array).size()):
 		var u := _spawn_unit("Северный боец %d / Ratatosk"%(i+1),"Matisse • Северное королевство","ratatosk",_array_to_cell((n.get("bots",[]) as Array)[i]),false,false,"north","matisse_ratatosk")
 		_apply_unit_level(u, "ratatosk", 10 + i % 6, 24 + i, 22 + i, 25 + i, 24 + i)
 		u.set_meta("portrait_path", "res://assets/ui/portraits/matisse.png")
 		north_bots.append(u)
 
-func _set_kingdom_identity(unit: Node3D, kingdom: String) -> void:
-	if unit == null or not is_instance_valid(unit):
-		return
-	unit.set_meta("team", kingdom)
-	unit.set_meta("kingdom", kingdom)
-	unit.set_meta("player", false)
 
+func _prepare_kingdom_ai_unit(unit: Node3D, staging_team: String) -> void:
+	if unit == null:
+		return
+	# _spawn_campaign_hero creates a controllable ally by default. Kingdom leaders
+	# are AI units and must remain on their own side until the player's choice is
+	# applied, otherwise both royal families become player allies.
+	unit.set_meta("player", false)
+	unit.set_meta("team", staging_team)
+	unit.set_meta("round_done", false)
+
+
+func _set_mission_six_combat_team(unit: Node3D, team: String) -> void:
+	if unit == null:
+		return
+	unit.set_meta("team", team)
+	unit.set_meta("player", false)
+	var visual: Node3D = unit.get_node_or_null("ATACVisual") as Node3D
+	if visual != null:
+		visual.rotation_degrees.y = 180.0 if team == "ally" else 0.0
+	var ring: MeshInstance3D = unit.get_node_or_null("SelectionRing") as MeshInstance3D
+	if ring != null:
+		var ring_material := StandardMaterial3D.new()
+		ring_material.albedo_color = Color(0.36, 0.86, 1.0) if team == "ally" else Color(0.95, 0.24, 0.18)
+		ring_material.emission_enabled = true
+		ring_material.emission = ring_material.albedo_color * 0.85
+		ring.material_override = ring_material
+	var hp_bar: Label3D = unit.get_node_or_null("HPBar") as Label3D
+	if hp_bar != null:
+		hp_bar.modulate = Color(0.72, 0.95, 1.0) if team == "ally" else Color(1.0, 0.82, 0.72)
 
 func _setup_player_party() -> void:
 	if mission_number != 6:
@@ -137,10 +191,12 @@ func _setup_player_party() -> void:
 		return
 	player_party.clear()
 	for u: Node3D in [player_unit, andrew_unit, zeira_unit_five, ione_unit, reyna_unit]:
-		if u != null:
+		if u != null and is_instance_valid(u) and _is_alive(u) and not player_party.has(u):
 			u.set_meta("player", true)
 			u.set_meta("team", "ally")
 			player_party.append(u)
+	if player_party.size() != 5:
+		push_error("Mission VI player party is incomplete: expected 5, got %d." % player_party.size())
 
 func _request_kingdom_choice() -> void:
 	choice_dialog_done = false
@@ -173,32 +229,16 @@ func _apply_kingdom_choice() -> void:
 	for u: Node3D in units:
 		var team := str(u.get_meta("team"))
 		if team == "south":
-			u.set_meta("team", "ally" if kingdom_choice == "south" else "enemy")
-			u.set_meta("player", false)
-			_refresh_kingdom_team_visual(u)
+			_set_mission_six_combat_team(u, "ally" if kingdom_choice == "south" else "enemy")
 		elif team == "north":
-			u.set_meta("team", "ally" if kingdom_choice == "north" else "enemy")
-			u.set_meta("player", false)
-			_refresh_kingdom_team_visual(u)
+			_set_mission_six_combat_team(u, "ally" if kingdom_choice == "north" else "enemy")
 	var side_label := "Южному" if kingdom_choice == "south" else "Северному"
 	status_label.text = "Вы помогаете %s королевству. Отвергнутая сторона атакует и ваш отряд." % side_label
-
-func _refresh_kingdom_team_visual(unit: Node3D) -> void:
-	var ring: MeshInstance3D = unit.get_node_or_null("SelectionRing") as MeshInstance3D
-	if ring == null:
-		return
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.25, 0.95, 0.52) if str(unit.get_meta("team")) == "ally" else Color(0.96, 0.20, 0.14)
-	material.emission_enabled = true
-	material.emission = material.albedo_color * 0.70
-	ring.material_override = material
-
 
 func _begin_player_turn() -> void:
 	if mission_number == 6 and mission_six_intro_pending:
 		return
 	if mission_number == 6:
-		_apply_alden_aura()
 		_check_south_reinforcement()
 	super._begin_player_turn()
 
@@ -236,19 +276,15 @@ func _check_south_reinforcement() -> void:
 		)
 		_apply_unit_level(u, "rahabar", 10 + i % 6, 25 + i, 23 + i, 25 + i, 25 + i)
 		u.set_meta("portrait_path", "res://assets/ui/portraits/nordilian.png")
+		south_bots.append(u)
 	status_label.text = "К Южному королевству прибыла подмога из шести Rahabor!"
 
 func _resolve_attack(attacker: Node3D, target: Node3D, mode: String) -> void:
-	if target == alden_unit and bool(target.get_meta("magic_immune", false)):
-		if mode in [
-			"ball_lightning", "bright_bomb", "fire_rain", "ice_rain", "frost",
-			"storm_vortex", "ultrasound", "wind_strike", "sound_strike",
-			"force_field_throw", "desert_storm", "sticky_sandstorm",
-			"quicksand", "healing_ban"
-		]:
-			status_label.text = "Altagrave невосприимчив к магии."
-			_spawn_guard_flash(target.global_position + Vector3(0, 1, 0), Color(0.5, 0.85, 1.0))
-			return
+	if target == alden_unit and str(attacker.get_meta("team", "")) != str(target.get_meta("team", "")) and bool(target.get_meta("magic_immune", false)) and CombatCatalog.is_magic(mode):
+		status_label.text = "Altagrave полностью невосприимчив к вражеской магии."
+		_spawn_guard_flash(target.global_position + Vector3(0, 1, 0), Color(0.5, 0.85, 1.0))
+		await _try_alden_iceberg_retaliation(attacker)
+		return
 	if mode == "devlin_combo":
 		status_label.text = "Комбо Snow Soldier невозможно заблокировать!"
 		var combo_damage: int = _calculate_damage(attacker, target, float(CombatCatalog.attack(mode).get("multiplier", 3.45)))
@@ -264,11 +300,21 @@ func _resolve_attack(attacker: Node3D, target: Node3D, mode: String) -> void:
 			_spawn_ice_lock_effect(target.global_position + Vector3(0, 1.0, 0))
 	if float(attacker.get_meta("logan_damage_boost", 1.0)) > 1.0:
 		attacker.set_meta("logan_damage_boost", 1.0)
-	if target == alden_unit and _is_alive(attacker) and rng.randf() <= 0.50:
-		status_label.text = "Ответная магия Alden: на атакующего падает айсберг!"
-		await _animate_ice_rain(alden_unit, attacker)
-		var retaliation: int = maxi(1, int(float(_stats(alden_unit).get("strength", 40)) * 2.0))
-		await _damage_target(attacker, retaliation)
+	if target == alden_unit:
+		await _try_alden_iceberg_retaliation(attacker)
+
+
+func _try_alden_iceberg_retaliation(attacker: Node3D) -> void:
+	if alden_unit == null or not _is_alive(alden_unit) or attacker == null or not _is_alive(attacker):
+		return
+	if str(attacker.get_meta("team", "")) == str(alden_unit.get_meta("team", "")):
+		return
+	if rng.randf() > 0.50:
+		return
+	status_label.text = "Ответная магия Alden: на атакующего падает айсберг!"
+	await _animate_ice_rain(alden_unit, attacker)
+	var retaliation: int = maxi(1, int(float(_stats(alden_unit).get("strength", 40)) * 2.0))
+	await _damage_target(attacker, retaliation)
 
 
 func _calculate_damage(attacker: Node3D, target: Node3D, multiplier: float) -> int:
@@ -279,14 +325,15 @@ func _calculate_damage(attacker: Node3D, target: Node3D, multiplier: float) -> i
 
 func _try_automatic_passive(defender: Node3D, attacker: Node3D, back_attack: bool) -> String:
 	if str(defender.get_meta("passive_ability", "")) == "logan_reflect" and rng.randf() <= 0.45:
-		status_label.text = "Crimson отражает атаку Logan обратно в противника!"
+		status_label.text = "Crimson отражает атаку Logan!"
 		await _animate_sharking_reflect(defender, attacker)
-		if _is_alive(attacker):
-			await _damage_target(attacker, maxi(1, _calculate_damage(defender, attacker, 0.75)))
-		return "reflected"
+		return "avoided"
 	return await super._try_automatic_passive(defender, attacker, back_attack)
 
 func _run_smart_ai_turn(unit: Node3D) -> void:
+	if unit == alden_unit:
+		_apply_alden_aura()
+		await get_tree().create_timer(0.25).timeout
 	if unit == devlin_unit and int(unit.get_meta("clone_uses", 0)) > 0 and devlin_clone == null:
 		var clone_cell: Vector2i = _first_free_adjacent_cell(unit)
 		if clone_cell.x >= 0:
@@ -350,7 +397,7 @@ func _choose_ai_attack(unit: Node3D, target: Node3D) -> String:
 	var modes := CombatCatalog.attacks_for(unit)
 	var distance := _grid_distance(unit, target)
 	for mode: String in [
-		"evil_heart", "storm_vortex", "devlin_combo", "bright_bomb",
+		"evil_heart", "storm_vortex", "iceberg", "devlin_combo", "bright_bomb",
 		"rocket_shot", "ice_rain", "frost", "precise_shot",
 		"ball_lightning", "strong_slash", "long_lunge", "lunge", "slash"
 	]:
@@ -369,7 +416,7 @@ func _play_attack_animation(attacker: Node3D, target: Node3D, mode: String) -> v
 			await _animate_strong_slash(attacker, target)
 			_spawn_heavy_arc(target.global_position + Vector3(0, 1.0, 0), Color(0.85, 0.02, 0.08))
 			_camera_shake(0.55, 0.24)
-		"frost":
+		"frost", "iceberg":
 			await _animate_ice_rain(attacker, target)
 		"storm_vortex":
 			await _animate_tornado(attacker, target)

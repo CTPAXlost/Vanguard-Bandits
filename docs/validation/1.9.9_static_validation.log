@@ -1,0 +1,38 @@
+OK: project version is 1.9.9
+OK: required file exists: project/scenes/Main.tscn
+OK: required file exists: project/scenes/BattlePrototype.tscn
+OK: required file exists: project/scenes/MissionBootSmoke.tscn
+OK: required file exists: project/scripts/mission_boot_smoke.gd
+OK: required file exists: .github/workflows/build-windows.yml
+OK: required file exists: .github/workflows/release-windows.yml
+OK: invalid standalone script_chain_smoke.gd is removed
+OK: Python syntax parsed for 43 files
+OK: JSON parsed for 36 files
+OK: PNG integrity verified for 524 files
+OK: all 355 static literal res:// references exist (5 format templates excluded)
+OK: YAML parsed: build-windows.yml
+OK: build-windows.yml has no continue-on-error
+OK: build-windows.yml does not run invalid standalone script smoke
+OK: build-windows.yml contains all 8 mission/branch boot cases
+OK: bash -n passed for 19 run blocks in build-windows.yml
+OK: YAML parsed: release-windows.yml
+OK: release-windows.yml has no continue-on-error
+OK: release-windows.yml does not run invalid standalone script smoke
+OK: release-windows.yml contains all 8 mission/branch boot cases
+OK: bash -n passed for 19 run blocks in release-windows.yml
+OK: export preset exists: Windows Desktop (Clean Prototype)
+OK: export preset exists: Windows Desktop (Local Imported)
+OK: both Windows presets carry version 1.9.9.0
+OK: campaign_battle.gd awaits parent _ready
+OK: campaign_battle_v08.gd awaits parent _ready
+OK: campaign_battle_v18.gd awaits parent _ready
+OK: campaign_battle_v19.gd awaits parent _ready
+OK: base battle ready block avoids subclass-only mission_number
+OK: house builder supports legacy and current map sizes
+OK: mission VI boot, AI teams, immunity and reinforcement logic present
+OK: all 8 mission VI balance profiles exist
+OK: castle passage cells are open
+OK: shop exposes and validates all 12 catalog items
+
+RESULT: PASS
+ERROR_COUNT: 0

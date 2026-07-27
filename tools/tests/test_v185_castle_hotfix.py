@@ -27,11 +27,13 @@ class V185CastleHotfixTests(unittest.TestCase):
         for cell in data["neutral_starts"].values():
             self.assertNotIn(tuple(cell), blocked)
 
-    def test_zakov_cannot_attack_allies_from_disorientation(self):
+    def test_zakov_only_attacks_allies_under_real_disorientation(self):
         source = (PROJECT / "scripts/campaign_battle_v18.gd").read_text(encoding="utf-8")
-        self.assertIn('str(unit.get_meta("character_id", "")) == "zakov"', source)
-        self.assertIn('unit.set_meta("friendly_fire_chance", 0.0)', source)
-        self.assertIn("Zakov сохраняет контроль и не атакует своих", source)
+        base = (PROJECT / "scripts/campaign_battle_v08.gd").read_text(encoding="utf-8")
+        self.assertIn("return await super._try_disoriented_friendly_fire(unit)", source)
+        self.assertIn('var disoriented_turns: int = int(enemy.get_meta("disoriented_turns", 0))', base)
+        self.assertIn("if await _try_disoriented_friendly_fire(enemy):", base)
+        self.assertNotIn('unit.set_meta("friendly_fire_chance", 0.0)', source)
 
     def test_shop_lists_all_catalog_items(self):
         state = (PROJECT / "scripts/campaign_state.gd").read_text(encoding="utf-8")
