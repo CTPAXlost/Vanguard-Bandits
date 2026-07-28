@@ -13,7 +13,7 @@
     "slug": "zulwarn",
     "max_level": 100,
     "max_energy": 350,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 2,
@@ -23,7 +23,7 @@
     "slug": "tic_tac",
     "max_level": 80,
     "max_energy": 250,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 3,
@@ -32,7 +32,7 @@
     "status": "catalogued",
     "slug": "alba",
     "max_level": 40,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 4,
@@ -41,7 +41,7 @@
     "status": "catalogued",
     "slug": "serata",
     "max_level": 35,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 5,
@@ -50,7 +50,7 @@
     "status": "catalogued",
     "slug": "haizuron",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 6,
@@ -59,7 +59,7 @@
     "status": "catalogued",
     "slug": "glaive",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 7,
@@ -68,7 +68,7 @@
     "status": "catalogued",
     "slug": "waiban",
     "max_level": 35,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 8,
@@ -77,7 +77,7 @@
     "status": "catalogued",
     "slug": "solarus",
     "max_level": 50,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 9,
@@ -86,7 +86,7 @@
     "status": "catalogued",
     "slug": "sarbelas",
     "max_level": 40,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 10,
@@ -95,7 +95,7 @@
     "status": "catalogued",
     "slug": "sylpheed",
     "max_level": 60,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 11,
@@ -104,7 +104,7 @@
     "status": "catalogued",
     "slug": "korbelan",
     "max_level": 50,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 12,
@@ -113,7 +113,7 @@
     "status": "catalogued",
     "slug": "sharking",
     "max_level": 55,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 13,
@@ -122,7 +122,7 @@
     "status": "catalogued",
     "slug": "einlager",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 14,
@@ -137,7 +137,7 @@
     "status": "catalogued",
     "slug": "barbatos",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 16,
@@ -147,7 +147,7 @@
     "slug": "altagrave",
     "max_level": 60,
     "max_energy": 155,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 17,
@@ -156,7 +156,7 @@
     "status": "catalogued",
     "slug": "amphisia",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 18,
@@ -165,7 +165,7 @@
     "status": "catalogued",
     "slug": "eigol",
     "max_level": 30,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 19,
@@ -174,7 +174,7 @@
     "status": "catalogued",
     "slug": "ratatosk",
     "max_level": 30,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 20,
@@ -184,7 +184,7 @@
     "slug": "crimson",
     "max_level": 60,
     "max_energy": 160,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 21,
@@ -199,7 +199,7 @@
     "status": "catalogued",
     "slug": "rahabar",
     "max_level": 30,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 23,
@@ -208,7 +208,7 @@
     "status": "catalogued",
     "slug": "toreadore",
     "max_level": 60,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 24,
@@ -224,7 +224,7 @@
     "slug": "roaring_lion",
     "max_level": 60,
     "max_energy": 150,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 26,
@@ -233,7 +233,7 @@
     "status": "catalogued",
     "slug": "flaros",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 27,
@@ -242,7 +242,7 @@
     "status": "catalogued",
     "slug": "vedocorban",
     "max_level": 50,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 28,
@@ -251,7 +251,7 @@
     "status": "catalogued",
     "slug": "bahamut",
     "max_level": 45,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 29,
@@ -260,7 +260,7 @@
     "status": "catalogued",
     "slug": "yurangol",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 30,
@@ -269,7 +269,7 @@
     "status": "catalogued",
     "slug": "number_69",
     "max_level": 60,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 31,
@@ -278,7 +278,7 @@
     "status": "catalogued",
     "slug": "dantarius",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 32,
@@ -287,7 +287,7 @@
     "status": "catalogued",
     "slug": "barazaph",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 33,
@@ -296,7 +296,7 @@
     "status": "catalogued",
     "slug": "andoras_amphisia",
     "max_level": 20,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   },
   {
     "id": 34,
@@ -305,6 +305,6 @@
     "status": "catalogued",
     "slug": "haurol",
     "max_level": 30,
-    "level_progression": "official_1.9.16"
+    "level_progression": "official_1.9.17"
   }
 ]
