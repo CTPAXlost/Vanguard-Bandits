@@ -1,0 +1,27 @@
+Vanguard Bandits Remaster 1.9.20
+
+ИСПРАВЛЕНИЕ VISIBILITY SMOKE ПО СВЕЖЕМУ ЛОГУ logs_82315881859
+
+Причина падения 1.9.19:
+- Старые ATAC Alba, Amphisia, Haurol, Barazaph, Eigol, Toreadore, Vedocorban и ряд новых машин намеренно переведены на цельные полноразмерные multi-view модели, потому что разрезанный Skeleton3D выглядел хуже.
+- Устаревший VisibilitySmoke продолжал требовать Skeleton3D абсолютно от каждого ATAC и падал на первом Alba с ошибкой TACTICAL_VISIBILITY_NOT_SKELETAL_alba.
+- Это была ошибка теста, а не ошибка загрузки Alba.
+
+Что исправлено:
+- VisibilitySmoke теперь отдельно и строго проверяет оба допустимых рендера:
+  1) Skeleton3D: кости, части оригинальной брони и текстуры.
+  2) Full-body multi-view: основная текстура, контур, четыре ракурса, постоянная видимость и API боевых поз.
+- Проверка расширена с 14 до 21 ATAC, включая Crimson, Rahabor, Altagrave, Snow Soldier, Ratatosk, Sylpheed и Korbelan.
+- Сохранена обязательная проверка базовых боевых анимаций для обоих типов моделей.
+- Python-валидатор запрещает возвращать старое требование «все ATAC обязаны быть skeletal».
+- Версия проекта, Windows-export и имя артефакта обновлены до 1.9.20.
+
+Что уже подтверждено свежим GitHub Actions до места падения:
+- VALIDATION_OK.
+- ALL_GDSCRIPT_COMPILE_OK count=36.
+- ATAC_PROGRESSION_SMOKE_OK entries=32.
+- Запуск миссий I–VI.
+- Mission III, IV, V и обе ветки Mission VI.
+- MovementInputSmoke, DeathCleanupSmoke и StorySmoke.
+
+После исправления обязательными остаются VisibilitySmoke, ArenaSmoke и Windows-export.

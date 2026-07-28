@@ -86,11 +86,11 @@ def check_progression() -> None:
 
 def check_project_metadata() -> None:
     project_text = (ROOT / "project.godot").read_text(encoding="utf-8")
-    if 'config/version="1.9.19"' not in project_text:
-        fail("project.godot version is not 1.9.19")
+    if 'config/version="1.9.20"' not in project_text:
+        fail("project.godot version is not 1.9.20")
     export_text = (ROOT / "export_presets.cfg").read_text(encoding="utf-8")
-    if 'application/product_version="1.9.19.0"' not in export_text:
-        fail("Windows export version is not 1.9.19.0")
+    if 'application/product_version="1.9.20.0"' not in export_text:
+        fail("Windows export version is not 1.9.20.0")
     for required in [
         "scenes/AllScriptsCompileSmoke.tscn",
         "scenes/AtacProgressionSmoke.tscn",
@@ -131,6 +131,18 @@ def check_runtime_smoke_safety() -> None:
     for marker in ["world_basis.determinant()", "world_basis.orthonormalized().inverse()"]:
         if marker not in multiview:
             fail(f"MultiViewAtac singular-basis guard is missing: {marker}")
+
+    visibility_smoke = (ROOT / "scripts/visibility_smoke.gd").read_text(encoding="utf-8")
+    if "TACTICAL_VISIBILITY_NOT_SKELETAL" in visibility_smoke:
+        fail("VisibilitySmoke still rejects intentional full-body multi-view ATAC")
+    for marker in [
+        'rig.get_meta("real_skeleton", false)',
+        'rig.get_meta("multiview_2_5d", false)',
+        'print("MULTIVIEW_ATAC_SMOKE_OK count=%d"',
+        '"crimson", "rahabar"',
+    ]:
+        if marker not in visibility_smoke:
+            fail(f"VisibilitySmoke renderer coverage is missing: {marker}")
 
     workflow = (ROOT / ".github/workflows/godot-ci.yml").read_text(encoding="utf-8")
     if 'timeout 90s "$GODOT"' not in workflow:
