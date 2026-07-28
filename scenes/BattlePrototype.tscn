@@ -1,0 +1,355 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://scripts/campaign_battle_v19.gd" type="Script" id="1"]
+
+[node name="BattlePrototype" type="Node3D"]
+script = ExtResource("1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -35, 0)
+shadow_enabled = true
+light_energy = 1.48
+light_color = Color(1, 0.95, 0.86, 1)
+
+[node name="FillLight" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-24, 135, 0)
+light_energy = 0.52
+light_color = Color(0.44, 0.60, 0.90, 1)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+
+[node name="CameraRig" type="Node3D" parent="."]
+position = Vector3(6.5, 0, 5.5)
+rotation_degrees = Vector3(0, -12, 0)
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+position = Vector3(0, 8.2, 11.4)
+rotation_degrees = Vector3(-36, 0, 0)
+current = true
+fov = 52.0
+near = 0.08
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="TopBar" type="PanelContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 14.0
+offset_right = 1584.0
+offset_bottom = 86.0
+
+[node name="Margin" type="MarginContainer" parent="HUD/TopBar"]
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="HBox" type="HBoxContainer" parent="HUD/TopBar/Margin"]
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="HUD/TopBar/Margin/HBox"]
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "Первая миссия — приграничная деревня"
+
+[node name="Phase" type="Label" parent="HUD/TopBar/Margin/HBox"]
+custom_minimum_size = Vector2(190, 0)
+theme_override_font_sizes/font_size = 19
+text = "ХОД ИГРОКА"
+horizontal_alignment = 1
+
+[node name="Status" type="Label" parent="HUD/TopBar/Margin/HBox"]
+custom_minimum_size = Vector2(480, 0)
+size_flags_horizontal = 3
+text = "Подготовка боя..."
+horizontal_alignment = 2
+
+[node name="Back" type="Button" parent="HUD/TopBar/Margin/HBox"]
+custom_minimum_size = Vector2(88, 0)
+text = "Назад"
+
+[node name="UnitPanel" type="PanelContainer" parent="HUD"]
+offset_left = 1228.0
+offset_top = 102.0
+offset_right = 1584.0
+offset_bottom = 890.0
+
+[node name="Margin" type="MarginContainer" parent="HUD/UnitPanel"]
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="HUD/UnitPanel/Margin"]
+theme_override_constants/separation = 8
+
+[node name="Portrait" type="TextureRect" parent="HUD/UnitPanel/Margin/VBox"]
+custom_minimum_size = Vector2(270, 270)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="UnitName" type="Label" parent="HUD/UnitPanel/Margin/VBox"]
+theme_override_font_sizes/font_size = 23
+autowrap_mode = 2
+text = "Юнит"
+horizontal_alignment = 1
+
+[node name="UnitRole" type="Label" parent="HUD/UnitPanel/Margin/VBox"]
+theme_override_font_sizes/font_size = 15
+autowrap_mode = 2
+text = "Роль"
+horizontal_alignment = 1
+
+[node name="HP" type="Label" parent="HUD/UnitPanel/Margin/VBox"]
+theme_override_font_sizes/font_size = 20
+text = "HP 0 / 0"
+horizontal_alignment = 1
+
+[node name="Fatigue" type="Label" parent="HUD/UnitPanel/Margin/VBox"]
+theme_override_font_sizes/font_size = 16
+text = "Усталость 0 / 100"
+horizontal_alignment = 1
+
+[node name="FatigueBar" type="ProgressBar" parent="HUD/UnitPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 18)
+max_value = 100.0
+show_percentage = false
+
+[node name="Energy" type="Label" parent="HUD/UnitPanel/Margin/VBox"]
+visible = false
+theme_override_font_sizes/font_size = 16
+text = "Энергия 0 / 0"
+horizontal_alignment = 1
+
+[node name="EnergyBar" type="ProgressBar" parent="HUD/UnitPanel/Margin/VBox"]
+visible = false
+custom_minimum_size = Vector2(0, 18)
+max_value = 100.0
+show_percentage = false
+
+[node name="Stats" type="Label" parent="HUD/UnitPanel/Margin/VBox"]
+theme_override_font_sizes/font_size = 15
+text = "Характеристики"
+autowrap_mode = 2
+
+[node name="Equipment" type="Label" parent="HUD/UnitPanel/Margin/VBox"]
+theme_override_font_sizes/font_size = 14
+text = "Снаряжение"
+autowrap_mode = 2
+
+[node name="CommandPanel" type="PanelContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 646.0
+offset_right = 1226.0
+offset_bottom = 884.0
+
+[node name="Margin" type="MarginContainer" parent="HUD/CommandPanel"]
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="HUD/CommandPanel/Margin"]
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="HUD/CommandPanel/Margin/VBox"]
+
+[node name="Caption" type="Label" parent="HUD/CommandPanel/Margin/VBox/Header"]
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "КОМАНДЫ"
+
+[node name="TurnInfo" type="Label" parent="HUD/CommandPanel/Margin/VBox/Header"]
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "Раунд 1"
+horizontal_alignment = 2
+
+[node name="UnitInfo" type="Label" parent="HUD/CommandPanel/Margin/VBox"]
+theme_override_font_sizes/font_size = 17
+text = "Юнит не выбран"
+autowrap_mode = 2
+
+[node name="Actions" type="GridContainer" parent="HUD/CommandPanel/Margin/VBox"]
+columns = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 8
+
+[node name="Attack" type="Button" parent="HUD/CommandPanel/Margin/VBox/Actions"]
+custom_minimum_size = Vector2(190, 44)
+text = "⚔ Атака"
+
+[node name="Defend" type="Button" parent="HUD/CommandPanel/Margin/VBox/Actions"]
+custom_minimum_size = Vector2(180, 44)
+text = "⛨ Защита"
+
+[node name="Dodge" type="Button" parent="HUD/CommandPanel/Margin/VBox/Actions"]
+custom_minimum_size = Vector2(180, 44)
+text = "↝ Увернуться"
+
+[node name="Ability" type="Button" parent="HUD/CommandPanel/Margin/VBox/Actions"]
+custom_minimum_size = Vector2(190, 44)
+text = "✦ Умение"
+
+[node name="EndTurn" type="Button" parent="HUD/CommandPanel/Margin/VBox/Actions"]
+custom_minimum_size = Vector2(180, 44)
+text = "Пропустить ход"
+
+[node name="Help" type="Label" parent="HUD/CommandPanel/Margin/VBox"]
+text = "ЛКМ: выбрать юнита/клетку • кнопка «Атака» открывает список приёмов\nWASD: камера • Q/E: вращение • колесо: масштаб • F: фокус на выбранном"
+autowrap_mode = 2
+
+[node name="AttackMenu" type="PanelContainer" parent="HUD"]
+visible = false
+z_index = 10
+offset_left = 32.0
+offset_top = 420.0
+offset_right = 390.0
+offset_bottom = 638.0
+
+[node name="Margin" type="MarginContainer" parent="HUD/AttackMenu"]
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="HUD/AttackMenu/Margin"]
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="HUD/AttackMenu/Margin/VBox"]
+theme_override_font_sizes/font_size = 20
+text = "ВЫБЕРИТЕ АТАКУ"
+horizontal_alignment = 1
+
+[node name="Slash" type="Button" parent="HUD/AttackMenu/Margin/VBox"]
+custom_minimum_size = Vector2(320, 38)
+text = "Порез — усталость 5"
+
+[node name="Lunge" type="Button" parent="HUD/AttackMenu/Margin/VBox"]
+custom_minimum_size = Vector2(320, 38)
+text = "Выпад — усиленный, усталость 6"
+
+[node name="LongLunge" type="Button" parent="HUD/AttackMenu/Margin/VBox"]
+custom_minimum_size = Vector2(320, 38)
+text = "Длинный выпад — дистанция 2, усталость 7"
+
+[node name="BallLightning" type="Button" parent="HUD/AttackMenu/Margin/VBox"]
+visible = false
+custom_minimum_size = Vector2(320, 38)
+text = "Шаровая молния — энергия 30"
+
+[node name="Cancel" type="Button" parent="HUD/AttackMenu/Margin/VBox"]
+custom_minimum_size = Vector2(320, 34)
+text = "Закрыть"
+
+
+[node name="AbilityMenu" type="PanelContainer" parent="HUD"]
+visible = false
+z_index = 20
+offset_left = 402.0
+offset_top = 438.0
+offset_right = 790.0
+offset_bottom = 606.0
+
+[node name="Margin" type="MarginContainer" parent="HUD/AbilityMenu"]
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="HUD/AbilityMenu/Margin"]
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="HUD/AbilityMenu/Margin/VBox"]
+theme_override_font_sizes/font_size = 20
+text = "УМЕНИЯ ATAC"
+horizontal_alignment = 1
+
+[node name="Reflect" type="Button" parent="HUD/AbilityMenu/Margin/VBox"]
+custom_minimum_size = Vector2(350, 40)
+text = "Отразить атаку — реакция"
+
+[node name="Hint" type="Label" parent="HUD/AbilityMenu/Margin/VBox"]
+text = "Умение Alba активируется только в момент фронтальной атаки врага."
+autowrap_mode = 2
+
+[node name="Cancel" type="Button" parent="HUD/AbilityMenu/Margin/VBox"]
+text = "Закрыть"
+
+[node name="ReactionMenu" type="PanelContainer" parent="HUD"]
+visible = false
+z_index = 15
+offset_left = 438.0
+offset_top = 285.0
+offset_right = 848.0
+offset_bottom = 548.0
+
+[node name="Margin" type="MarginContainer" parent="HUD/ReactionMenu"]
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="HUD/ReactionMenu/Margin"]
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="HUD/ReactionMenu/Margin/VBox"]
+theme_override_font_sizes/font_size = 21
+text = "Враг атакует"
+horizontal_alignment = 1
+
+[node name="Defend" type="Button" parent="HUD/ReactionMenu/Margin/VBox"]
+custom_minimum_size = Vector2(376, 40)
+text = "Защита — снизить фронтальный урон"
+
+[node name="Dodge" type="Button" parent="HUD/ReactionMenu/Margin/VBox"]
+custom_minimum_size = Vector2(376, 40)
+text = "Увернуться — усталость 4"
+
+[node name="Ability" type="Button" parent="HUD/ReactionMenu/Margin/VBox"]
+custom_minimum_size = Vector2(376, 40)
+text = "Умение..."
+
+[node name="TakeHit" type="Button" parent="HUD/ReactionMenu/Margin/VBox"]
+custom_minimum_size = Vector2(376, 40)
+text = "Принять удар"
+
+[node name="DialoguePanel" type="PanelContainer" parent="HUD"]
+visible = false
+z_index = 30
+offset_left = 170.0
+offset_top = 592.0
+offset_right = 1180.0
+offset_bottom = 850.0
+
+[node name="Margin" type="MarginContainer" parent="HUD/DialoguePanel"]
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
+
+[node name="HBox" type="HBoxContainer" parent="HUD/DialoguePanel/Margin"]
+theme_override_constants/separation = 18
+
+[node name="Portrait" type="TextureRect" parent="HUD/DialoguePanel/Margin/HBox"]
+custom_minimum_size = Vector2(205, 205)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="HUD/DialoguePanel/Margin/HBox"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Speaker" type="Label" parent="HUD/DialoguePanel/Margin/HBox/VBox"]
+theme_override_font_sizes/font_size = 25
+text = "Kamorge"
+
+[node name="Text" type="Label" parent="HUD/DialoguePanel/Margin/HBox/VBox"]
+custom_minimum_size = Vector2(0, 118)
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 20
+text = "Диалог"
+autowrap_mode = 2
+
+[node name="Continue" type="Button" parent="HUD/DialoguePanel/Margin/HBox/VBox"]
+custom_minimum_size = Vector2(190, 40)
+text = "Продолжить"

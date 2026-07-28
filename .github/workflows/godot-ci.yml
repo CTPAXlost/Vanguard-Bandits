@@ -1,0 +1,92 @@
+name: Godot 4.6.3 CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate-test-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Godot 4.6.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-delay 2 \
+            'https://downloads.godotengine.org/?flavor=stable&platform=linux.64&slug=linux.x86_64.zip&version=4.6.3' \
+            -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          chmod +x /tmp/godot/Godot_v4.6.3-stable_linux.x86_64
+          echo "GODOT=/tmp/godot/Godot_v4.6.3-stable_linux.x86_64" >> "$GITHUB_ENV"
+
+      - name: Install export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-delay 2 \
+            'https://downloads.godotengine.org/?flavor=stable&platform=templates&slug=export_templates.tpz&version=4.6.3' \
+            -o /tmp/templates.tpz
+          rm -rf /tmp/godot-templates
+          mkdir -p /tmp/godot-templates "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+          cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
+
+      - name: Python validation
+        run: python3 tools/validate_project.py
+
+      - name: Godot import
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 300s "$GODOT" --headless --path "$GITHUB_WORKSPACE" --import
+
+      - name: Compile all scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 180s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/AllScriptsCompileSmoke.tscn
+
+      - name: Runtime smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          scenes=(
+            AtacProgressionSmoke
+            BattleStartupSmoke
+            MissionBootSmoke
+            Mission3Smoke
+            Mission4Smoke
+            Mission5Smoke
+            Mission6Smoke
+            MovementInputSmoke
+            DeathCleanupSmoke
+            StorySmoke
+            VisibilitySmoke
+            ArenaSmoke
+          )
+          for scene in "${scenes[@]}"; do
+            echo "Running ${scene}"
+            timeout 240s "$GODOT" --headless --path "$GITHUB_WORKSPACE" "res://scenes/${scene}.tscn"
+          done
+
+      - name: Windows export
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/build/windows"
+          "$GODOT" --headless --path "$GITHUB_WORKSPACE" \
+            --export-release "Windows Desktop (Clean Prototype)" \
+            "$GITHUB_WORKSPACE/build/windows/Vanguard Bandits Remaster.exe"
+          test -s "$GITHUB_WORKSPACE/build/windows/Vanguard Bandits Remaster.exe"
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vanguard-Bandits-Remaster-1.9.16-Windows
+          path: build/windows/
+          if-no-files-found: error

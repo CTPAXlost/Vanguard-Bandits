@@ -1,0 +1,310 @@
+[
+  {
+    "id": 0,
+    "hex_id": "00",
+    "name": "Ultragunner",
+    "status": "catalogued"
+  },
+  {
+    "id": 1,
+    "hex_id": "01",
+    "name": "Zulwarn",
+    "status": "catalogued",
+    "slug": "zulwarn",
+    "max_level": 100,
+    "max_energy": 350,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 2,
+    "hex_id": "02",
+    "name": "TIC-TAC",
+    "status": "catalogued",
+    "slug": "tic_tac",
+    "max_level": 80,
+    "max_energy": 250,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 3,
+    "hex_id": "03",
+    "name": "Alba",
+    "status": "catalogued",
+    "slug": "alba",
+    "max_level": 40,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 4,
+    "hex_id": "04",
+    "name": "Serata",
+    "status": "catalogued",
+    "slug": "serata",
+    "max_level": 35,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 5,
+    "hex_id": "05",
+    "name": "Haizuron",
+    "status": "catalogued",
+    "slug": "haizuron",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 6,
+    "hex_id": "06",
+    "name": "Glaive",
+    "status": "catalogued",
+    "slug": "glaive",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 7,
+    "hex_id": "07",
+    "name": "Waiban",
+    "status": "catalogued",
+    "slug": "waiban",
+    "max_level": 35,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 8,
+    "hex_id": "08",
+    "name": "Solarus",
+    "status": "catalogued",
+    "slug": "solarus",
+    "max_level": 50,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 9,
+    "hex_id": "09",
+    "name": "Sarbelas",
+    "status": "catalogued",
+    "slug": "sarbelas",
+    "max_level": 40,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 10,
+    "hex_id": "0A",
+    "name": "Sylpheed",
+    "status": "catalogued",
+    "slug": "sylpheed",
+    "max_level": 60,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 11,
+    "hex_id": "0B",
+    "name": "Korbelan",
+    "status": "catalogued",
+    "slug": "korbelan",
+    "max_level": 50,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 12,
+    "hex_id": "0C",
+    "name": "Sharking",
+    "status": "catalogued",
+    "slug": "sharking",
+    "max_level": 55,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 13,
+    "hex_id": "0D",
+    "name": "Einlager",
+    "status": "catalogued",
+    "slug": "einlager",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 14,
+    "hex_id": "0E",
+    "name": "Botsu (0E)",
+    "status": "catalogued"
+  },
+  {
+    "id": 15,
+    "hex_id": "0F",
+    "name": "Barbatos",
+    "status": "catalogued",
+    "slug": "barbatos",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 16,
+    "hex_id": "10",
+    "name": "Altagrave",
+    "status": "catalogued",
+    "slug": "altagrave",
+    "max_level": 60,
+    "max_energy": 155,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 17,
+    "hex_id": "11",
+    "name": "Amphisia",
+    "status": "catalogued",
+    "slug": "amphisia",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 18,
+    "hex_id": "12",
+    "name": "Eigol",
+    "status": "catalogued",
+    "slug": "eigol",
+    "max_level": 30,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 19,
+    "hex_id": "13",
+    "name": "Ratatosk",
+    "status": "catalogued",
+    "slug": "ratatosk",
+    "max_level": 30,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 20,
+    "hex_id": "14",
+    "name": "Crimson",
+    "status": "catalogued",
+    "slug": "crimson",
+    "max_level": 60,
+    "max_energy": 160,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 21,
+    "hex_id": "15",
+    "name": "Botsu (15)",
+    "status": "catalogued"
+  },
+  {
+    "id": 22,
+    "hex_id": "16",
+    "name": "Rahabor",
+    "status": "catalogued",
+    "slug": "rahabar",
+    "max_level": 30,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 23,
+    "hex_id": "17",
+    "name": "Toreadore",
+    "status": "catalogued",
+    "slug": "toreadore",
+    "max_level": 60,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 24,
+    "hex_id": "18",
+    "name": "Botsu (18)",
+    "status": "catalogued"
+  },
+  {
+    "id": 25,
+    "hex_id": "19",
+    "name": "Roaring Lion",
+    "status": "catalogued",
+    "slug": "roaring_lion",
+    "max_level": 60,
+    "max_energy": 150,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 26,
+    "hex_id": "1A",
+    "name": "Flaros",
+    "status": "catalogued",
+    "slug": "flaros",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 27,
+    "hex_id": "1B",
+    "name": "Vedocorban",
+    "status": "catalogued",
+    "slug": "vedocorban",
+    "max_level": 50,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 28,
+    "hex_id": "1C",
+    "name": "Bahamut",
+    "status": "catalogued",
+    "slug": "bahamut",
+    "max_level": 45,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 29,
+    "hex_id": "1D",
+    "name": "Yurangol",
+    "status": "catalogued",
+    "slug": "yurangol",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 30,
+    "hex_id": "1E",
+    "name": "No. 86",
+    "status": "catalogued",
+    "slug": "number_69",
+    "max_level": 60,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 31,
+    "hex_id": "1F",
+    "name": "Dantarius",
+    "status": "catalogued",
+    "slug": "dantarius",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 32,
+    "hex_id": "20",
+    "name": "Barazaph",
+    "status": "catalogued",
+    "slug": "barazaph",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 33,
+    "hex_id": "21",
+    "name": "Andoras",
+    "status": "catalogued",
+    "slug": "andoras_amphisia",
+    "max_level": 20,
+    "level_progression": "official_1.9.16"
+  },
+  {
+    "id": 34,
+    "hex_id": "22",
+    "name": "Haurol",
+    "status": "catalogued",
+    "slug": "haurol",
+    "max_level": 30,
+    "level_progression": "official_1.9.16"
+  }
+]
