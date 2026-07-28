@@ -86,11 +86,11 @@ def check_progression() -> None:
 
 def check_project_metadata() -> None:
     project_text = (ROOT / "project.godot").read_text(encoding="utf-8")
-    if 'config/version="1.9.18"' not in project_text:
-        fail("project.godot version is not 1.9.18")
+    if 'config/version="1.9.19"' not in project_text:
+        fail("project.godot version is not 1.9.19")
     export_text = (ROOT / "export_presets.cfg").read_text(encoding="utf-8")
-    if 'application/product_version="1.9.18.0"' not in export_text:
-        fail("Windows export version is not 1.9.18.0")
+    if 'application/product_version="1.9.19.0"' not in export_text:
+        fail("Windows export version is not 1.9.19.0")
     for required in [
         "scenes/AllScriptsCompileSmoke.tscn",
         "scenes/AtacProgressionSmoke.tscn",
@@ -108,12 +108,44 @@ def check_shop_icons() -> None:
             fail(f"missing shop icon: {icon_path}")
 
 
+
+def check_runtime_smoke_safety() -> None:
+    story_smoke = (ROOT / "scripts/story_smoke.gd").read_text(encoding="utf-8")
+    if "get_tree().change_scene_to_file" in story_smoke:
+        fail("StorySmoke must not replace the active scene from _ready")
+    for marker in [
+        'await _validate_branch("stay_and_fight"',
+        'await _validate_branch("seek_southern_aid"',
+        'print("STORY_SMOKE_OK")',
+    ]:
+        if marker not in story_smoke:
+            fail(f"StorySmoke missing marker: {marker}")
+
+    death_smoke = (ROOT / "scripts/death_cleanup_smoke.gd").read_text(encoding="utf-8")
+    if "remaining.has(enemy)" in death_smoke:
+        fail("DeathCleanupSmoke passes a freed object into TypedArray.has")
+    if "enemy_instance_id" not in death_smoke:
+        fail("DeathCleanupSmoke does not compare stable instance IDs")
+
+    multiview = (ROOT / "scripts/multiview_atac.gd").read_text(encoding="utf-8")
+    for marker in ["world_basis.determinant()", "world_basis.orthonormalized().inverse()"]:
+        if marker not in multiview:
+            fail(f"MultiViewAtac singular-basis guard is missing: {marker}")
+
+    workflow = (ROOT / ".github/workflows/godot-ci.yml").read_text(encoding="utf-8")
+    if 'timeout 90s "$GODOT"' not in workflow:
+        fail("runtime smoke timeout is not capped at 90 seconds")
+    if "continue-on-error" in workflow:
+        fail("workflow must not use continue-on-error")
+
+
 def main() -> None:
     check_json()
     check_brackets()
     check_progression()
     check_project_metadata()
     check_shop_icons()
+    check_runtime_smoke_safety()
     print("VALIDATION_OK")
 
 

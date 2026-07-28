@@ -123,7 +123,7 @@ jobs:
           )
           for scene in "${scenes[@]}"; do
             echo "Running ${scene}"
-            timeout 240s "$GODOT" --headless --path "$GITHUB_WORKSPACE" "res://scenes/${scene}.tscn"
+            timeout 90s "$GODOT" --headless --path "$GITHUB_WORKSPACE" "res://scenes/${scene}.tscn"
           done
 
   windows-export:
@@ -253,7 +253,7 @@ jobs:
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: Vanguard-Bandits-Remaster-1.9.18-Windows
+          name: Vanguard-Bandits-Remaster-1.9.19-Windows
           path: build/windows/
           if-no-files-found: error
           compression-level: 0

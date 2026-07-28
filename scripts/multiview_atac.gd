@@ -248,8 +248,18 @@ func _sync_camera_facing(camera: Camera3D) -> void:
 func _process_view_direction(camera: Camera3D, force: bool) -> void:
 	if sprite == null or not is_visible_in_tree():
 		return
-	var to_camera: Vector3 = (camera.global_position - global_position).normalized()
-	var local_direction: Vector3 = global_transform.basis.inverse() * to_camera
+	var camera_delta: Vector3 = camera.global_position - global_position
+	if camera_delta.length_squared() <= 0.000001:
+		return
+	var world_basis: Basis = global_transform.basis
+	# During cleanup / scale tweens a tactical visual may briefly have a singular
+	# transform. Inverting that basis floods headless runs with det == 0 errors.
+	# Skip only that transient frame and use an orthonormal basis otherwise so
+	# view selection is independent from tactical display scale.
+	if absf(world_basis.determinant()) <= 0.000001:
+		return
+	var to_camera: Vector3 = camera_delta.normalized()
+	var local_direction: Vector3 = world_basis.orthonormalized().inverse() * to_camera
 	var angle: float = rad_to_deg(atan2(local_direction.x, -local_direction.z))
 	var absolute_angle: float = absf(angle)
 	var key: String = "front"

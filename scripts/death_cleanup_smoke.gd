@@ -27,15 +27,18 @@ func _ready() -> void:
 		return
 
 	var enemy_reference: WeakRef = weakref(enemy)
+	var enemy_instance_id: int = enemy.get_instance_id()
 	var old_cell: Vector2i = enemy.get_meta("cell", Vector2i.ZERO)
 	await battle.call("_damage_target", enemy, 999999)
 	for _frame: int in range(8):
 		await get_tree().process_frame
 
 	var remaining: Array = battle.get("units") as Array
-	if remaining.has(enemy):
-		_fail("DEATH_CLEANUP_SMOKE_FAILED: defeated unit remains in units")
-		return
+	for remaining_value: Variant in remaining:
+		var remaining_unit: Node3D = remaining_value as Node3D
+		if remaining_unit != null and is_instance_valid(remaining_unit) and remaining_unit.get_instance_id() == enemy_instance_id:
+			_fail("DEATH_CLEANUP_SMOKE_FAILED: defeated unit remains in units")
+			return
 	if enemy_reference.get_ref() != null:
 		var leftover: Node3D = enemy_reference.get_ref() as Node3D
 		if leftover != null and leftover.visible:
