@@ -147,7 +147,9 @@ func _spawn_campaign_hero(character_id: String, slug: String, cell: Vector2i, pr
 	unit.set_meta("facing_chosen", false)
 	unit.set_meta("reaction_system", "defend_dodge_counter")
 	unit.set_meta("max_move_actions", 1)
-	unit.set_meta("stats", CampaignState.apply_equipment_bonuses(character_id, _stats(unit)))
+	# Preserve campaign level, HP growth, unlocked progression energy and all
+	# allocated stat points whenever a hero enters later chapters.
+	unit.set_meta("stats", CampaignState.apply_character_progress(character_id, _stats(unit)))
 	_refresh_hp_bar(unit)
 	return unit
 

@@ -539,7 +539,7 @@ func _spawn_unit(
 			Vector3.ONE * (0.64 if model_slug in ["barazaph", "eigol"] else (0.61 if player_controlled else 0.58))
 		)
 	visual.set_meta("base_tactical_scale", visual.scale)
-	visual.rotation_degrees.y = 180.0 if team == "ally" else 0.0
+	visual.rotation_degrees.y = 180.0 if bool(visual.get_meta("multiview_2_5d", false)) else (180.0 if team == "ally" else 0.0)
 	unit.add_child(visual)
 
 	var marker := MeshInstance3D.new()
@@ -581,7 +581,7 @@ func _create_stats(profile: String, player_controlled: bool, commander: bool) ->
 	var profile_aliases: Dictionary = {
 		"bastion": "bastion_alba",
 		"andrew": "andrew_vedocorban",
-		"kamorge": "kamorge_eigol",
+		"kamorge": "kamorge_barazaph",
 		"ione": "ione_amphisia",
 		"reyna": "reyna_haurol",
 		"zeira": "zeira_toreadore",

@@ -16,7 +16,7 @@ jobs:
   validate-runtime:
     name: Validate and runtime smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 50
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -102,19 +102,35 @@ jobs:
           set -euo pipefail
           timeout 240s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/AllScriptsCompileSmoke.tscn
 
+      - name: Normal mission boot lifecycle I–VII
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          for mission in 1 2 3 4 5; do
+            echo "Boot mission ${mission}"
+            VBR_SMOKE_MISSION="$mission" timeout 90s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/MissionBootSmoke.tscn
+          done
+          for branch in south north; do
+            echo "Boot mission 6 branch ${branch}"
+            VBR_SMOKE_MISSION=6 VBR_SMOKE_BRANCH="$branch" timeout 90s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/MissionBootSmoke.tscn
+            echo "Boot mission 7 branch ${branch}"
+            VBR_SMOKE_MISSION=7 VBR_SMOKE_BRANCH="$branch" timeout 90s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/MissionBootSmoke.tscn
+          done
+
       - name: Runtime smoke tests
         shell: bash
-        timeout-minutes: 18
+        timeout-minutes: 25
         run: |
           set -euo pipefail
           scenes=(
             AtacProgressionSmoke
             BattleStartupSmoke
-            MissionBootSmoke
             Mission3Smoke
             Mission4Smoke
             Mission5Smoke
             Mission6Smoke
+            Mission7Smoke
             MovementInputSmoke
             DeathCleanupSmoke
             StorySmoke
@@ -253,7 +269,7 @@ jobs:
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: Vanguard-Bandits-Remaster-1.9.20-Windows
+          name: Vanguard-Bandits-Remaster-2.0.0-Windows
           path: build/windows/
           if-no-files-found: error
           compression-level: 0

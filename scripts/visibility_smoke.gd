@@ -9,7 +9,7 @@ const SLUGS: Array[String] = [
 	"alba", "barbatos", "barazaph", "vedocorban", "cador", "solarus",
 	"sarbelas", "einlager", "eigol", "amphisia", "haurol", "toreadore",
 	"serata", "glaive", "sylpheed", "korbelan", "crimson", "rahabar",
-	"altagrave", "snow_soldier", "ratatosk",
+	"altagrave", "snow_soldier", "ratatosk", "panther", "engineer", "waiban",
 ]
 const CAMERA_POSITIONS: Array[Vector3] = [
 	Vector3(0, 2.5, 6.0),

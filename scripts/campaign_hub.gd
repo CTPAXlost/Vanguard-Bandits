@@ -142,13 +142,19 @@ func _refresh_campaign_status() -> void:
 	store_button.disabled = not CampaignState.is_shop_available()
 	store_button.text = "Общий магазин — открыт" if CampaignState.is_shop_available() else "Общий магазин — закрыт"
 	mode_button.text = "Тактические анимации: ВКЛ"
-	if CampaignState.mission_6_complete:
-		title_label.text = "СОЮЗ КОРОЛЕВСТВ ЗАКЛЮЧЁН"
+	if CampaignState.mission_7_complete:
+		title_label.text = "ИМПЕРСКИЙ ЗАМОК ВЗЯТ"
+		subtitle_label.text = "Galvas и Ganlon спасены; королевский союз выдержал первое испытание"
+		status_label.text = "Глава VII завершена. Ganlon и Waiban доступны в постоянном отряде."
+		mission_button.text = "Продолжение готовится"
+		mission_button.disabled = true
+	elif CampaignState.mission_6_complete:
+		title_label.text = "ГЛАВА VII — ШТУРМ ИМПЕРСКОГО ЗАМКА"
 		var side_name: String = "Южное" if CampaignState.kingdom_alliance == "south" else "Северное"
 		subtitle_label.text = "%s королевство стало союзником Bastion" % side_name
-		status_label.text = "Выбранная сторона согласилась помочь в дальнейшей войне. Следующая глава готовится."
-		mission_button.text = "Следующая глава готовится"
-		mission_button.disabled = true
+		status_label.text = "Galvas и Ganlon находятся в плену. При критическом положении союзный король придёт с войском под управление игрока."
+		mission_button.text = "Начать главу VII — штурм замка"
+		mission_button.disabled = false
 	elif CampaignState.mission_5_complete:
 		title_label.text = "ЗАМОК УДЕРЖАН — ВЕТКА KAMORGE"
 		subtitle_label.text = "Kamorge жив; эта сюжетная линия продолжится в отдельной главе"
@@ -271,7 +277,12 @@ func _allocate(stat_key: String) -> void:
 
 
 func _start_next_mission() -> void:
+	if CampaignState.mission_7_complete:
+		return
 	if CampaignState.mission_6_complete:
+		CampaignState.current_mission = 7
+		CampaignState.save_game()
+		get_tree().change_scene_to_file("res://scenes/BattlePrototype.tscn")
 		return
 	if CampaignState.mission_5_complete:
 		# Mission VI is not part of the surviving-Kamorge branch.

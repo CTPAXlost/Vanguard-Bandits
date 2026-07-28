@@ -50,6 +50,24 @@ func _run() -> void:
 	if not AtacProgression.attacks_for("zulwarn", 100).has("summon_clone"):
 		_fail("Zulwarn clone is not unlocked")
 		return
+	if AtacProgression.attacks_for("panther", 15) != ["slash", "strong_slash", "panther_throw", "claw_release", "predator_assault", "panther_teleport"]:
+		_fail("Panther level 15 kit is wrong")
+		return
+	if AtacProgression.attacks_for("engineer", 35) != ["wrench_hit", "engineer_heal", "engineer_armor", "engineer_energy", "engineer_shield"]:
+		_fail("Engineer level 35 support kit is wrong")
+		return
+	if not AtacProgression.attacks_for("waiban", 16).has("waiban_decoys"):
+		_fail("Waiban decoys are not unlocked at level 16")
+		return
+	CampaignState.reset_campaign()
+	CampaignState.prepare_mission_for_test(1)
+	if CampaignState.character_atac("kamorge") != "barazaph" or CampaignState.unlocked_atacs.has("eigol"):
+		_fail("Kamorge must use Barazaph before mission III is completed")
+		return
+	CampaignState.prepare_mission_for_test(4, "seek_southern_aid")
+	if CampaignState.character_atac("kamorge") != "eigol":
+		_fail("Surviving Kamorge must receive Eigol only after mission III")
+		return
 	CampaignState.reset_campaign()
 	var bastion: Dictionary = CampaignState.characters["bastion"] as Dictionary
 	bastion["experience"] = CampaignState.xp_needed(1) - 1

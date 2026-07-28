@@ -110,7 +110,7 @@ func _spawn_character_unit(
 	elif character_id == "zeira":
 		profile = "zeira_toreadore"
 		role = "Предводитель партизан"
-	var atac_slug: String = CampaignState.character_atac(character_id)
+	var atac_slug: String = "barazaph" if character_id == "kamorge" and mission_number <= 3 else CampaignState.character_atac(character_id)
 	var atac_name: String = str(
 		(CampaignState.ATAC_DATA.get(atac_slug, {}) as Dictionary).get(
 			"name", atac_slug.capitalize()

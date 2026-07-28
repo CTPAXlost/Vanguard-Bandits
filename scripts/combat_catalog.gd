@@ -287,6 +287,17 @@ const ATTACKS: Dictionary = {
 	"hoof_stomp": {"label":"Топот копыт","fatigue":0,"energy":45,"range":2,"range_mode":"up_to","multiplier":2.25,"animation":"earthquake","area_targets":3},
 	"ice_storm": {"label":"Ледяной шторм","fatigue":0,"energy":35,"range":4,"range_mode":"up_to","multiplier":1.90,"animation":"ice_rain","magic":true},
 	"summon_clone": {"label":"Призвать клона","fatigue":0,"energy":0,"range":4,"range_mode":"up_to","multiplier":0.0,"animation":"ultrasound","magic":true},
+	"panther_throw": {"label":"Бросок","fatigue":0,"energy":25,"range":2,"range_mode":"up_to","multiplier":1.45,"animation":"spear_throw"},
+	"claw_release": {"label":"Выпуск когтей","fatigue":0,"energy":20,"range":3,"range_mode":"up_to","multiplier":1.55,"animation":"wind_strike"},
+	"predator_assault": {"label":"Хищное нападение","fatigue":0,"energy":50,"range":1,"multiplier":2.75,"animation":"strong_slash"},
+	"panther_teleport": {"label":"Магия: телепорт","fatigue":0,"energy":35,"range":8,"range_mode":"up_to","multiplier":0.0,"animation":"ultrasound","magic":true},
+	"wrench_hit": {"label":"Удар ключом","fatigue":0,"energy":5,"range":1,"multiplier":0.55,"animation":"shoulder_bash"},
+	"engineer_heal": {"label":"Ремонтный импульс","fatigue":0,"energy":45,"range":4,"range_mode":"up_to","multiplier":0.0,"animation":"healing_ban","magic":true},
+	"engineer_armor": {"label":"Бронепластина +200","fatigue":0,"energy":50,"range":4,"range_mode":"up_to","multiplier":0.0,"animation":"force_field_throw","magic":true},
+	"engineer_energy": {"label":"Энергоблок +50","fatigue":0,"energy":35,"range":4,"range_mode":"up_to","multiplier":0.0,"animation":"ball_lightning","magic":true},
+	"engineer_shield": {"label":"Защитный щит","fatigue":0,"energy":40,"range":4,"range_mode":"up_to","multiplier":0.0,"animation":"force_field_throw","magic":true},
+	"waiban_decoys": {"label":"Клоны-приманки","fatigue":0,"energy":35,"range":1,"multiplier":0.0,"animation":"summon_clone","magic":true},
+
 
 }
 
@@ -428,6 +439,15 @@ static func attack(mode: String) -> Dictionary:
 
 
 static func attacks_for(unit: Node3D) -> Array[String]:
+	# An explicit override is authoritative even when it is empty. This is used by
+	# Waiban decoys, which must absorb attacks but never receive combat commands.
+	if unit.has_meta("attack_override"):
+		var override_value: Variant = unit.get_meta("attack_override", [])
+		if override_value is Array:
+			var override_result: Array[String] = []
+			for override_attack: Variant in override_value as Array:
+				override_result.append(str(override_attack))
+			return override_result
 	var character_id: String = str(unit.get_meta("character_id", ""))
 	var profile: String = str(unit.get_meta("combat_profile", ""))
 	var model_slug: String = str(unit.get_meta("model_slug", ""))
@@ -501,6 +521,9 @@ static func magic_summary_for_unit(unit: Node3D) -> String:
 
 
 static func ability_summary_for_unit(unit: Node3D) -> String:
+	var override_text: String = str(unit.get_meta("ability_override", ""))
+	if not override_text.is_empty():
+		return override_text
 	var stats: Dictionary = unit.get_meta("stats", {}) as Dictionary
 	var model_slug: String = str(unit.get_meta("model_slug", ""))
 	var progression_summary: String = AtacProgression.ability_summary(model_slug, int(stats.get("level", 1)))

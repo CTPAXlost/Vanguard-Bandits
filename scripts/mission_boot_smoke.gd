@@ -5,7 +5,7 @@ var forced_branch: String = ""
 
 
 func _enter_tree() -> void:
-	expected_mission = clampi(int(OS.get_environment("VBR_SMOKE_MISSION")), 1, 6)
+	expected_mission = clampi(int(OS.get_environment("VBR_SMOKE_MISSION")), 1, 7)
 	forced_branch = OS.get_environment("VBR_SMOKE_BRANCH")
 	CampaignState.reset_campaign()
 	if expected_mission == 1:
@@ -40,6 +40,10 @@ func _ready() -> void:
 		if expected_mission == 6 and bool(battle.get("mission_six_intro_pending")):
 			continue
 		if expected_mission == 6 and str(battle.get("kingdom_choice")) != forced_branch:
+			continue
+		if expected_mission == 7 and not bool(battle.get("mission_seven_boot_finished")):
+			continue
+		if expected_mission == 7 and CampaignState.kingdom_alliance != forced_branch:
 			continue
 		print("MISSION_BOOT_SMOKE_OK mission=%d branch=%s units=%d party=%d" % [
 			expected_mission,

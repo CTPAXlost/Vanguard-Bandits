@@ -55,7 +55,7 @@ func _build_interface() -> void:
 	title.add_theme_font_size_override("font_size", 34)
 	box.add_child(title)
 	var subtitle: Label = Label.new()
-	subtitle.text = "Пройденные задания можно запускать повторно. Для третьей, пятой и шестой миссий доступны отдельные сюжетные варианты."
+	subtitle.text = "Пройденные задания можно запускать повторно. Для третьей, пятой, шестой и седьмой миссий доступны отдельные сюжетные варианты."
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.add_theme_font_size_override("font_size", 19)
@@ -132,11 +132,25 @@ func _build_interface() -> void:
 		6,
 		"north"
 	)
+	_add_mission_button(
+		box,
+		"Миссия 7А — Штурм замка с союзом Юга",
+		"Claire и Shion идут с отрядом. При тяжёлом положении Logan приводит Crimson и шесть Nordilian/Rahabor.",
+		7,
+		"south"
+	)
+	_add_mission_button(
+		box,
+		"Миссия 7Б — Штурм замка с союзом Севера",
+		"Barlow, Milea/Panther и Puck/Engineer идут с отрядом. Alden, Devlin и шесть Matisse могут прибыть на помощь.",
+		7,
+		"north"
+	)
 
 	details_label = Label.new()
 	details_label.text = (
 		"Награды: обычный ATAC — 25 монет, командир — 50, элитный ATAC — 75. "
-		+ "За первое прохождение миссий: 200 / 300 / 500 / 800 / 1200 / 1500 монет. Все награды поступают в общий фонд команды. Повторные бои сохраняют награды за уничтоженные ATAC."
+		+ "За первое прохождение миссий: 200 / 300 / 500 / 800 / 1200 / 1500 / 2200 монет. Все награды поступают в общий фонд команды. Повторные бои сохраняют награды за уничтоженные ATAC."
 	)
 	details_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	details_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

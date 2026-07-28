@@ -248,12 +248,12 @@ const DATA: Dictionary = {
 			{"min": 1, "attacks": ["slash", "lunge"]},
 			{"min": 6, "attacks": ["long_lunge"]},
 			{"min": 11, "attacks": ["strong_slash", "shoulder_bash"]},
-			{"min": 20, "attacks": ["ball_lightning"]},
+			{"min": 16, "attacks": ["ball_lightning", "waiban_decoys"]},
 			{"min": 30, "attacks": ["bright_bomb"]},
 		],
 		"abilities": [
-			{"min": 20, "text": "Аура: союзникам в радиусе 3 клеток +15 HP и энергии каждый ход."},
-			{"min": 30, "text": "Усиленная аура: союзникам +35 HP и энергии каждый ход."},
+			{"min": 16, "text": "Клоны-приманки по 100 HP не атакуют и защищают от ближних ударов."},
+			{"min": 30, "text": "Аура: союзникам в радиусе 3 клеток +35 HP и энергии каждый ход."},
 		],
 	},
 	"yurangol": {
@@ -363,6 +363,25 @@ const DATA: Dictionary = {
 			{"min": 20, "text": "Точечно восстанавливает союзнику 50% энергии."},
 			{"min": 30, "text": "Удар копытами со спины: 250% мощности и отбрасывание на 4 клетки."},
 		],
+	},
+	"panther": {
+		"name": "Panther", "max_level": 100, "max_energy": 180,
+		"tiers": [
+			{"min": 1, "attacks": ["slash"]},
+			{"min": 6, "attacks": ["strong_slash"]},
+			{"min": 10, "attacks": ["panther_throw"]},
+			{"min": 12, "attacks": ["claw_release"]},
+			{"min": 15, "attacks": ["predator_assault", "panther_teleport"]},
+		],
+		"abilities": [{"min": 15, "text": "40% шанс украсть 20–40 энергии; телепорт 2× за бой."}],
+	},
+	"engineer": {
+		"name": "Engineer", "max_level": 100, "max_energy": 240,
+		"tiers": [
+			{"min": 1, "attacks": ["wrench_hit"]},
+			{"min": 35, "attacks": ["engineer_heal", "engineer_armor", "engineer_energy", "engineer_shield"]},
+		],
+		"abilities": [{"min": 35, "text": "Лечение радиусом 4; 200 брони 1×; +50 энергии; щит −40% урона 3×."}],
 	},
 	"tic_tac": {
 		"name": "TIC-TAC", "max_level": 80, "max_energy": 250,

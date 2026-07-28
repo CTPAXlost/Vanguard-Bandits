@@ -28,6 +28,9 @@ const SUPPORTED_SLUGS: Array[String] = [
 	"altagrave",
 	"snow_soldier",
 	"ratatosk",
+	"panther",
+	"engineer",
+	"waiban",
 ]
 
 var slug: String = "alba"
@@ -168,7 +171,7 @@ func _pixel_size() -> float:
 		return 0.00188
 	if slug in ["barbatos", "barazaph", "vedocorban"]:
 		return 0.00218
-	if slug in ["crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk"]:
+	if slug in ["crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk", "panther", "engineer", "waiban"]:
 		return 0.00205
 	return 0.00216
 
@@ -178,6 +181,7 @@ func _build_weapons() -> void:
 	if slug in [
 		"cador", "amphisia", "haurol", "toreadore", "serata", "glaive",
 		"crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk",
+		"panther", "engineer", "waiban",
 	]:
 		return
 	var primary_path: String = "res://assets/atac_views/sword_level_1.png"
@@ -260,6 +264,11 @@ func _process_view_direction(camera: Camera3D, force: bool) -> void:
 		return
 	var to_camera: Vector3 = camera_delta.normalized()
 	var local_direction: Vector3 = world_basis.orthonormalized().inverse() * to_camera
+	# Ratatosk source sheets were authored with the opposite forward axis. Apply
+	# the correction only to this model so the Matisse squad no longer walks
+	# visually backwards while all other corrected ATAC keep their orientation.
+	if slug == "ratatosk":
+		local_direction = Basis(Vector3.UP, PI) * local_direction
 	var angle: float = rad_to_deg(atan2(local_direction.x, -local_direction.z))
 	var absolute_angle: float = absf(angle)
 	var key: String = "front"

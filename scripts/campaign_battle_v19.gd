@@ -222,7 +222,7 @@ func _set_mission_six_combat_team(unit: Node3D, team: String) -> void:
 	unit.set_meta("player", false)
 	var visual: Node3D = unit.get_node_or_null("ATACVisual") as Node3D
 	if visual != null:
-		visual.rotation_degrees.y = 180.0 if team == "ally" else 0.0
+		visual.rotation_degrees.y = 180.0 if bool(visual.get_meta("multiview_2_5d", false)) else (180.0 if team == "ally" else 0.0)
 	var ring: MeshInstance3D = unit.get_node_or_null("SelectionRing") as MeshInstance3D
 	if ring != null:
 		var ring_material := StandardMaterial3D.new()

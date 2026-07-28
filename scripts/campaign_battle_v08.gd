@@ -1703,9 +1703,10 @@ func _attempt_knockback(attacker: Node3D, target: Node3D) -> void:
 
 
 func _open_current_upgrade() -> void:
-	if player_unit == null:
+	var target_unit: Node3D = selected_unit if selected_unit != null else player_unit
+	if target_unit == null or not bool(target_unit.get_meta("player", false)):
 		return
-	var character_id: String = str(player_unit.get_meta("character_id", ""))
+	var character_id: String = str(target_unit.get_meta("character_id", ""))
 	if character_id.is_empty():
 		return
 	_open_upgrade_panel(character_id)
@@ -1777,7 +1778,10 @@ func _refresh_ui() -> void:
 	var character_data: Dictionary = CampaignState.get_character(character_id) if not character_id.is_empty() else {}
 	if str(selected_unit.get_meta("model_slug", "")) == "eigol":
 		equipment_label.text += "\nМагия: Зыбучие пески — %d / 3" % int(selected_unit.get_meta("magic_uses", 0))
-	upgrade_button.visible = bool(selected_unit.get_meta("player", false)) and int(character_data.get("stat_points", 0)) > 0
+	var upgrade_points: int = int(character_data.get("stat_points", 0))
+	upgrade_button.visible = bool(selected_unit.get_meta("player", false)) and not character_id.is_empty()
+	upgrade_button.disabled = upgrade_points <= 0
+	upgrade_button.text = "Прокачка (%d)" % upgrade_points
 	var can_player_act: bool = phase in [Phase.PLAYER_MOVE, Phase.PLAYER_ACTION] and not action_in_progress and selected_unit == player_unit
 	var any_target: bool = false
 	if can_player_act:
@@ -2209,6 +2213,13 @@ func _spawn_partisan_reinforcements() -> void:
 	ione_unit = _spawn_character_unit("ione", _resolve_spawn_cell(_array_to_cell(spawn_data.get("ione", [21, 3]))), true, "ally")
 	reyna_unit = _spawn_character_unit("reyna", _resolve_spawn_cell(_array_to_cell(spawn_data.get("reyna", [20, 4]))), true, "ally")
 	zeira_unit = _spawn_character_unit("zeira", _resolve_spawn_cell(_array_to_cell(spawn_data.get("zeira", [19, 4]))), true, "ally")
+	# Mission III uses the canonical starter kits. Magic and advanced skills unlock only by ATAC level later.
+	ione_unit.set_meta("attack_override", ["slash", "lunge", "long_lunge"])
+	reyna_unit.set_meta("attack_override", ["slash", "lunge", "long_lunge"])
+	zeira_unit.set_meta("attack_override", ["slash", "lunge", "long_lunge", "strong_slash"])
+	ione_unit.set_meta("ability_override", "Нет — открывается с уровнем ATAC")
+	reyna_unit.set_meta("ability_override", "Нет — открывается с уровнем ATAC")
+	zeira_unit.set_meta("ability_override", "Нет — открывается с уровнем ATAC")
 	for partisan: Node3D in [ione_unit, reyna_unit, zeira_unit]:
 		partisan.set_meta("facing", Vector2i(-1, 0))
 		partisan.rotation.y = atan2(-1.0, 0.0)
@@ -2218,12 +2229,12 @@ func _spawn_partisan_reinforcements() -> void:
 		_spawn_arrival_effect(partisan.global_position + Vector3(0, 1.0, 0))
 	await _show_dialogue(
 		"Reyna",
-		"Haurol готов. Копьё достанет их с пяти клеток, а ледяной дождь остановит наступление.",
+		"Haurol готов. Сейчас у меня только базовые выпады — новые приёмы откроются по мере роста уровня ATAC.",
 		REYNA_PORTRAIT
 	)
 	await _show_dialogue(
 		"Zeira",
-		"Я Zeira. Toreadore поведёт отряд: два перемещения за ход, золотое копьё и ни шага назад. Bastion, сражайся рядом с нами.",
+		"Я Zeira. В этом бою Toreadore использует только базовые клинковые приёмы. Остальные умения и магия откроются с уровнем.",
 		ZEIRA_PORTRAIT
 	)
 
