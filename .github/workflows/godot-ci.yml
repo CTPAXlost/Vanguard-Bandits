@@ -5,54 +5,106 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  GODOT_VERSION: "4.6.3"
+  GODOT_RELEASE: "4.6.3-stable"
+  GODOT_BINARY: "Godot_v4.6.3-stable_linux.x86_64"
+  GODOT_CACHE_DIR: "${{ github.workspace }}/.ci-cache/godot/4.6.3"
+  TEMPLATE_DIR: "${{ github.workspace }}/.ci-cache/export_templates/4.6.3.stable"
+
 jobs:
-  validate-test-export:
+  validate-runtime:
+    name: Validate and runtime smoke
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Godot 4.6.3
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -fL --retry 3 --retry-delay 2 \
-            'https://downloads.godotengine.org/?flavor=stable&platform=linux.64&slug=linux.x86_64.zip&version=4.6.3' \
-            -o /tmp/godot.zip
-          unzip -q /tmp/godot.zip -d /tmp/godot
-          chmod +x /tmp/godot/Godot_v4.6.3-stable_linux.x86_64
-          echo "GODOT=/tmp/godot/Godot_v4.6.3-stable_linux.x86_64" >> "$GITHUB_ENV"
+      - name: Restore Godot editor cache
+        id: godot-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ci-cache/godot/4.6.3
+          key: ${{ runner.os }}-godot-editor-4.6.3-v2
 
-      - name: Install export templates
+      - name: Install Godot 4.6.3 when cache is empty
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          mkdir -p "$GODOT_CACHE_DIR"
+          archive="$RUNNER_TEMP/godot-4.6.3.zip"
+          urls=(
+            "https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}/Godot_v${GODOT_RELEASE}_linux.x86_64.zip"
+            "https://downloads.godotengine.org/?flavor=stable&platform=linux.64&slug=linux.x86_64.zip&version=${GODOT_VERSION}"
+          )
+          downloaded=false
+          for url in "${urls[@]}"; do
+            echo "Downloading Godot editor from: $url"
+            if curl -fL --retry 6 --retry-all-errors --retry-delay 3 \
+              --connect-timeout 30 --max-time 720 -C - "$url" -o "$archive"; then
+              downloaded=true
+              break
+            fi
+            rm -f "$archive"
+          done
+          test "$downloaded" = true
+          unzip -q "$archive" -d "$GODOT_CACHE_DIR"
+          chmod +x "$GODOT_CACHE_DIR/$GODOT_BINARY"
+          "$GODOT_CACHE_DIR/$GODOT_BINARY" --version
+
+      - name: Save Godot editor cache
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .ci-cache/godot/4.6.3
+          key: ${{ runner.os }}-godot-editor-4.6.3-v2
+
+      - name: Set Godot path
         shell: bash
         run: |
           set -euo pipefail
-          curl -fL --retry 3 --retry-delay 2 \
-            'https://downloads.godotengine.org/?flavor=stable&platform=templates&slug=export_templates.tpz&version=4.6.3' \
-            -o /tmp/templates.tpz
-          rm -rf /tmp/godot-templates
-          mkdir -p /tmp/godot-templates "$HOME/.local/share/godot/export_templates/4.6.3.stable"
-          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
-          cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
+          test -x "$GODOT_CACHE_DIR/$GODOT_BINARY"
+          echo "GODOT=$GODOT_CACHE_DIR/$GODOT_BINARY" >> "$GITHUB_ENV"
 
       - name: Python validation
         run: python3 tools/validate_project.py
 
+      - name: Restore Godot import cache
+        id: import-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .godot
+          key: ${{ runner.os }}-vbr-import-4.6.3-${{ hashFiles('project.godot', 'export_presets.cfg', 'scripts/**/*.gd', 'scenes/**/*.tscn', 'data/**/*.json', 'assets/**/*.png', 'assets/**/*.jpg', 'assets/**/*.webp') }}
+          restore-keys: |
+            ${{ runner.os }}-vbr-import-4.6.3-
+
       - name: Godot import
         shell: bash
+        timeout-minutes: 8
         run: |
           set -euo pipefail
-          timeout 300s "$GODOT" --headless --path "$GITHUB_WORKSPACE" --import
+          timeout 420s "$GODOT" --headless --path "$GITHUB_WORKSPACE" --import
+
+      - name: Save Godot import cache
+        if: steps.import-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .godot
+          key: ${{ runner.os }}-vbr-import-4.6.3-${{ hashFiles('project.godot', 'export_presets.cfg', 'scripts/**/*.gd', 'scenes/**/*.tscn', 'data/**/*.json', 'assets/**/*.png', 'assets/**/*.jpg', 'assets/**/*.webp') }}
 
       - name: Compile all scripts
         shell: bash
+        timeout-minutes: 5
         run: |
           set -euo pipefail
-          timeout 180s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/AllScriptsCompileSmoke.tscn
+          timeout 240s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/AllScriptsCompileSmoke.tscn
 
       - name: Runtime smoke tests
         shell: bash
+        timeout-minutes: 18
         run: |
           set -euo pipefail
           scenes=(
@@ -74,12 +126,126 @@ jobs:
             timeout 240s "$GODOT" --headless --path "$GITHUB_WORKSPACE" "res://scenes/${scene}.tscn"
           done
 
-      - name: Windows export
+  windows-export:
+    name: Windows export
+    needs: validate-runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore Godot editor cache
+        id: godot-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ci-cache/godot/4.6.3
+          key: ${{ runner.os }}-godot-editor-4.6.3-v2
+
+      - name: Emergency Godot editor download
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          mkdir -p "$GODOT_CACHE_DIR"
+          archive="$RUNNER_TEMP/godot-4.6.3.zip"
+          curl -fL --retry 6 --retry-all-errors --retry-delay 3 \
+            --connect-timeout 30 --max-time 720 \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}/Godot_v${GODOT_RELEASE}_linux.x86_64.zip" \
+            -o "$archive"
+          unzip -q "$archive" -d "$GODOT_CACHE_DIR"
+          chmod +x "$GODOT_CACHE_DIR/$GODOT_BINARY"
+
+      - name: Set Godot path
         shell: bash
         run: |
           set -euo pipefail
+          test -x "$GODOT_CACHE_DIR/$GODOT_BINARY"
+          echo "GODOT=$GODOT_CACHE_DIR/$GODOT_BINARY" >> "$GITHUB_ENV"
+
+      - name: Restore Godot import cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .godot
+          key: ${{ runner.os }}-vbr-import-4.6.3-${{ hashFiles('project.godot', 'export_presets.cfg', 'scripts/**/*.gd', 'scenes/**/*.tscn', 'data/**/*.json', 'assets/**/*.png', 'assets/**/*.jpg', 'assets/**/*.webp') }}
+          restore-keys: |
+            ${{ runner.os }}-vbr-import-4.6.3-
+
+      - name: Restore Windows export templates cache
+        id: templates-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ci-cache/export_templates/4.6.3.stable
+          key: ${{ runner.os }}-godot-4.6.3-windows-x86_64-templates-v2
+
+      - name: Download only the required Windows templates
+        if: steps.templates-cache.outputs.cache-hit != 'true'
+        shell: bash
+        timeout-minutes: 70
+        run: |
+          set -euo pipefail
+          mkdir -p "$TEMPLATE_DIR"
+          archive="$RUNNER_TEMP/export_templates_4.6.3.tpz"
+          urls=(
+            "https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}/Godot_v${GODOT_RELEASE}_export_templates.tpz"
+            "https://downloads.godotengine.org/?flavor=stable&platform=templates&slug=export_templates.tpz&version=${GODOT_VERSION}"
+          )
+          downloaded=false
+          for url in "${urls[@]}"; do
+            echo "Downloading export templates from: $url"
+            if curl -fL --retry 10 --retry-all-errors --retry-delay 5 \
+              --connect-timeout 30 --max-time 3900 -C - "$url" -o "$archive"; then
+              downloaded=true
+              break
+            fi
+            rm -f "$archive"
+          done
+          test "$downloaded" = true
+
+          extract_dir="$RUNNER_TEMP/windows-templates"
+          rm -rf "$extract_dir"
+          mkdir -p "$extract_dir"
+          unzip -q "$archive" \
+            'templates/windows_release_x86_64.exe' \
+            'templates/windows_debug_x86_64.exe' \
+            -d "$extract_dir"
+          cp -a "$extract_dir/templates/." "$TEMPLATE_DIR/"
+          test -s "$TEMPLATE_DIR/windows_release_x86_64.exe"
+          test -s "$TEMPLATE_DIR/windows_debug_x86_64.exe"
+          du -sh "$TEMPLATE_DIR"
+
+      - name: Save Windows export templates cache
+        if: steps.templates-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .ci-cache/export_templates/4.6.3.stable
+          key: ${{ runner.os }}-godot-4.6.3-windows-x86_64-templates-v2
+
+      - name: Install cached Windows templates for Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          install_dir="$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          rm -rf "$install_dir"
+          mkdir -p "$install_dir"
+          cp -a "$TEMPLATE_DIR/." "$install_dir/"
+          test -s "$install_dir/windows_release_x86_64.exe"
+
+      - name: Refresh import cache for export
+        shell: bash
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          timeout 420s "$GODOT" --headless --path "$GITHUB_WORKSPACE" --import
+
+      - name: Windows export
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
           mkdir -p "$GITHUB_WORKSPACE/build/windows"
-          "$GODOT" --headless --path "$GITHUB_WORKSPACE" \
+          timeout 840s "$GODOT" --headless --path "$GITHUB_WORKSPACE" \
             --export-release "Windows Desktop (Clean Prototype)" \
             "$GITHUB_WORKSPACE/build/windows/Vanguard Bandits Remaster.exe"
           test -s "$GITHUB_WORKSPACE/build/windows/Vanguard Bandits Remaster.exe"
@@ -87,6 +253,8 @@ jobs:
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: Vanguard-Bandits-Remaster-1.9.17-Windows
+          name: Vanguard-Bandits-Remaster-1.9.18-Windows
           path: build/windows/
           if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

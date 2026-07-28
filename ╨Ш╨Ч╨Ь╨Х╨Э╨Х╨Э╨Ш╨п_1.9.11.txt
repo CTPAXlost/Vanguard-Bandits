@@ -1,4 +1,0 @@
-Vanguard Bandits Remaster 1.9.11
-
-Исправлены отсутствовавшие функции CampaignHub: сохранение прогресса и открытие панели персонажей/ATAC.
-Добавлена обязательная компиляция всех GDScript в обоих GitHub Actions workflow до запуска миссий и Windows-export.

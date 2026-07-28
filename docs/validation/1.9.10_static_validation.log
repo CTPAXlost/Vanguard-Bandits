@@ -1,9 +1,0 @@
-Vanguard Bandits Remaster 1.9.10 static validation
-python_files: 44
-json_files: 36
-png_files: 524
-literal_runtime_res_refs: 360
-workflows: 2
-RESULT: OK
-YAML OK .github/workflows/build-windows.yml
-YAML OK .github/workflows/release-windows.yml

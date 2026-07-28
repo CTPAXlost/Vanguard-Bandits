@@ -1,8 +1,0 @@
-Vanguard Bandits Remaster 1.9.13
-
-Исправлена ошибка сохранения миссии VI:
-Trying to assign an array of type "Array" to a variable of type "Array[String]".
-
-Причина: тернарное выражение возвращало обычный Array и присваивалось Array[String].
-Исправлены оба пути: завершение миссии VI и восстановление разблокировок после загрузки.
-Проверка обеих сторон и сохранения союза остаётся обязательной в GitHub Actions.

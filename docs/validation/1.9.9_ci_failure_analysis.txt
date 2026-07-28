@@ -1,8 +1,0 @@
-Источник: logs_82025695480.zip
-
-Последний успешный этап до падения: Import Godot project.
-Падающий этап: Runtime parse test for battle script chain.
-Команда: Godot --script res://scripts/script_chain_smoke.gd.
-Ошибка: Compile Error: Identifier not found: CampaignState во всех шести слоях боевой цепочки.
-
-Исправление 1.9.9: standalone-проверка удалена. Наследуемая цепочка компилируется и запускается через обычную MissionBootSmoke.tscn с предустановленным BattlePrototype.tscn и проектными autoload-синглтонами.

@@ -1,8 +1,0 @@
-Vanguard Bandits Remaster 1.9.12
-
-1. Исправлена ошибка Godot 4.6.3 в model_gallery.gd: Cannot infer the type of delta_mouse.
-2. Все события ввода в ModelGallery явно приводятся к точным типам.
-3. Проверка всех GDScript больше не может напечатать OK после parse error: проверяется Script.can_instantiate().
-4. Добавлены регрессионные тесты текущего падения и ложного успешного маркера.
-5. Обязательные import, runtime-smoke, миссии I–VI и Windows-export сохранены.
-6. continue-on-error отсутствует.

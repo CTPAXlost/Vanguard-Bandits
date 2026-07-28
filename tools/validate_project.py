@@ -86,11 +86,11 @@ def check_progression() -> None:
 
 def check_project_metadata() -> None:
     project_text = (ROOT / "project.godot").read_text(encoding="utf-8")
-    if 'config/version="1.9.17"' not in project_text:
-        fail("project.godot version is not 1.9.17")
+    if 'config/version="1.9.18"' not in project_text:
+        fail("project.godot version is not 1.9.18")
     export_text = (ROOT / "export_presets.cfg").read_text(encoding="utf-8")
-    if 'application/product_version="1.9.17.0"' not in export_text:
-        fail("Windows export version is not 1.9.17.0")
+    if 'application/product_version="1.9.18.0"' not in export_text:
+        fail("Windows export version is not 1.9.18.0")
     for required in [
         "scenes/AllScriptsCompileSmoke.tscn",
         "scenes/AtacProgressionSmoke.tscn",

@@ -1,3 +1,0 @@
-PRIVATE REPOSITORY NOTICE
-
-Version 1.2 contains user-provided character and ATAC reference images, generated multiview assets and reconstructed OBJ models for a private fan remaster. Keep this repository private. Do not publish the image assets, reconstructed models or extracted original-game technical references as a standalone asset pack.
