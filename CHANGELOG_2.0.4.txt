@@ -1,0 +1,27 @@
+VANGUARD BANDITS REMASTER 2.0.4 — ИСПРАВЛЕНИЕ ЗАГРУЗКИ МИССИИ III В CI
+
+Причина сбоя 2.0.3:
+- Импорт проекта и компиляция всех GDScript прошли успешно.
+- Миссии I и II успешно завершили MissionBootSmoke.
+- Миссия III создала 17 юнитов, но осталась в Phase.DIALOGUE с action_in_progress=true.
+- Обычный MissionBootSmoke не имеет игрока, который мог бы промотать длинную сцену на мосту и выбрать сюжетную ветку.
+- Из-за этого campaign_battle_v08.gd не завершал await _play_mission_three_intro(), а поздний слой v20 не успевал применить тестовое масштабирование уровней.
+
+Исправлено:
+- Добавлен узкий helper `_is_mission_three_boot_probe()`.
+- Только при `VBR_SMOKE_MISSION=3` и пустом `VBR_SMOKE_BRANCH` обычный boot-probe пропускает интерактивную сцену выбора.
+- После пропуска снимается блокировка диалога, запускается первый ход и печатается `MISSION3_BOOT_PROBE_UNLOCKED`.
+- Полная сюжетная логика миссии III в обычной игре не изменена.
+- Отдельный Mission3Smoke по-прежнему запускает обе ветки `stay_and_fight` и `seek_southern_aid`, проматывает реальные диалоги и проверяет движение после развилки.
+- Python-валидатор теперь проверяет наличие узкого boot-probe и сохранение обеих полноценных веток Mission3Smoke.
+- Версия проекта, Windows export и GitHub-артефакта обновлена до 2.0.4.
+
+Что подтвердил свежий лог до исправления:
+- `VALIDATION_OK`;
+- импорт Godot 4.6.3;
+- компиляция 39 GDScript;
+- `MISSION_BOOT_SMOKE_OK` для миссий I и II;
+- `TEST_LEVEL_SCALING_OK mission=2`;
+- создание миссии III: `BATTLE_READY_OK mission=3 units=17`.
+
+Окончательные runtime-smoke миссий III–VII и Windows-export должен подтвердить новый запуск GitHub Actions.

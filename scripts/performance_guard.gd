@@ -167,7 +167,7 @@ func _create_overlay() -> void:
 
 
 func _write_header() -> void:
-	_write_line("Vanguard Bandits Remaster 2.0.3 performance log", false)
+	_write_line("Vanguard Bandits Remaster 2.0.4 performance log", false)
 	_write_line("GPU: %s | Vendor: %s" % [RenderingServer.get_video_adapter_name(), RenderingServer.get_video_adapter_vendor()], false)
 	_write_line("Renderer: %s | Driver: %s | FPS cap: %d | VSync: enabled" % [RenderingServer.get_current_rendering_method(), RenderingServer.get_current_rendering_driver_name(), TARGET_FPS], false)
 	var memory: Dictionary = OS.get_memory_info()

@@ -119,11 +119,11 @@ def check_progression() -> None:
 
 def check_project_metadata() -> None:
     project_text = read("project.godot")
-    if 'config/version="2.0.3"' not in project_text:
-        fail("project.godot version is not 2.0.3")
+    if 'config/version="2.0.4"' not in project_text:
+        fail("project.godot version is not 2.0.4")
     export_text = read("export_presets.cfg")
-    if 'application/product_version="2.0.3.0"' not in export_text:
-        fail("Windows export version is not 2.0.3.0")
+    if 'application/product_version="2.0.4.0"' not in export_text:
+        fail("Windows export version is not 2.0.4.0")
     scene = read("scenes/BattlePrototype.tscn")
     if 'res://scripts/campaign_battle_v20.gd' not in scene:
         fail("BattlePrototype is not registered to campaign_battle_v20.gd")
@@ -135,8 +135,8 @@ def check_project_metadata() -> None:
         "data/maps/mission_07.json",
         "data/balance/official_atac_balance_by_level.txt",
         "scenes/PerformanceSmoke.tscn",
-        "CHANGELOG_2.0.3.txt",
-        "README_2.0.3.md",
+        "CHANGELOG_2.0.4.txt",
+        "README_2.0.4.md",
     ]:
         if not (ROOT / required).is_file():
             fail(f"missing required file: {required}")
@@ -266,11 +266,24 @@ def check_runtime_smoke_safety() -> None:
         fail("headless/smoke helper must be declared in the base campaign script")
     if "func _is_headless_or_smoke_runtime() -> bool:" in read("scripts/campaign_battle_v18.gd"):
         fail("headless/smoke helper must not be duplicated only in a late mission layer")
+    mission_three = read("scripts/campaign_battle_v08.gd")
+    for marker in [
+        "func _is_mission_three_boot_probe() -> bool:",
+        'OS.get_environment("VBR_SMOKE_MISSION") == "3"',
+        'print("MISSION3_BOOT_PROBE_UNLOCKED units=%d party=%d"',
+    ]:
+        if marker not in mission_three:
+            fail(f"Mission III boot-probe gate is missing: {marker}")
+    # The dedicated branch smoke must remain independent of VBR_SMOKE_MISSION,
+    # otherwise skipping the boot probe would accidentally stop testing 3A/3B.
+    mission_three_smoke = read("scripts/mission3_smoke.gd")
+    if 'for branch: String in ["stay_and_fight", "seek_southern_aid"]' not in mission_three_smoke:
+        fail("Mission3Smoke must still execute both complete story branches")
     workflow = read(".github/workflows/godot-ci.yml")
     for marker in [
         'VBR_SMOKE_MISSION=7 VBR_SMOKE_BRANCH="$branch"',
         'Mission7Smoke',
-        'name: Vanguard-Bandits-Remaster-2.0.3-Windows',
+        'name: Vanguard-Bandits-Remaster-2.0.4-Windows',
         'timeout 90s "$GODOT"',
         'PerformanceSmoke',
     ]:

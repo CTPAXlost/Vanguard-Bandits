@@ -77,6 +77,17 @@ func _ready() -> void:
 		action_in_progress = true
 		phase = Phase.DIALOGUE
 		_clear_highlights()
+		# MissionBootSmoke validates that the normal chapter scene can initialize,
+		# but it has no player to advance the long bridge dialogue or choose a
+		# story branch. Skip only that one non-interactive boot probe. The dedicated
+		# Mission3Smoke does not set VBR_SMOKE_MISSION and still runs both complete
+		# branches, advancing every dialogue and checking real movement afterward.
+		if _is_mission_three_boot_probe():
+			mission_three_intro_pending = false
+			action_in_progress = false
+			_begin_player_turn()
+			print("MISSION3_BOOT_PROBE_UNLOCKED units=%d party=%d" % [units.size(), player_party.size()])
+			return
 		await _play_mission_three_intro()
 		mission_three_intro_pending = false
 		# The branch setup calls _begin_player_turn() while the intro lock is still
@@ -93,6 +104,13 @@ func _ready() -> void:
 		mission_four_intro_pending = false
 		action_in_progress = false
 		_begin_player_turn()
+
+
+func _is_mission_three_boot_probe() -> bool:
+	return (
+		OS.get_environment("VBR_SMOKE_MISSION") == "3"
+		and OS.get_environment("VBR_SMOKE_BRANCH").is_empty()
+	)
 
 func _build_v08_interface() -> void:
 	var attack_vbox: VBoxContainer = $HUD/AttackMenu/Margin/VBox
