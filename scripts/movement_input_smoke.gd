@@ -81,7 +81,13 @@ func _ready() -> void:
 	for _frame: int in range(900):
 		await get_tree().process_frame
 		if player.get_meta("cell", Vector2i.ZERO) == destination:
-			print("MOVEMENT_INPUT_SMOKE_OK")
+			player.set_meta("facing_chosen", false)
+			battle.call("_choose_facing", Vector2i(1, 0))
+			await get_tree().process_frame
+			if not bool(player.get_meta("facing_chosen", false)) or player.get_meta("facing", Vector2i.ZERO) != Vector2i(1, 0):
+				_fail(battle, "arrow-key facing did not persist east direction")
+				return
+			print("MOVEMENT_INPUT_SMOKE_OK facing=east")
 			get_tree().quit()
 			return
 

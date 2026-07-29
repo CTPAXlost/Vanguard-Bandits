@@ -187,9 +187,11 @@ func _award_attack_experience(attacker: Node3D, damage: int, killed_enemy: bool)
 	var character_id: String = str(attacker.get_meta("character_id", ""))
 	if character_id.is_empty():
 		return
-	var damage_bonus: int = mini(8, maxi(0, int(float(damage) / 7.0)))
-	var attack_xp: int = 7 + damage_bonus
-	var total_xp: int = attack_xp + (50 if killed_enemy else 0)
+	# A successful battle must visibly move the progress bar. Early builds awarded
+	# so little XP that several eliminations could leave a level-1 hero unchanged.
+	var damage_bonus: int = mini(20, maxi(0, int(float(damage) / 10.0)))
+	var attack_xp: int = 12 + damage_bonus
+	var total_xp: int = attack_xp + (80 if killed_enemy else 0)
 	var previous_stats: Dictionary = _stats(attacker).duplicate(true)
 	var attacks_before: Array[String] = CombatCatalog.attacks_for(attacker)
 	var previous_hp: int = int(previous_stats.get("hp", 1))
@@ -227,7 +229,7 @@ func _spawn_experience_label(world_position: Vector3, amount: int) -> void:
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
 	label.position = world_position
-	add_child(label)
+	_register_transient_fx(label, 1.5)
 	var tween := create_tween()
 	tween.tween_property(label, "position:y", label.position.y + 0.65, 0.75)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.75)
@@ -246,7 +248,7 @@ func _spawn_level_up_effect(position: Vector3) -> void:
 		ring.position = position
 		ring.rotation_degrees = Vector3(90, index * 27, 0)
 		ring.material_override = _effect_material(Color(1.0, 0.82, 0.18, 0.82))
-		add_child(ring)
+		_register_transient_fx(ring, 1.8)
 		var tween := create_tween()
 		ring.scale = Vector3.ONE * 0.25
 		tween.tween_property(ring, "scale", Vector3.ONE * 1.45, 0.35 + index * 0.03)
@@ -486,6 +488,8 @@ func _show_cador_cameo() -> void:
 
 
 func _refresh_ui() -> void:
+	if selected_unit != null:
+		_sync_runtime_progress_fields(selected_unit)
 	super._refresh_ui()
 	if selected_unit == null:
 		return
@@ -506,6 +510,24 @@ func _refresh_ui() -> void:
 				int(stats.get("stat_points", 0)),
 			]
 		)
+
+
+func _sync_runtime_progress_fields(unit: Node3D) -> void:
+	var character_id: String = str(unit.get_meta("character_id", ""))
+	if character_id.is_empty():
+		return
+	var character: Dictionary = CampaignState.get_character(character_id)
+	if character.is_empty():
+		return
+	var stats: Dictionary = _stats(unit)
+	var level: int = int(character.get("level", int(stats.get("level", 1))))
+	var atac_id: String = str(character.get("atac", unit.get_meta("model_slug", "alba")))
+	stats["level"] = level
+	stats["max_level"] = AtacProgression.max_level(atac_id, 100)
+	stats["experience"] = int(character.get("experience", 0))
+	stats["experience_needed"] = 0 if level >= int(stats["max_level"]) else CampaignState.xp_needed(level)
+	stats["stat_points"] = int(character.get("stat_points", 0))
+	unit.set_meta("stats", stats)
 
 
 func _animate_slash(attacker: Node3D, target: Node3D) -> void:
@@ -545,13 +567,13 @@ func _spawn_afterimages(unit: Node3D, tint: Color) -> void:
 				texture = ResourceLoader.load(source_path, "Texture2D", ResourceLoader.CACHE_MODE_REUSE) as Texture2D
 	if texture == null:
 		return
-	for index: int in range(3):
+	for index: int in range(2):
 		var ghost := Sprite3D.new()
 		ghost.texture = texture
 		ghost.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		ghost.alpha_cut = SpriteBase3D.ALPHA_CUT_OPAQUE_PREPASS
 		ghost.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE
-		ghost.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		ghost.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		ghost.shaded = false
 		ghost.double_sided = true
 		ghost.pixel_size = pixel_size
@@ -559,7 +581,7 @@ func _spawn_afterimages(unit: Node3D, tint: Color) -> void:
 		ghost.scale = Vector3.ONE * float(unit.get_node("ATACVisual").scale.x)
 		ghost.modulate = Color(tint.r, tint.g, tint.b, maxf(0.05, tint.a - index * 0.07))
 		ghost.no_depth_test = false
-		add_child(ghost)
+		_register_transient_fx(ghost, 1.0)
 		var tween := create_tween()
 		tween.tween_property(ghost, "position", ghost.position + Vector3(0, 0.12 + index * 0.05, 0), 0.28)
 		tween.parallel().tween_property(ghost, "modulate:a", 0.0, 0.28)
@@ -573,7 +595,7 @@ func _animate_ball_lightning(attacker: Node3D, target: Node3D) -> void:
 	var finish: Vector3 = target.global_position + Vector3(0, 1.10, 0)
 	var charge_root := Node3D.new()
 	charge_root.position = origin
-	add_child(charge_root)
+	_register_transient_fx(charge_root, 2.5)
 	for index: int in range(8):
 		var spark := MeshInstance3D.new()
 		var spark_mesh := SphereMesh.new()
@@ -604,7 +626,7 @@ func _animate_ball_lightning(attacker: Node3D, target: Node3D) -> void:
 	orb.mesh = sphere
 	orb.position = origin
 	orb.material_override = _effect_material(Color(0.34, 0.72, 1.0, 0.98))
-	add_child(orb)
+	_register_transient_fx(orb, 2.5)
 	var orb_light := OmniLight3D.new()
 	orb_light.light_color = Color(0.28, 0.64, 1.0)
 	orb_light.light_energy = 20.0
@@ -630,7 +652,7 @@ func _animate_ball_lightning(attacker: Node3D, target: Node3D) -> void:
 
 func _spawn_lightning_chain(start: Vector3, finish: Vector3) -> void:
 	var root := Node3D.new()
-	add_child(root)
+	_register_transient_fx(root, 1.2)
 	var previous: Vector3 = start
 	var segments: int = 9
 	for index: int in range(1, segments + 1):
@@ -661,7 +683,7 @@ func _spawn_lightning_chain(start: Vector3, finish: Vector3) -> void:
 func _spawn_attack_burst(world_position: Vector3, color: Color, scale_factor: float) -> void:
 	var root := Node3D.new()
 	root.position = world_position
-	add_child(root)
+	_register_transient_fx(root, 1.2)
 	for index: int in range(3):
 		var ring := MeshInstance3D.new()
 		var torus := TorusMesh.new()
@@ -693,7 +715,7 @@ func _screen_flash(color: Color, peak_alpha: float, duration: float) -> void:
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	flash.color = Color(color.r, color.g, color.b, 0.0)
 	layer.add_child(flash)
-	add_child(layer)
+	_register_transient_fx(layer, 1.0)
 	var tween := create_tween()
 	tween.tween_property(flash, "color:a", peak_alpha, duration * 0.35)
 	tween.tween_property(flash, "color:a", 0.0, duration * 0.65)

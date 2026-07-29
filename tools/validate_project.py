@@ -119,11 +119,11 @@ def check_progression() -> None:
 
 def check_project_metadata() -> None:
     project_text = read("project.godot")
-    if 'config/version="2.0.0"' not in project_text:
-        fail("project.godot version is not 2.0.0")
+    if 'config/version="2.0.1"' not in project_text:
+        fail("project.godot version is not 2.0.1")
     export_text = read("export_presets.cfg")
-    if 'application/product_version="2.0.0.0"' not in export_text:
-        fail("Windows export version is not 2.0.0.0")
+    if 'application/product_version="2.0.1.0"' not in export_text:
+        fail("Windows export version is not 2.0.1.0")
     scene = read("scenes/BattlePrototype.tscn")
     if 'res://scripts/campaign_battle_v20.gd' not in scene:
         fail("BattlePrototype is not registered to campaign_battle_v20.gd")
@@ -134,7 +134,9 @@ def check_project_metadata() -> None:
         "scenes/Mission7Smoke.tscn",
         "data/maps/mission_07.json",
         "data/balance/official_atac_balance_by_level.txt",
-        "CHANGELOG_2.0.0.txt",
+        "scenes/PerformanceSmoke.tscn",
+        "CHANGELOG_2.0.1.txt",
+        "README_2.0.1.md",
     ]:
         if not (ROOT / required).is_file():
             fail(f"missing required file: {required}")
@@ -176,6 +178,8 @@ def check_story_and_mission_seven() -> None:
         'func _animate_evil_heart_v20', 'func _animate_geno_flame_v20',
         'func _animate_rocket_v20', 'func _animate_ice_field_v20',
         'MISSION7_BOOT_OK', 'MISSION7_RELIEF_OK', 'MISSION7_VICTORY_OK',
+        'TEST_LEVEL_SCALING_OK', 'func _apply_runtime_test_balance',
+        'CampaignState.raise_character_level_floor',
     ]:
         if marker not in battle:
             fail(f"mission VII marker missing: {marker}")
@@ -196,7 +200,7 @@ def check_visual_assets() -> None:
     required_slugs = [
         "alba", "amphisia", "haurol", "toreadore", "vedocorban",
         "crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk",
-        "panther", "engineer", "waiban",
+        "panther", "engineer", "waiban", "solarus", "sarbelas",
     ]
     views = ["front", "back", "side", "three_quarter", "left", "right"]
     for slug in required_slugs:
@@ -206,11 +210,25 @@ def check_visual_assets() -> None:
                 fail(f"missing or empty ATAC view: {slug}/{view}.png")
     factory = read("scripts/atac_factory.gd")
     multiview = read("scripts/multiview_atac.gd")
-    for slug in ["alba", "amphisia", "haurol", "toreadore", "vedocorban", "panther", "engineer", "waiban"]:
+    for slug in ["alba", "amphisia", "haurol", "toreadore", "vedocorban", "panther", "engineer", "waiban", "solarus", "sarbelas"]:
         if f'"{slug}"' not in factory or f'"{slug}"' not in multiview:
             fail(f"full-body ATAC is not registered: {slug}")
-    if 'if slug == "ratatosk"' not in multiview:
-        fail("Ratatosk forward-axis correction is missing")
+    if 'if slug in ["ratatosk", "rahabar"]' not in multiview:
+        fail("Ratatosk/Rahabar forward-axis correction is missing")
+    factory = read("scripts/atac_factory.gd")
+    for slug in ["solarus", "sarbelas"]:
+        if f'"{slug}"' not in factory:
+            fail(f"new full-body model is not registered: {slug}")
+
+    storyboard_modes = [
+        "geno_flame", "evil_heart", "rocket_shot", "area_rocket",
+        "frost", "storm_vortex", "ice_age",
+    ]
+    for mode in storyboard_modes:
+        for index in range(1, 5):
+            path = ROOT / "assets" / "vfx" / "storyboard" / mode / f"{index}.png"
+            if not path.is_file() or path.stat().st_size < 1000:
+                fail(f"missing storyboard frame: {mode}/{index}.png")
 
 
 def check_shop_icons() -> None:
@@ -242,13 +260,78 @@ def check_runtime_smoke_safety() -> None:
     for marker in [
         'VBR_SMOKE_MISSION=7 VBR_SMOKE_BRANCH="$branch"',
         'Mission7Smoke',
-        'name: Vanguard-Bandits-Remaster-2.0.0-Windows',
+        'name: Vanguard-Bandits-Remaster-2.0.1-Windows',
         'timeout 90s "$GODOT"',
+        'PerformanceSmoke',
     ]:
         if marker not in workflow:
             fail(f"workflow marker missing: {marker}")
     if "continue-on-error" in workflow:
         fail("workflow must not use continue-on-error")
+
+
+def check_optimization_and_controls() -> None:
+    state = read("scripts/campaign_state.gd")
+    battle = read("scripts/campaign_battle.gd")
+    battle_v08 = read("scripts/campaign_battle_v08.gd")
+    battle_v18 = read("scripts/campaign_battle_v18.gd")
+    battle_v20 = read("scripts/campaign_battle_v20.gd")
+    performance = read("scripts/performance_guard.gd")
+    multiview = read("scripts/multiview_atac.gd")
+
+    for marker in [
+        "func request_save_game", "func raise_character_level_floor",
+        "return 75 + level * 25", "request_save_game()",
+    ]:
+        if marker not in state:
+            fail(f"campaign progression optimization missing: {marker}")
+    for marker in [
+        "var damage_bonus: int = mini(20", "80 if killed_enemy else 0",
+        "func _sync_runtime_progress_fields", 'stats["experience_needed"]',
+    ]:
+        if marker not in battle:
+            fail(f"battle XP marker missing: {marker}")
+    for marker in [
+        "Сначала поверните ATAC стрелками", "func _choose_facing",
+        'event.is_action_pressed("ui_up")', 'event.is_action_pressed("ui_right")',
+        'end_turn_button.text = "Пропустить ход" if facing_ready',
+    ]:
+        if marker not in battle_v08:
+            fail(f"arrow-facing marker missing: {marker}")
+    for marker in [
+        'root.name = gate_name', '"OpenLeafNorth"', '"OpenLeafSouth"',
+        'blocked_cells.erase(Vector2i(x, int(gate_z_value)))',
+        '"DefenseCastleCourtyard"', '"DefenseCastleBattlements"',
+    ]:
+        if marker not in battle_v18:
+            fail(f"open castle gate/map marker missing: {marker}")
+    for marker in [
+        "TEST_LEVEL_SCALING_OK", "enemy_average - 3",
+        "func _scale_runtime_ally", "CampaignState.request_save_game(0.20)",
+        'CinematicVfx.play(self, "evil_heart"',
+        'CinematicVfx.play(self, "storm_vortex"',
+    ]:
+        if marker not in battle_v20:
+            fail(f"runtime scaling/VFX marker missing: {marker}")
+    for marker in [
+        "MAX_TRANSIENT_FX: int = 96", "LOG_FLUSH_INTERVAL: float = 30.0",
+        "FX_CLEANUP_INTERVAL: float = 12.0", "func _trim_transient_fx",
+        "OS.low_processor_usage_mode = true",
+    ]:
+        if marker not in performance:
+            fail(f"performance guard marker missing: {marker}")
+    for marker in [
+        "VIEW_UPDATE_INTERVAL: float = 0.18", "SHARED_SHADOW_MESH",
+        "sync_elapsed >= 0.12", 'if slug in ["ratatosk", "rahabar"]',
+    ]:
+        if marker not in multiview:
+            fail(f"multiview optimization marker missing: {marker}")
+    performance_smoke = read("scripts/performance_smoke.gd")
+    if 'PERFORMANCE_SMOKE_OK' not in performance_smoke or 'range(130)' not in performance_smoke:
+        fail("PerformanceSmoke is incomplete")
+    movement_smoke = read("scripts/movement_input_smoke.gd")
+    if 'battle.call("_choose_facing", Vector2i(1, 0))' not in movement_smoke:
+        fail("MovementInputSmoke does not verify arrow facing")
 
 
 def main() -> None:
@@ -260,6 +343,7 @@ def main() -> None:
     check_visual_assets()
     check_shop_icons()
     check_runtime_smoke_safety()
+    check_optimization_and_controls()
     print("VALIDATION_OK")
 
 

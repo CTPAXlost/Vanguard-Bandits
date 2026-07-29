@@ -15,7 +15,10 @@ static func play(parent: Node3D, mode: String, world_position: Vector3, size: fl
 	var root: Node3D = Node3D.new()
 	root.name = "CinematicVFX_%s" % mode
 	root.position = world_position
-	parent.add_child(root)
+	if parent.has_method("_register_transient_fx"):
+		parent.call("_register_transient_fx", root, 2.5)
+	else:
+		parent.add_child(root)
 
 	var sprite: Sprite3D = Sprite3D.new()
 	sprite.name = "EffectLayer"
@@ -24,7 +27,7 @@ static func play(parent: Node3D, mode: String, world_position: Vector3, size: fl
 	sprite.double_sided = true
 	sprite.no_depth_test = true
 	sprite.render_priority = 20
-	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	sprite.pixel_size = 0.0047 * size
 	sprite.position = Vector3(0, 0.68, 0)
 	sprite.modulate = Color(1.12, 1.12, 1.12, 0.0)
@@ -76,8 +79,10 @@ static func _frames(mode: String) -> Array:
 
 static func _mode_color(mode: String) -> Color:
 	match mode:
-		"bright_bomb": return Color(1.0, 0.36, 0.08)
+		"bright_bomb", "rocket_shot", "area_rocket", "geno_flame": return Color(1.0, 0.30, 0.06)
+		"evil_heart": return Color(1.0, 0.04, 0.18)
 		"sticky_sandstorm", "quicksand", "desert_storm": return Color(1.0, 0.62, 0.18)
-		"ice_rain": return Color(0.34, 0.72, 1.0)
+		"ice_rain", "frost", "ice_age": return Color(0.34, 0.72, 1.0)
+		"storm_vortex": return Color(0.26, 0.48, 1.0)
 		"ball_lightning": return Color(0.35, 0.48, 1.0)
 		_: return Color(0.65, 0.88, 1.0)

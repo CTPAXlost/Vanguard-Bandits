@@ -6,8 +6,9 @@ const RealModelAtac = preload("res://scripts/real_model_atac.gd")
 const SkeletalAtac = preload("res://scripts/skeletal_atac.gd")
 const FULL_BODY_TACTICAL_SLUGS: Array[String] = [
 	"alba", "altagrave", "amphisia", "archangel", "barazaph", "crimson",
-	"eigol", "haurol", "rahabar", "ratatosk", "roaring_lion", "serata",
-	"snow_soldier", "toreadore", "vedocorban", "panther", "engineer", "waiban",
+	"eigol", "haurol", "rahabar", "ratatosk", "roaring_lion", "sarbelas",
+	"serata", "snow_soldier", "solarus", "toreadore", "vedocorban",
+	"panther", "engineer", "waiban",
 ]
 
 

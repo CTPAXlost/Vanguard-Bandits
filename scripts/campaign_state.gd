@@ -3,7 +3,7 @@ extends Node
 const AtacProgression = preload("res://scripts/atac_progression.gd")
 
 const SAVE_PATH: String = "user://vanguard_campaign_save.json"
-const SAVE_VERSION: int = 21
+const SAVE_VERSION: int = 22
 const MISSION_COMPLETION_REWARDS: Dictionary = {
 	1: 200,
 	2: 300,
@@ -264,6 +264,8 @@ var experimental_3d_enabled: bool = false
 var arena_battles_enabled: bool = false
 # Runtime-only test helpers. They are intentionally not written into the save file.
 var test_forced_branch: String = ""
+var test_level_scaling_enabled: bool = false
+var _save_request_pending: bool = false
 var mission_selector_return_scene: String = "res://scenes/Main.tscn"
 
 
@@ -358,6 +360,7 @@ func reset_campaign() -> void:
 	experimental_3d_enabled = false
 	arena_battles_enabled = false
 	test_forced_branch = ""
+	test_level_scaling_enabled = false
 	characters = _default_characters()
 
 
@@ -533,6 +536,44 @@ func _migrate_coin_economy(loaded_version: int) -> void:
 		_award_mission_completion_once(5)
 
 
+func request_save_game(delay: float = 0.35) -> void:
+	if _save_request_pending:
+		return
+	_save_request_pending = true
+	var timer: SceneTreeTimer = get_tree().create_timer(maxf(0.05, delay))
+	timer.timeout.connect(_commit_requested_save, CONNECT_ONE_SHOT)
+
+
+func _commit_requested_save() -> void:
+	_save_request_pending = false
+	save_game()
+
+
+func raise_character_level_floor(character_id: String, target_level: int) -> int:
+	if not characters.has(character_id):
+		return 0
+	var data: Dictionary = characters[character_id] as Dictionary
+	var atac_id: String = str(data.get("atac", "alba"))
+	var maximum_level: int = AtacProgression.max_level(atac_id, 100)
+	var old_level: int = int(data.get("level", 1))
+	var new_level: int = clampi(maxi(old_level, target_level), 1, maximum_level)
+	data["level"] = new_level
+	if new_level >= maximum_level:
+		data["experience"] = 0
+	characters[character_id] = data
+	return new_level
+
+
+func _test_level_floor(mission_id: int) -> int:
+	return int({1: 1, 2: 4, 3: 8, 4: 14, 5: 18, 6: 18, 7: 26}.get(mission_id, 1))
+
+
+func _apply_test_level_floor(mission_id: int) -> void:
+	var floor_level: int = _test_level_floor(mission_id)
+	for character_id: String in get_unlocked_character_ids():
+		raise_character_level_floor(character_id, floor_level)
+
+
 func get_coin_balance() -> int:
 	return coins
 
@@ -573,6 +614,7 @@ func _award_mission_completion_once(mission_id: int) -> Dictionary:
 
 func prepare_mission_for_test(mission_id: int, forced_branch: String = "") -> void:
 	var safe_mission: int = clampi(mission_id, 1, 7)
+	test_level_scaling_enabled = true
 	test_forced_branch = forced_branch if forced_branch in ["stay_and_fight", "seek_southern_aid", "defend_castle", "leave_castle", "south", "north"] else ""
 	if safe_mission <= 3:
 		var early_kamorge: Dictionary = characters["kamorge"] as Dictionary
@@ -658,9 +700,11 @@ func prepare_mission_for_test(mission_id: int, forced_branch: String = "") -> vo
 		kingdom_alliance = forced_branch if forced_branch in ["south", "north"] else "south"
 		_unlock_kingdom_alliance(kingdom_alliance)
 		current_mission = 7
+		_apply_test_level_floor(7)
 		save_game()
 		return
 	current_mission = safe_mission
+	_apply_test_level_floor(safe_mission)
 	save_game()
 
 
@@ -862,7 +906,9 @@ func character_atac(character_id: String) -> String:
 
 
 func xp_needed(level: int) -> int:
-	return 70 + level * 35
+	# Early levels must visibly advance during a real battle instead of requiring
+	# several missions before the player sees the first upgrade.
+	return 75 + level * 25
 
 
 func award_experience(character_id: String, amount: int) -> Dictionary:
@@ -876,7 +922,7 @@ func award_experience(character_id: String, amount: int) -> Dictionary:
 		data["level"] = maximum_level
 		data["experience"] = 0
 		characters[character_id] = data
-		save_game()
+		request_save_game()
 		return {"gained": 0, "levels": 0, "level": maximum_level, "experience": 0, "needed": 0, "max_level": maximum_level, "at_max": true, "stat_points": int(data.get("stat_points", 0))}
 	var experience: int = int(data.get("experience", 0)) + amount
 	var levels_gained: int = 0
@@ -891,7 +937,7 @@ func award_experience(character_id: String, amount: int) -> Dictionary:
 	data["experience"] = experience
 	data["level"] = level
 	characters[character_id] = data
-	save_game()
+	request_save_game()
 	return {
 		"gained": amount,
 		"levels": levels_gained,

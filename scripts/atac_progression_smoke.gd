@@ -69,6 +69,11 @@ func _run() -> void:
 		_fail("Surviving Kamorge must receive Eigol only after mission III")
 		return
 	CampaignState.reset_campaign()
+	CampaignState.prepare_mission_for_test(7, "south")
+	if int(CampaignState.get_character("bastion").get("level", 1)) < 26:
+		_fail("late-mission test scaling left Bastion below level 26")
+		return
+	CampaignState.reset_campaign()
 	var bastion: Dictionary = CampaignState.characters["bastion"] as Dictionary
 	bastion["experience"] = CampaignState.xp_needed(1) - 1
 	CampaignState.characters["bastion"] = bastion

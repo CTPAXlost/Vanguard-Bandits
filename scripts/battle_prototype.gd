@@ -16,6 +16,7 @@ const FATIGUE_LUNGE := 6
 const FATIGUE_LONG_LUNGE := 7
 const FATIGUE_DODGE := 4
 const FATIGUE_RECOVERY := 18
+const MAX_LOCAL_TRANSIENT_FX: int = 96
 
 enum Phase { PLAYER_MOVE, PLAYER_ACTION, ALLY_TURN, ENEMY_TURN, DIALOGUE, VICTORY, DEFEAT }
 
@@ -88,6 +89,8 @@ var reaction_back_attack := false
 var pending_reaction_choice := "none"
 var coin_label: Label
 var shared_prop_materials: Dictionary = {}
+var shared_effect_materials: Dictionary = {}
+var transient_fx_ids: Array[int] = []
 var battle_initialized: bool = false
 
 
@@ -239,11 +242,15 @@ func _build_environment() -> void:
 	sky.sky_material = sky_material
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.68
+	env.ambient_light_energy = 0.78
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.62, 0.72, 0.72)
-	env.fog_density = 0.004
+	env.fog_density = 0.0025
+	env.adjustment_enabled = true
+	env.adjustment_brightness = 1.04
+	env.adjustment_contrast = 1.08
+	env.adjustment_saturation = 1.08
 	$WorldEnvironment.environment = env
 
 
@@ -289,10 +296,10 @@ func _build_terrain_multimeshes(road_cells: Dictionary, raised_cells: Dictionary
 			else:
 				grass_dark.append(transform)
 
-	_create_box_multimesh("TerrainGrassDark", grass_dark, Vector3(0.98, 0.08, 0.98), Color(0.39, 0.64, 0.30), false)
-	_create_box_multimesh("TerrainGrassLight", grass_light, Vector3(0.98, 0.08, 0.98), Color(0.39, 0.64, 0.30).lightened(0.05), false)
-	_create_box_multimesh("TerrainRoadDark", road_dark, Vector3(0.98, 0.08, 0.98), Color(0.48, 0.39, 0.27), false)
-	_create_box_multimesh("TerrainRoadLight", road_light, Vector3(0.98, 0.08, 0.98), Color(0.48, 0.39, 0.27).lightened(0.05), false)
+	_create_box_multimesh("TerrainGrassDark", grass_dark, Vector3(0.98, 0.08, 0.98), Color(0.30, 0.58, 0.28), false)
+	_create_box_multimesh("TerrainGrassLight", grass_light, Vector3(0.98, 0.08, 0.98), Color(0.36, 0.67, 0.34), false)
+	_create_box_multimesh("TerrainRoadDark", road_dark, Vector3(0.98, 0.08, 0.98), Color(0.50, 0.43, 0.31), false)
+	_create_box_multimesh("TerrainRoadLight", road_light, Vector3(0.98, 0.08, 0.98), Color(0.58, 0.50, 0.36), false)
 
 
 func _create_box_multimesh(
@@ -1128,7 +1135,7 @@ func _spawn_damage_label(world_position: Vector3, damage: int) -> void:
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
 	label.position = world_position
-	add_child(label)
+	_register_transient_fx(label, 1.2)
 	var tween := create_tween()
 	tween.tween_property(label, "position:y", label.position.y + 0.75, 0.65)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.65)
@@ -1138,13 +1145,13 @@ func _spawn_damage_label(world_position: Vector3, damage: int) -> void:
 func _spawn_slash_effect(world_position: Vector3) -> void:
 	var effect: Node3D = Node3D.new()
 	effect.position = world_position
-	add_child(effect)
+	_register_transient_fx(effect, 1.2)
 	for index: int in range(5):
 		var arc: MeshInstance3D = MeshInstance3D.new()
 		var torus: TorusMesh = TorusMesh.new()
 		torus.inner_radius = 0.38 + index * 0.075
 		torus.outer_radius = 0.43 + index * 0.075
-		torus.rings = 32
+		torus.rings = 18
 		torus.ring_segments = 6
 		arc.mesh = torus
 		arc.rotation_degrees = Vector3(70, 12 + index * 8, 30 - index * 8)
@@ -1176,7 +1183,7 @@ func _spawn_slash_effect(world_position: Vector3) -> void:
 
 func _spawn_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
 	var effect: Node3D = Node3D.new()
-	add_child(effect)
+	_register_transient_fx(effect, 1.2)
 	effect.position = world_position - direction * 0.42
 	effect.look_at(world_position + direction, Vector3.UP)
 	for index: int in range(6):
@@ -1209,7 +1216,7 @@ func _spawn_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
 
 func _spawn_long_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
 	var effect: Node3D = Node3D.new()
-	add_child(effect)
+	_register_transient_fx(effect, 1.2)
 	effect.position = world_position - direction * 0.72
 	effect.look_at(world_position + direction, Vector3.UP)
 	for index: int in range(9):
@@ -1226,7 +1233,7 @@ func _spawn_long_lunge_effect(world_position: Vector3, direction: Vector3) -> vo
 		var torus: TorusMesh = TorusMesh.new()
 		torus.inner_radius = 0.18 + ring_index * 0.10
 		torus.outer_radius = 0.22 + ring_index * 0.10
-		torus.rings = 24
+		torus.rings = 16
 		torus.ring_segments = 6
 		ring.mesh = torus
 		ring.position = Vector3(0, 0, -0.90 - ring_index * 0.14)
@@ -1257,7 +1264,7 @@ func _spawn_guard_effect(world_position: Vector3) -> void:
 	effect.mesh = sphere
 	effect.position = world_position
 	effect.material_override = _effect_material(Color(0.25, 0.70, 1.0, 0.24))
-	add_child(effect)
+	_register_transient_fx(effect, 1.2)
 	effect.scale = Vector3.ONE * 0.25
 	var tween := create_tween()
 	tween.tween_property(effect, "scale", Vector3.ONE * 1.25, 0.20)
@@ -1266,13 +1273,44 @@ func _spawn_guard_effect(world_position: Vector3) -> void:
 	tween.tween_callback(Callable(effect, "queue_free"))
 
 
+func _register_transient_fx(node: Node, lifetime: float = 4.0) -> void:
+	if node == null:
+		return
+	add_child(node)
+	node.add_to_group("vbr_transient_fx")
+	node.set_meta("vbr_fx_created", Time.get_ticks_msec())
+	node.set_meta("vbr_fx_lifetime_msec", int(maxf(0.5, lifetime) * 1000.0))
+	transient_fx_ids.append(node.get_instance_id())
+	while transient_fx_ids.size() > MAX_LOCAL_TRANSIENT_FX:
+		var oldest_id: int = transient_fx_ids.pop_front()
+		var oldest: Object = instance_from_id(oldest_id)
+		if oldest is Node and is_instance_valid(oldest):
+			(oldest as Node).queue_free()
+	var timer: SceneTreeTimer = get_tree().create_timer(maxf(0.5, lifetime))
+	timer.timeout.connect(_expire_transient_fx.bind(node.get_instance_id()), CONNECT_ONE_SHOT)
+
+
+func _expire_transient_fx(instance_id: int) -> void:
+	transient_fx_ids.erase(instance_id)
+	var candidate: Object = instance_from_id(instance_id)
+	if candidate is Node and is_instance_valid(candidate) and not (candidate as Node).is_queued_for_deletion():
+		(candidate as Node).queue_free()
+
+
 func _effect_material(color: Color) -> StandardMaterial3D:
+	# Quantized keys let the many short-lived VFX share GPU materials instead of
+	# allocating a new StandardMaterial3D for every spark and ring.
+	var key: String = "%.2f|%.2f|%.2f|%.2f" % [color.r, color.g, color.b, color.a]
+	if shared_effect_materials.has(key):
+		return shared_effect_materials[key] as StandardMaterial3D
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.emission_enabled = true
-	material.emission = Color(color.r, color.g, color.b) * 2.2
+	material.emission = Color(color.r, color.g, color.b) * 1.85
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	shared_effect_materials[key] = material
 	return material
 
 
@@ -1473,7 +1511,7 @@ func _animate_ball_lightning(attacker: Node3D, target: Node3D) -> void:
 	orb.mesh = sphere
 	orb.position = origin
 	orb.material_override = _effect_material(Color(0.46, 0.75, 1.0, 0.95))
-	add_child(orb)
+	_register_transient_fx(orb, 1.5)
 	var light := OmniLight3D.new()
 	light.light_color = Color(0.38, 0.72, 1.0)
 	light.light_energy = 7.0
@@ -1491,13 +1529,13 @@ func _animate_ball_lightning(attacker: Node3D, target: Node3D) -> void:
 func _spawn_lightning_impact(position: Vector3) -> void:
 	var root := Node3D.new()
 	root.position = position
-	add_child(root)
+	_register_transient_fx(root, 1.2)
 	for index in range(4):
 		var ring := MeshInstance3D.new()
 		var torus := TorusMesh.new()
 		torus.inner_radius = 0.20 + index * 0.09
 		torus.outer_radius = 0.24 + index * 0.09
-		torus.rings = 24
+		torus.rings = 16
 		torus.ring_segments = 6
 		ring.mesh = torus
 		ring.rotation_degrees = Vector3(35 + index * 17, index * 37, 18)

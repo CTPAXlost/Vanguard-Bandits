@@ -111,6 +111,13 @@ func _build_defense_castle_geometry() -> void:
 	var west_x: int = int(castle.get("west_wall_x", min_x))
 	var east_x: int = int(castle.get("east_wall_x", max_x))
 	var gate_z_values: Array = castle.get("gate_z", [8, 9]) as Array
+	# One efficient MultiMesh gives the castle a readable stone courtyard without
+	# adding hundreds of individual nodes or collision bodies.
+	var courtyard_transforms: Array[Transform3D] = []
+	for courtyard_x: int in range(min_x + 1, max_x):
+		for courtyard_z: int in range(min_z + 1, max_z):
+			courtyard_transforms.append(Transform3D(Basis.IDENTITY, _cell_to_world(Vector2i(courtyard_x, courtyard_z)) + Vector3(0, 0.055, 0)))
+	_create_box_multimesh("DefenseCastleCourtyard", courtyard_transforms, Vector3(0.96, 0.08, 0.96), Color(0.30, 0.34, 0.40), false)
 	var wall_size := Vector3(0.92, 1.65, 0.92)
 	var wall_transforms: Array[Transform3D] = []
 	for z: int in range(min_z, max_z + 1):
@@ -121,6 +128,13 @@ func _build_defense_castle_geometry() -> void:
 		wall_transforms.append(Transform3D(Basis.IDENTITY, _cell_to_world(Vector2i(x, min_z)) + Vector3(0, wall_size.y * 0.5, 0)))
 		wall_transforms.append(Transform3D(Basis.IDENTITY, _cell_to_world(Vector2i(x, max_z)) + Vector3(0, wall_size.y * 0.5, 0)))
 	_create_box_multimesh("DefenseCastleWalls", wall_transforms, wall_size, Color(0.40, 0.42, 0.48), true)
+	var battlement_transforms: Array[Transform3D] = []
+	for wall_index: int in range(wall_transforms.size()):
+		if wall_index % 2 != 0:
+			continue
+		var wall_transform: Transform3D = wall_transforms[wall_index]
+		battlement_transforms.append(Transform3D(Basis.IDENTITY, wall_transform.origin + Vector3(0, 1.03, 0)))
+	_create_box_multimesh("DefenseCastleBattlements", battlement_transforms, Vector3(0.48, 0.42, 0.48), Color(0.48, 0.50, 0.58), true)
 	for tower_cell: Vector2i in [
 		Vector2i(min_x, min_z), Vector2i(min_x, max_z),
 		Vector2i(max_x, min_z), Vector2i(max_x, max_z)
@@ -139,10 +153,33 @@ func _build_defense_castle_geometry() -> void:
 	_create_castle_gate("DefenseCastleGateEast", east_x, gate_z_values, false)
 
 
-func _create_castle_gate(_gate_name: String, _gate_x: int, _gate_z_values: Array, _opens_west: bool) -> void:
-	# The castle passage is deliberately completely open: no leaves, posts, lintel,
-	# teeth or invisible blockers are created in the traversable gate cells.
-	return
+func _create_castle_gate(gate_name: String, gate_x: int, gate_z_values: Array, opens_west: bool) -> void:
+	# Visible doors are swung fully outside the corridor. Nothing created here has
+	# collision and `_open_castle_passages()` erases a three-cell-wide route, so the
+	# entrance looks like a real open gate while remaining completely traversable.
+	if gate_z_values.is_empty():
+		return
+	var minimum_z: int = 9999
+	var maximum_z: int = -9999
+	for value: Variant in gate_z_values:
+		minimum_z = mini(minimum_z, int(value))
+		maximum_z = maxi(maximum_z, int(value))
+	var root: Node3D = Node3D.new()
+	root.name = gate_name
+	add_child(root)
+	var wall_world_x: float = _cell_to_world(Vector2i(gate_x, minimum_z)).x
+	var minimum_world_z: float = _cell_to_world(Vector2i(gate_x, minimum_z)).z
+	var maximum_world_z: float = _cell_to_world(Vector2i(gate_x, maximum_z)).z
+	var centre_z: float = (minimum_world_z + maximum_world_z) * 0.5
+	var outside_x: float = wall_world_x + (-0.62 if opens_west else 0.62)
+	var stone: Color = Color(0.48, 0.50, 0.58)
+	var wood: Color = Color(0.22, 0.13, 0.10)
+	_box_prop(root, "NorthGatePost", Vector3(wall_world_x, 1.05, minimum_world_z - 0.58), Vector3(0.78, 2.10, 0.44), stone)
+	_box_prop(root, "SouthGatePost", Vector3(wall_world_x, 1.05, maximum_world_z + 0.58), Vector3(0.78, 2.10, 0.44), stone)
+	_box_prop(root, "OpenLeafNorth", Vector3(outside_x, 0.92, minimum_world_z - 0.20), Vector3(1.38, 1.72, 0.14), wood, Vector3(0, -72.0 if opens_west else 72.0, 0))
+	_box_prop(root, "OpenLeafSouth", Vector3(outside_x, 0.92, maximum_world_z + 0.20), Vector3(1.38, 1.72, 0.14), wood, Vector3(0, 72.0 if opens_west else -72.0, 0))
+	# An elevated lintel frames the doorway but never intersects the walkable cells.
+	_box_prop(root, "GateLintel", Vector3(wall_world_x, 2.28, centre_z), Vector3(0.72, 0.32, absf(maximum_world_z - minimum_world_z) + 1.45), stone)
 
 
 func _spawn_mission_units() -> void:
@@ -260,6 +297,16 @@ func _apply_unit_level(unit: Node3D, slug: String, level: int, strength: int, ag
 	stats["move_range"] = int(data.get("move_range", 6))
 	stats["atac_name"] = str(data.get("name", slug.capitalize()))
 	stats["equipment"] = str(data.get("equipment", "Броня ATAC"))
+	var character_id: String = str(unit.get_meta("character_id", ""))
+	if bool(unit.get_meta("player", false)) and not character_id.is_empty():
+		# Do not overwrite campaign XP/levels when a late mission applies its combat
+		# template. This was the source of the visible "Опыт 0 / 0" and level-1 bug.
+		stats = CampaignState.apply_character_progress(character_id, stats)
+	else:
+		stats["max_level"] = AtacProgression.max_level(slug, 100)
+		stats["experience"] = 0
+		stats["experience_needed"] = 0 if level >= int(stats["max_level"]) else CampaignState.xp_needed(level)
+		stats["stat_points"] = 0
 	unit.set_meta("stats", stats)
 	_refresh_hp_bar(unit)
 
@@ -803,7 +850,7 @@ func _animate_fire_rain(attacker: Node3D, target: Node3D) -> void:
 		meteor.mesh = meteor_mesh
 		meteor.global_position = centre + Vector3(rng.randf_range(-1.2, 1.2), 3.4 + float(meteor_index) * 0.18, rng.randf_range(-1.2, 1.2))
 		meteor.material_override = _effect_material(Color(1.0, 0.34, 0.08, 0.95))
-		add_child(meteor)
+		_register_transient_fx(meteor, 2.2)
 		var impact: Vector3 = centre + Vector3(rng.randf_range(-0.6, 0.6), rng.randf_range(-0.10, 0.30), rng.randf_range(-0.6, 0.6))
 		var tween: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tween.tween_interval(float(meteor_index) * 0.055)
@@ -831,7 +878,7 @@ func _animate_force_field_throw(attacker: Node3D, target: Node3D) -> void:
 	disc.look_at(finish, Vector3.UP)
 	disc.rotation_degrees.x += 90.0
 	disc.material_override = _effect_material(Color(0.14, 0.72, 1.0, 0.94))
-	add_child(disc)
+	_register_transient_fx(disc, 1.8)
 	for ring_index: int in range(3):
 		var ring := MeshInstance3D.new()
 		var torus := TorusMesh.new()
@@ -843,7 +890,7 @@ func _animate_force_field_throw(attacker: Node3D, target: Node3D) -> void:
 		ring.global_position = origin
 		ring.rotation = disc.rotation
 		ring.material_override = _effect_material(Color(0.55, 0.94, 1.0, 0.86))
-		add_child(ring)
+		_register_transient_fx(ring, 1.8)
 		var ring_tween: Tween = create_tween()
 		ring_tween.tween_property(ring, "global_position", finish, 0.34 + float(ring_index) * 0.025)
 		ring_tween.parallel().tween_property(ring, "rotation_degrees:z", 720.0 * (1.0 if ring_index % 2 == 0 else -1.0), 0.34)
@@ -878,7 +925,7 @@ func _animate_sharking_reflect(defender: Node3D, attacker: Node3D) -> void:
 		shell.mesh = sphere
 		shell.global_position = centre
 		shell.material_override = _effect_material(Color(0.12 + float(layer) * 0.08, 0.64, 1.0, 0.25))
-		add_child(shell)
+		_register_transient_fx(shell, 1.5)
 		shell.scale = Vector3.ONE * 0.25
 		var tween: Tween = create_tween()
 		tween.tween_interval(float(layer) * 0.035)
@@ -924,7 +971,7 @@ func _animate_sound_strike(attacker: Node3D, target: Node3D) -> void:
 		ring.look_at(finish, Vector3.UP)
 		ring.rotation_degrees.x += 90.0
 		ring.material_override = _effect_material(Color(0.40, 0.90, 1.0, 0.90))
-		add_child(ring)
+		_register_transient_fx(ring, 1.8)
 		var delay: float = float(index) * 0.055
 		var tween: Tween = create_tween()
 		tween.tween_interval(delay)
@@ -949,7 +996,7 @@ func _animate_wind_strike(attacker: Node3D, target: Node3D) -> void:
 		slash.global_position = start.lerp(finish, float(index) / 9.0)
 		slash.rotation_degrees = Vector3(-15, index * 27, 42)
 		slash.material_override = _effect_material(Color(0.55, 1.0, 0.86, 0.82))
-		add_child(slash)
+		_register_transient_fx(slash, 1.5)
 		var tween: Tween = create_tween()
 		tween.tween_property(slash, "global_position", finish, 0.22 + index * 0.012)
 		tween.parallel().tween_property(slash, "scale", Vector3.ONE * 1.65, 0.22)
@@ -974,7 +1021,7 @@ func _animate_incinerate(attacker: Node3D, target: Node3D) -> void:
 	projectile.look_at(finish, Vector3.UP)
 	projectile.rotation_degrees.x += 90.0
 	projectile.material_override = _effect_material(Color(1.0, 0.31, 0.04, 0.98))
-	add_child(projectile)
+	_register_transient_fx(projectile, 2.0)
 	for index: int in range(7):
 		_spawn_attack_burst(origin + Vector3(0, 0, -float(index) * 0.08), Color(1.0, 0.35, 0.03), 0.24 + index * 0.04)
 	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
@@ -1014,7 +1061,7 @@ func _spawn_guillotine_arc(position: Vector3) -> void:
 		arc.global_position = position + Vector3(0, 0.65, 0)
 		arc.rotation_degrees = Vector3(0, index * 9, -24 + index * 8)
 		arc.material_override = _effect_material(Color(1.0, 0.18 + index * 0.035, 0.08, 0.90))
-		add_child(arc)
+		_register_transient_fx(arc, 1.5)
 		var tween: Tween = create_tween()
 		arc.scale = Vector3(0.2, 0.2, 0.2)
 		tween.tween_property(arc, "scale", Vector3.ONE * 1.35, 0.12)
@@ -1032,7 +1079,7 @@ func _spawn_guard_flash(position: Vector3, color: Color) -> void:
 	shell.mesh = sphere
 	shell.global_position = position
 	shell.material_override = _effect_material(Color(color.r, color.g, color.b, 0.45))
-	add_child(shell)
+	_register_transient_fx(shell, 1.5)
 	shell.scale = Vector3.ONE * 0.25
 	var tween: Tween = create_tween()
 	tween.tween_property(shell, "scale", Vector3.ONE * 1.20, 0.16)

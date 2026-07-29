@@ -450,7 +450,7 @@ func _activate_player_member(member: Node3D) -> void:
 	phase_label.text = "ХОД ИГРОКА"
 	phase_label.modulate = Color(0.42, 0.95, 1.0)
 	var character_name: String = str(member.get_meta("label"))
-	status_label.text = "%s: выберите зелёную клетку или действие." % character_name
+	status_label.text = "%s: выберите клетку или действие. Перед завершением хода поверните ATAC стрелками." % character_name
 	turn_info.text = "Раунд %d • герой %d/%d" % [round_number, player_turn_index + 1, player_party.size()]
 	move_undo_snapshot = {}
 	if undo_move_button != null:
@@ -462,7 +462,8 @@ func _end_player_turn() -> void:
 	if action_in_progress and phase != Phase.ENEMY_TURN:
 		return
 	if player_unit != null and not bool(player_unit.get_meta("facing_chosen", false)):
-		await _request_facing_choice(player_unit)
+		status_label.text = "Сначала поверните ATAC стрелками ↑ ↓ ← →, затем завершите ход."
+		return
 	_close_attack_menu()
 	_close_ability_menu()
 	_cancel_target_selection()
@@ -518,8 +519,7 @@ func _move_player_to(cell: Vector2i) -> void:
 	player_unit.set_meta("moved", moves_taken >= max_moves)
 	if moves_taken >= max_moves:
 		phase = Phase.PLAYER_ACTION
-		await _request_facing_choice(player_unit)
-		status_label.text = "Направление выбрано. Выберите цель и действие."
+		status_label.text = "Выберите действие. Перед завершением хода задайте направление стрелками ↑ ↓ ← →."
 	else:
 		phase = Phase.PLAYER_MOVE
 		status_label.text = (
@@ -547,11 +547,21 @@ func _request_facing_choice(unit: Node3D) -> void:
 
 
 func _choose_facing(direction: Vector2i) -> void:
-	if not facing_choice_pending or player_unit == null:
+	if player_unit == null or direction == Vector2i.ZERO:
 		return
 	player_unit.set_meta("facing", direction)
+	player_unit.set_meta("facing_chosen", true)
 	player_unit.rotation.y = atan2(-float(direction.x), -float(direction.y))
-	facing_selected.emit()
+	var direction_name: String = {
+		Vector2i(0, -1): "север",
+		Vector2i(0, 1): "юг",
+		Vector2i(-1, 0): "запад",
+		Vector2i(1, 0): "восток",
+	}.get(direction, "направление")
+	status_label.text = "%s повернут на %s. Теперь можно завершить ход." % [str(player_unit.get_meta("label")), direction_name]
+	if facing_choice_pending:
+		facing_selected.emit()
+	_refresh_ui()
 
 
 func _handle_click(screen_position: Vector2) -> void:
@@ -676,6 +686,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		# переопределённый _handle_click(), который подтвердит подсвеченную цель.
 		super._unhandled_input(event)
 		return
+
+	# В обычном ходе стрелки задают направление корпуса. Выбор не открывает
+	# отдельное модальное окно: игрок сначала поворачивает ATAC, затем нажимает
+	# «Пропустить ход».
+	if event.is_pressed() and not event.is_echo() and player_unit != null and phase in [Phase.PLAYER_MOVE, Phase.PLAYER_ACTION] and not action_in_progress:
+		var facing_direction: Vector2i = Vector2i.ZERO
+		if event.is_action_pressed("ui_up"):
+			facing_direction = Vector2i(0, -1)
+		elif event.is_action_pressed("ui_down"):
+			facing_direction = Vector2i(0, 1)
+		elif event.is_action_pressed("ui_left"):
+			facing_direction = Vector2i(-1, 0)
+		elif event.is_action_pressed("ui_right"):
+			facing_direction = Vector2i(1, 0)
+		if facing_direction != Vector2i.ZERO:
+			_choose_facing(facing_direction)
+			get_viewport().set_input_as_handled()
+			return
 
 	# Обычный режим: движение по клеткам, выбор юнита, приближение камеры и F.
 	super._unhandled_input(event)
@@ -1416,7 +1444,7 @@ func _spawn_heal_effect(position: Vector3) -> void:
 		ring.position = position
 		ring.rotation_degrees = Vector3(90, index * 28, 0)
 		ring.material_override = _effect_material(Color(0.35, 1.0, 0.62, 0.85))
-		add_child(ring)
+		_register_transient_fx(ring, 1.6)
 		var tween: Tween = create_tween()
 		ring.scale = Vector3.ZERO
 		tween.tween_property(ring, "scale", Vector3.ONE * 1.5, 0.45)
@@ -1508,7 +1536,7 @@ func _spawn_step_dust(position: Vector3, step_index: int) -> void:
 	dust.mesh = mesh
 	dust.position = position + Vector3(0.17 if step_index % 2 == 0 else -0.17, 0.05, 0)
 	dust.material_override = _effect_material(Color(0.62, 0.57, 0.47, 0.45))
-	add_child(dust)
+	_register_transient_fx(dust, 0.8)
 	var tween: Tween = create_tween()
 	dust.scale = Vector3(0.3, 0.2, 0.3)
 	tween.tween_property(dust, "scale", Vector3(1.4, 0.25, 1.4), 0.24)
@@ -1586,7 +1614,7 @@ func _animate_tornado(attacker: Node3D, target: Node3D) -> void:
 		ring.position = attacker.global_position + Vector3(0, 0.35 + index * 0.24, 0)
 		ring.rotation_degrees.x = 90.0
 		ring.material_override = _effect_material(Color(0.55, 0.92, 1.0, 0.65))
-		add_child(ring)
+		_register_transient_fx(ring, 1.6)
 		var ring_tween: Tween = create_tween()
 		ring_tween.tween_property(ring, "rotation_degrees:y", 720.0, 0.72)
 		ring_tween.parallel().tween_property(ring, "scale", Vector3.ONE * 1.45, 0.72)
@@ -1615,7 +1643,7 @@ func _animate_bright_bomb(attacker: Node3D, target: Node3D) -> void:
 	orb.mesh = sphere
 	orb.position = attacker.global_position + Vector3(0, 2.15, 0)
 	orb.material_override = _effect_material(Color(1.0, 0.92, 0.38, 0.98))
-	add_child(orb)
+	_register_transient_fx(orb, 2.4)
 	var light: OmniLight3D = OmniLight3D.new()
 	light.light_color = Color(1.0, 0.82, 0.25)
 	light.light_energy = 22.0
@@ -1658,7 +1686,7 @@ func _animate_earthquake(attacker: Node3D, target: Node3D) -> void:
 		ring.position = attacker.global_position + Vector3(0, 0.08, 0)
 		ring.rotation_degrees.x = 90.0
 		ring.material_override = _effect_material(Color(0.68, 0.48, 0.24, 0.82))
-		add_child(ring)
+		_register_transient_fx(ring, 1.6)
 		var tween: Tween = create_tween()
 		ring.scale = Vector3.ZERO
 		tween.tween_property(ring, "scale", Vector3.ONE * (1.0 + index * 0.45), 0.32 + index * 0.05)
@@ -1674,13 +1702,13 @@ func _spawn_heavy_arc(position: Vector3, color: Color) -> void:
 		var mesh: TorusMesh = TorusMesh.new()
 		mesh.inner_radius = 0.38 + index * 0.06
 		mesh.outer_radius = 0.43 + index * 0.06
-		mesh.rings = 28
+		mesh.rings = 18
 		mesh.ring_segments = 7
 		arc.mesh = mesh
 		arc.position = position
 		arc.rotation_degrees = Vector3(90, index * 17, 25 + index * 8)
 		arc.material_override = _effect_material(Color(color.r, color.g, color.b, 0.76 - index * 0.12))
-		add_child(arc)
+		_register_transient_fx(arc, 1.4)
 		var tween: Tween = create_tween()
 		arc.scale = Vector3.ONE * 0.25
 		tween.tween_property(arc, "scale", Vector3.ONE * 1.35, 0.18)
@@ -1790,7 +1818,9 @@ func _refresh_ui() -> void:
 				any_target = true
 				break
 	attack_button.disabled = not (can_player_act and any_target)
-	end_turn_button.disabled = not can_player_act
+	var facing_ready: bool = player_unit != null and bool(player_unit.get_meta("facing_chosen", false))
+	end_turn_button.disabled = not can_player_act or not facing_ready
+	end_turn_button.text = "Пропустить ход" if facing_ready else "Сначала повернуть стрелками"
 
 
 func _play_mission_three_intro() -> void:
@@ -2176,7 +2206,7 @@ func _spawn_water_splash(position: Vector3) -> void:
 		drop.mesh = mesh
 		drop.position = position
 		drop.material_override = _effect_material(Color(0.38, 0.78, 1.0, 0.82))
-		add_child(drop)
+		_register_transient_fx(drop, 1.2)
 		var angle: float = TAU * float(index) / 7.0
 		var target: Vector3 = position + Vector3(cos(angle) * 0.9, 0.55 + float(index % 2) * 0.25, sin(angle) * 0.9)
 		var tween: Tween = create_tween()
@@ -2353,7 +2383,7 @@ func _spawn_ice_lock_effect(position: Vector3) -> void:
 		shard.position = position + Vector3(cos(angle) * 0.58, -0.25, sin(angle) * 0.58)
 		shard.rotation_degrees = Vector3(0, rad_to_deg(angle), -12 + index * 4)
 		shard.material_override = _effect_material(Color(0.42, 0.88, 1.0, 0.82))
-		add_child(shard)
+		_register_transient_fx(shard, 1.5)
 		shard.scale = Vector3.ZERO
 		var tween: Tween = create_tween()
 		tween.tween_property(shard, "scale", Vector3.ONE, 0.20)
@@ -2373,7 +2403,7 @@ func _animate_spear_throw(attacker: Node3D, target: Node3D) -> void:
 	spear.mesh = mesh
 	spear.position = attacker.global_position + Vector3(0, 1.15, 0)
 	spear.material_override = _effect_material(Color(1.0, 0.78, 0.20, 0.95))
-	add_child(spear)
+	_register_transient_fx(spear, 1.5)
 	var direction: Vector3 = (target.global_position - attacker.global_position).normalized()
 	spear.rotation = Vector3(PI / 2.0, atan2(direction.x, direction.z), 0)
 	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
@@ -2392,7 +2422,7 @@ func _animate_ice_rain(attacker: Node3D, target: Node3D) -> void:
 	await CinematicVfx.play(self, "ice_rain", target.global_position + Vector3(0, 0.10, 0), 1.20, 0.105)
 	if vfx_visual != null and vfx_visual.has_method("reset_pose"):
 		vfx_visual.call("reset_pose")
-	for index: int in range(10):
+	for index: int in range(7):
 		var shard: MeshInstance3D = MeshInstance3D.new()
 		var mesh: BoxMesh = BoxMesh.new()
 		mesh.size = Vector3(0.08, 0.72, 0.08)
@@ -2401,7 +2431,7 @@ func _animate_ice_rain(attacker: Node3D, target: Node3D) -> void:
 		var z_offset: float = float((index / 5) - 1) * 0.35
 		shard.position = target.global_position + Vector3(x_offset, 3.0 + float(index % 3) * 0.25, z_offset)
 		shard.material_override = _effect_material(Color(0.48, 0.90, 1.0, 0.92))
-		add_child(shard)
+		_register_transient_fx(shard, 1.6)
 		var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
 		tween.tween_interval(float(index) * 0.025)
 		tween.tween_property(shard, "position:y", target.global_position.y + 0.35, 0.30)
@@ -2419,13 +2449,13 @@ func _animate_ultrasound(attacker: Node3D, target: Node3D) -> void:
 		var torus: TorusMesh = TorusMesh.new()
 		torus.inner_radius = 0.22
 		torus.outer_radius = 0.27
-		torus.rings = 28
+		torus.rings = 18
 		torus.ring_segments = 7
 		ring.mesh = torus
 		ring.position = attacker.global_position + Vector3(0, 1.1, 0)
 		ring.look_at(target.global_position + Vector3(0, 1.1, 0), Vector3.UP)
 		ring.material_override = _effect_material(Color(0.78, 0.42, 1.0, 0.76))
-		add_child(ring)
+		_register_transient_fx(ring, 1.6)
 		var tween: Tween = create_tween()
 		tween.tween_interval(float(index) * 0.055)
 		tween.tween_property(ring, "position", target.global_position + Vector3(0, 1.1, 0), 0.34)
@@ -2618,7 +2648,7 @@ func _animate_quicksand(attacker: Node3D, target: Node3D) -> void:
 		ring.rotation_degrees.x = 90.0
 		ring.position = origin
 		ring.material_override = _effect_material(Color(0.69, 0.47, 0.20, 0.78 - index * 0.08))
-		add_child(ring)
+		_register_transient_fx(ring, 1.6)
 		var tween: Tween = create_tween()
 		ring.scale = Vector3.ZERO
 		tween.tween_property(ring, "scale", Vector3.ONE * 1.45, 0.45 + index * 0.04)
@@ -2637,7 +2667,7 @@ func _spawn_sand_arc(position: Vector3, index: int) -> void:
 	var angle: float = float(index) * 1.67
 	particle.position = position + Vector3(cos(angle) * 0.58, float(index % 4) * 0.08, sin(angle) * 0.58)
 	particle.material_override = _effect_material(Color(0.78, 0.54, 0.24, 0.66))
-	add_child(particle)
+	_register_transient_fx(particle, 1.0)
 	var tween: Tween = create_tween()
 	tween.tween_property(particle, "position:y", particle.position.y + 0.65, 0.28)
 	tween.parallel().tween_property(particle, "scale", Vector3.ZERO, 0.28)

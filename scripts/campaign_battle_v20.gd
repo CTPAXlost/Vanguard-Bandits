@@ -20,6 +20,8 @@ var puck_unit: Node3D
 var ganlon_unit: Node3D
 var galvas_prisoner: Node3D
 var mission_seven_decoys: Array[Node3D] = []
+var runtime_test_balance_applied: bool = false
+var runtime_test_balance_started: bool = false
 
 
 func _ready() -> void:
@@ -28,6 +30,87 @@ func _ready() -> void:
 	await super._ready()
 	if mission_number == 7:
 		call_deferred("_finalize_mission_seven_boot")
+	call_deferred("_apply_runtime_test_balance")
+
+
+func _apply_runtime_test_balance() -> void:
+	if runtime_test_balance_applied or runtime_test_balance_started or not CampaignState.test_level_scaling_enabled:
+		return
+	runtime_test_balance_started = true
+	while is_inside_tree() and (units.is_empty() or player_party.is_empty()):
+		await get_tree().process_frame
+	if mission_number == 6:
+		while is_inside_tree() and not mission_six_boot_finalized:
+			await get_tree().process_frame
+	elif mission_number == 7:
+		while is_inside_tree() and not mission_seven_boot_finished:
+			await get_tree().process_frame
+	if not is_inside_tree() or units.is_empty():
+		runtime_test_balance_started = false
+		return
+	var enemy_level_sum: int = 0
+	var enemy_count: int = 0
+	var enemy_maximum: int = 1
+	for unit: Node3D in units:
+		if not _is_alive(unit) or str(unit.get_meta("team", "")) != "enemy":
+			continue
+		var enemy_level: int = int(_stats(unit).get("level", 1))
+		enemy_level_sum += enemy_level
+		enemy_count += 1
+		enemy_maximum = maxi(enemy_maximum, enemy_level)
+	if enemy_count <= 0:
+		runtime_test_balance_started = false
+		return
+	var enemy_average: int = maxi(1, int(round(float(enemy_level_sum) / float(enemy_count))))
+	# Player-controlled ATACs remain a little weaker than the opposition, while
+	# late-mission test launches no longer leave the full party at level 1.
+	var player_floor: int = clampi(maxi(_runtime_level_floor(mission_number), enemy_average - 3), 1, 100)
+	var allied_floor: int = clampi(maxi(1, player_floor - 1), 1, 100)
+	for unit: Node3D in units:
+		if not _is_alive(unit) or str(unit.get_meta("team", "")) != "ally":
+			continue
+		var target_level: int = player_floor if bool(unit.get_meta("player", false)) else allied_floor
+		_scale_runtime_ally(unit, target_level)
+	runtime_test_balance_applied = true
+	runtime_test_balance_started = false
+	CampaignState.request_save_game(0.20)
+	print("TEST_LEVEL_SCALING_OK mission=%d enemy_avg=%d enemy_max=%d player_floor=%d" % [mission_number, enemy_average, enemy_maximum, player_floor])
+	_refresh_ui()
+
+
+func _runtime_level_floor(mission_id: int) -> int:
+	return int({1: 1, 2: 4, 3: 8, 4: 14, 5: 18, 6: 18, 7: 26}.get(mission_id, 1))
+
+
+func _scale_runtime_ally(unit: Node3D, requested_level: int) -> void:
+	var stats: Dictionary = _stats(unit).duplicate(true)
+	var old_level: int = maxi(1, int(stats.get("level", 1)))
+	var character_id: String = str(unit.get_meta("character_id", ""))
+	var model_slug: String = str(unit.get_meta("model_slug", "alba"))
+	var target_level: int = requested_level
+	if not character_id.is_empty() and not CampaignState.get_character(character_id).is_empty():
+		target_level = CampaignState.raise_character_level_floor(character_id, requested_level)
+		stats = CampaignState.apply_character_progress(character_id, stats)
+	else:
+		var maximum_level: int = AtacProgression.max_level(model_slug, 100)
+		target_level = clampi(maxi(old_level, requested_level), 1, maximum_level)
+		var atac_data: Dictionary = CampaignState.ATAC_DATA.get(model_slug, CampaignState.ATAC_DATA["alba"]) as Dictionary
+		stats["level"] = target_level
+		stats["max_level"] = maximum_level
+		stats["max_hp"] = int(atac_data.get("base_hp", 180)) + (target_level - 1) * int(atac_data.get("hp_per_level", 8))
+		stats["hp"] = int(stats["max_hp"])
+		stats["experience"] = 0
+		stats["experience_needed"] = 0 if target_level >= maximum_level else CampaignState.xp_needed(target_level)
+		stats["stat_points"] = 0
+	var level_gain: int = maxi(0, target_level - old_level)
+	if level_gain > 0:
+		stats["strength"] = int(stats.get("strength", 1)) + level_gain
+		stats["agility"] = int(stats.get("agility", 1)) + int(round(float(level_gain) * 0.70))
+		stats["defense"] = int(stats.get("defense", 1)) + int(round(float(level_gain) * 0.85))
+		stats["attack_skill"] = int(stats.get("attack_skill", 1)) + level_gain
+	stats["hp"] = int(stats.get("max_hp", stats.get("hp", 1)))
+	unit.set_meta("stats", stats)
+	_refresh_hp_bar(unit)
 
 
 func _load_first_mission() -> void:
@@ -533,7 +616,7 @@ func _animate_evil_heart_v20(attacker: Node3D, target: Node3D) -> void:
 	_face_target(attacker, target)
 	status_label.text = "%s выпускает «Злое сердце»" % str(attacker.get_meta("label"))
 	var orb := Node3D.new()
-	add_child(orb)
+	_register_transient_fx(orb, 2.0)
 	orb.global_position = attacker.global_position + Vector3(0, 1.25, 0)
 	for offset: Vector3 in [Vector3(-0.10, 0.08, 0), Vector3(0.10, 0.08, 0), Vector3(0, -0.08, 0)]:
 		var part := MeshInstance3D.new()
@@ -547,8 +630,9 @@ func _animate_evil_heart_v20(attacker: Node3D, target: Node3D) -> void:
 	var tween: Tween = create_tween().set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_IN)
 	tween.tween_property(orb, "global_position", target.global_position + Vector3(0, 1.0, 0), 0.32)
 	await tween.finished
-	for index: int in range(8):
-		_spawn_heavy_arc(target.global_position + Vector3(0, 0.75 + index * 0.04, 0), Color(0.75, 0.0, 0.08))
+	await CinematicVfx.play(self, "evil_heart", target.global_position + Vector3(0, 0.08, 0), 1.26, 0.095)
+	for index: int in range(3):
+		_spawn_heavy_arc(target.global_position + Vector3(0, 0.80 + index * 0.08, 0), Color(0.75, 0.0, 0.08))
 	_camera_shake(0.72, 0.30)
 	orb.queue_free()
 
@@ -557,7 +641,7 @@ func _animate_geno_flame_v20(attacker: Node3D, target: Node3D) -> void:
 	_face_target(attacker, target)
 	status_label.text = "%s возводит стену «Гено-пламени»" % str(attacker.get_meta("label"))
 	var direction: Vector3 = (target.global_position - attacker.global_position).normalized()
-	for index: int in range(8):
+	for index: int in range(6):
 		var flame := MeshInstance3D.new()
 		var mesh := CylinderMesh.new()
 		mesh.top_radius = 0.05
@@ -565,15 +649,15 @@ func _animate_geno_flame_v20(attacker: Node3D, target: Node3D) -> void:
 		mesh.height = 1.7
 		flame.mesh = mesh
 		flame.material_override = _effect_material(Color(1.0, 0.12 + index * 0.035, 0.01, 0.86))
-		flame.global_position = attacker.global_position.lerp(target.global_position, float(index + 1) / 8.0) + Vector3(0, 0.85, 0) + Vector3(-direction.z, 0, direction.x) * sin(float(index)) * 0.35
+		flame.global_position = attacker.global_position.lerp(target.global_position, float(index + 1) / 6.0) + Vector3(0, 0.85, 0) + Vector3(-direction.z, 0, direction.x) * sin(float(index)) * 0.35
 		flame.scale = Vector3(0.1, 0.1, 0.1)
-		add_child(flame)
+		_register_transient_fx(flame, 1.4)
 		var tween := create_tween()
 		tween.tween_property(flame, "scale", Vector3(1.0, 1.0 + float(index % 3) * 0.25, 1.0), 0.18)
 		tween.tween_interval(0.22)
 		tween.tween_property(flame, "scale", Vector3.ZERO, 0.20)
 		tween.tween_callback(Callable(flame, "queue_free"))
-	await get_tree().create_timer(0.48).timeout
+	await CinematicVfx.play(self, "geno_flame", target.global_position + Vector3(0, 0.05, 0), 1.30, 0.095)
 	_camera_shake(0.62, 0.28)
 
 
@@ -590,7 +674,7 @@ func _animate_rocket_v20(attacker: Node3D, target: Node3D, area: bool) -> void:
 		rocket.rotation_degrees.x = 90.0
 		rocket.material_override = _effect_material(Color(1.0, 0.30, 0.04, 0.98))
 		rocket.global_position = attacker.global_position + Vector3(0, 1.15 + index * 0.08, 0)
-		add_child(rocket)
+		_register_transient_fx(rocket, 1.5)
 		var destination: Vector3 = target.global_position + Vector3(float(index - 1) * 0.32, 0.85, float(index % 2) * 0.18)
 		var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tween.tween_property(rocket, "global_position", destination + Vector3(0, 1.2, 0), 0.18)
@@ -598,13 +682,15 @@ func _animate_rocket_v20(attacker: Node3D, target: Node3D, area: bool) -> void:
 		await tween.finished
 		_spawn_attack_burst(destination, Color(1.0, 0.25, 0.02), 1.35 if area else 0.95)
 		rocket.queue_free()
+	await CinematicVfx.play(self, "area_rocket" if area else "rocket_shot", target.global_position + Vector3(0, 0.08, 0), 1.22 if area else 1.08, 0.09)
 	_camera_shake(0.58 if area else 0.35, 0.25)
 
 
 func _animate_ice_field_v20(attacker: Node3D, target: Node3D, mode: String) -> void:
 	_face_target(attacker, target)
 	status_label.text = "%s применяет «%s»" % [str(attacker.get_meta("label")), str(CombatCatalog.attack(mode).get("label", mode))]
-	var amount: int = 15 if mode == "ice_age" else 8
+	var cinematic_mode: String = "ice_age" if mode == "ice_age" else "frost"
+	var amount: int = 7 if mode == "ice_age" else 5
 	for index: int in range(amount):
 		var shard := MeshInstance3D.new()
 		var mesh := PrismMesh.new()
@@ -616,19 +702,19 @@ func _animate_ice_field_v20(attacker: Node3D, target: Node3D, mode: String) -> v
 		shard.rotation_degrees.y = rad_to_deg(angle)
 		shard.material_override = _effect_material(Color(0.35, 0.78, 1.0, 0.88))
 		shard.scale = Vector3(0.05, 0.05, 0.05)
-		add_child(shard)
+		_register_transient_fx(shard, 1.5)
 		var tween := create_tween()
 		tween.tween_property(shard, "scale", Vector3.ONE, 0.16 + float(index % 3) * 0.03)
 		tween.tween_interval(0.28)
 		tween.tween_property(shard, "scale", Vector3.ZERO, 0.18)
 		tween.tween_callback(Callable(shard, "queue_free"))
-	await get_tree().create_timer(0.42).timeout
+	await CinematicVfx.play(self, cinematic_mode, target.global_position + Vector3(0, 0.04, 0), 1.30 if mode == "ice_age" else 1.12, 0.10)
 	_camera_shake(0.48, 0.22)
 
 
 func _animate_storm_vortex_v20(attacker: Node3D, target: Node3D) -> void:
 	await _animate_tornado(attacker, target)
-	for index: int in range(12):
+	for index: int in range(4):
 		var bolt := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
 		mesh.size = Vector3(0.035, 0.035, 0.75 + float(index % 3) * 0.2)
@@ -636,11 +722,12 @@ func _animate_storm_vortex_v20(attacker: Node3D, target: Node3D) -> void:
 		bolt.global_position = target.global_position + Vector3(cos(float(index)) * 0.75, 0.7 + float(index % 4) * 0.25, sin(float(index)) * 0.75)
 		bolt.rotation_degrees = Vector3(25.0 + index * 5.0, index * 31.0, -35.0 + index * 6.0)
 		bolt.material_override = _effect_material(Color(0.35, 0.65, 1.0, 0.92))
-		add_child(bolt)
+		_register_transient_fx(bolt, 1.2)
 		var tween := create_tween()
 		tween.tween_property(bolt, "scale", Vector3(1.0, 1.0, 1.5), 0.10)
 		tween.tween_property(bolt, "scale", Vector3.ZERO, 0.16)
 		tween.tween_callback(Callable(bolt, "queue_free"))
+	await CinematicVfx.play(self, "storm_vortex", target.global_position + Vector3(0, 0.05, 0), 1.34, 0.10)
 	_camera_shake(0.70, 0.30)
 
 

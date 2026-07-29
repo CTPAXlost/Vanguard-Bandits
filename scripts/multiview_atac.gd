@@ -2,10 +2,12 @@ class_name MultiViewAtac
 extends Node3D
 
 const VIEW_KEYS: Array[String] = ["front", "side", "back", "three_quarter"]
-const VIEW_UPDATE_INTERVAL: float = 0.10
+const VIEW_UPDATE_INTERVAL: float = 0.18
 const SAFE_VISIBILITY_AABB: AABB = AABB(Vector3(-2.2, -1.2, -1.0), Vector3(4.4, 4.8, 2.0))
 
 static var SHARED_TEXTURES: Dictionary = {}
+static var SHARED_SHADOW_MESH: CylinderMesh
+static var SHARED_SHADOW_MATERIAL: StandardMaterial3D
 const SUPPORTED_SLUGS: Array[String] = [
 	"alba",
 	"barbatos",
@@ -49,6 +51,9 @@ var current_mirror: bool = false
 var view_update_elapsed: float = 0.0
 var arena_view_locked: bool = false
 var base_sprite_position: Vector3 = Vector3(0, 1.08, 0)
+var sync_elapsed: float = 0.0
+var last_owner_position: Vector3 = Vector3(INF, INF, INF)
+var last_camera_position: Vector3 = Vector3(INF, INF, INF)
 
 
 func configure(model_slug: String) -> void:
@@ -116,22 +121,32 @@ func configure(model_slug: String) -> void:
 
 	var shadow: MeshInstance3D = MeshInstance3D.new()
 	shadow.name = "ContactShadow"
-	var disc: CylinderMesh = CylinderMesh.new()
-	disc.top_radius = 0.38
-	disc.bottom_radius = 0.43
-	disc.height = 0.018
-	disc.radial_segments = 16
-	shadow.mesh = disc
+	shadow.mesh = _shared_shadow_mesh()
 	shadow.position = Vector3(0, 0.018, 0)
 	shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var shadow_mat: StandardMaterial3D = StandardMaterial3D.new()
-	shadow_mat.albedo_color = Color(0.03, 0.035, 0.04, 0.18)
-	shadow_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	shadow_mat.roughness = 1.0
-	shadow_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	shadow.material_override = shadow_mat
+	shadow.material_override = _shared_shadow_material()
 	add_child(shadow)
 	set_process(true)
+
+
+static func _shared_shadow_mesh() -> CylinderMesh:
+	if SHARED_SHADOW_MESH == null:
+		SHARED_SHADOW_MESH = CylinderMesh.new()
+		SHARED_SHADOW_MESH.top_radius = 0.38
+		SHARED_SHADOW_MESH.bottom_radius = 0.43
+		SHARED_SHADOW_MESH.height = 0.018
+		SHARED_SHADOW_MESH.radial_segments = 12
+	return SHARED_SHADOW_MESH
+
+
+static func _shared_shadow_material() -> StandardMaterial3D:
+	if SHARED_SHADOW_MATERIAL == null:
+		SHARED_SHADOW_MATERIAL = StandardMaterial3D.new()
+		SHARED_SHADOW_MATERIAL.albedo_color = Color(0.03, 0.035, 0.04, 0.16)
+		SHARED_SHADOW_MATERIAL.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		SHARED_SHADOW_MATERIAL.roughness = 1.0
+		SHARED_SHADOW_MATERIAL.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return SHARED_SHADOW_MATERIAL
 
 
 func _new_character_sprite(sprite_name: String) -> Sprite3D:
@@ -143,7 +158,7 @@ func _new_character_sprite(sprite_name: String) -> Sprite3D:
 	result.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	result.alpha_cut = SpriteBase3D.ALPHA_CUT_OPAQUE_PREPASS
 	result.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE
-	result.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	result.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	result.shaded = false
 	result.double_sided = true
 	result.no_depth_test = false
@@ -212,7 +227,7 @@ func _weapon_sprite(path: String, pixel_size: float) -> Sprite3D:
 	weapon.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	weapon.alpha_cut = SpriteBase3D.ALPHA_CUT_OPAQUE_PREPASS
 	weapon.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE
-	weapon.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	weapon.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	weapon.shaded = false
 	weapon.double_sided = true
 	weapon.pixel_size = pixel_size
@@ -229,11 +244,20 @@ func _process(delta: float) -> void:
 	var camera: Camera3D = get_viewport().get_camera_3d()
 	if camera == null:
 		return
-	_sync_camera_facing(camera)
+	sync_elapsed += delta
+	var owner_moved: bool = global_position.distance_squared_to(last_owner_position) > 0.000025
+	var camera_moved: bool = camera.global_position.distance_squared_to(last_camera_position) > 0.0004
+	# Static ATACs no longer execute look_at() every rendered frame. Moving units
+	# still follow smoothly, while idle formations update at a modest cadence.
+	if owner_moved or camera_moved or sync_elapsed >= 0.12:
+		sync_elapsed = 0.0
+		last_owner_position = global_position
+		last_camera_position = camera.global_position
+		_sync_camera_facing(camera)
 	if arena_view_locked:
 		return
 	view_update_elapsed += delta
-	if view_update_elapsed < VIEW_UPDATE_INTERVAL:
+	if not camera_moved and not owner_moved and view_update_elapsed < VIEW_UPDATE_INTERVAL:
 		return
 	view_update_elapsed = 0.0
 	_process_view_direction(camera, false)
@@ -264,10 +288,10 @@ func _process_view_direction(camera: Camera3D, force: bool) -> void:
 		return
 	var to_camera: Vector3 = camera_delta.normalized()
 	var local_direction: Vector3 = world_basis.orthonormalized().inverse() * to_camera
-	# Ratatosk source sheets were authored with the opposite forward axis. Apply
-	# the correction only to this model so the Matisse squad no longer walks
-	# visually backwards while all other corrected ATAC keep their orientation.
-	if slug == "ratatosk":
+	# The Ratatosk and Rahabar sheets were authored with the opposite forward
+	# axis. Correct both formations so Matisse and Nordilian units do not walk
+	# visually backwards while the remaining ATAC keep their normal orientation.
+	if slug in ["ratatosk", "rahabar"]:
 		local_direction = Basis(Vector3.UP, PI) * local_direction
 	var angle: float = rad_to_deg(atan2(local_direction.x, -local_direction.z))
 	var absolute_angle: float = absf(angle)

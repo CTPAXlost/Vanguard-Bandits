@@ -135,6 +135,7 @@ jobs:
             DeathCleanupSmoke
             StorySmoke
             VisibilitySmoke
+            PerformanceSmoke
             ArenaSmoke
           )
           for scene in "${scenes[@]}"; do
@@ -269,7 +270,7 @@ jobs:
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: Vanguard-Bandits-Remaster-2.0.0-Windows
+          name: Vanguard-Bandits-Remaster-2.0.1-Windows
           path: build/windows/
           if-no-files-found: error
           compression-level: 0

@@ -45,6 +45,15 @@ func _ready() -> void:
 			continue
 		if expected_mission == 7 and CampaignState.kingdom_alliance != forced_branch:
 			continue
+		if expected_mission >= 2 and not bool(battle.get("runtime_test_balance_applied")):
+			continue
+		if expected_mission >= 2:
+			var first_player: Node3D = (party_value as Array)[0] as Node3D
+			var player_stats: Dictionary = first_player.get_meta("stats", {}) as Dictionary
+			if int(player_stats.get("level", 1)) < _expected_level_floor(expected_mission):
+				continue
+			if int(player_stats.get("experience_needed", 0)) <= 0 and int(player_stats.get("level", 1)) < int(player_stats.get("max_level", 100)):
+				continue
 		print("MISSION_BOOT_SMOKE_OK mission=%d branch=%s units=%d party=%d" % [
 			expected_mission,
 			forced_branch,
@@ -68,6 +77,10 @@ func _ready() -> void:
 		str(battle.get("action_in_progress")),
 		str(battle.get("phase")),
 	])
+
+
+func _expected_level_floor(mission_id: int) -> int:
+	return int({1: 1, 2: 4, 3: 8, 4: 14, 5: 18, 6: 18, 7: 26}.get(mission_id, 1))
 
 
 func _fail(message: String) -> void:
