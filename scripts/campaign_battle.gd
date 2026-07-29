@@ -14,6 +14,17 @@ var andrew_unit: Node3D
 var andrew_joined: bool = false
 
 
+func _is_headless_or_smoke_runtime() -> bool:
+	# Shared by every campaign layer, including missions I and II.  The helper
+	# used to live only in campaign_battle_v18.gd, so the base campaign script
+	# could not compile after mission II started using it.
+	return (
+		DisplayServer.get_name().to_lower() == "headless"
+		or OS.get_environment("VBR_SMOKE_MISSION") != ""
+		or OS.get_environment("VBR_SMOKE_BRANCH") != ""
+	)
+
+
 func _ready() -> void:
 	mission_number = maxi(1, CampaignState.current_mission)
 	# Every inherited campaign layer must finish booting before mission-specific

@@ -24,20 +24,6 @@ var zakov_captains: Array[Node3D] = []
 var zakov_barbatos: Array[Node3D] = []
 
 
-func _is_headless_or_smoke_runtime() -> bool:
-	# The official editor does not expose a reliable feature flag for --headless in this path.
-	# official editor build used by GitHub Actions. DisplayServer is the actual
-	# runtime source of truth; the explicit smoke variables also cover tests that
-	# instantiate BattlePrototype inside a headless parent scene. A forced story
-	# branch is deliberately NOT a smoke flag: replaying a branch must retain all
-	# of its dialogue and only automate the already selected decision.
-	return (
-		DisplayServer.get_name().to_lower() == "headless"
-		or OS.get_environment("VBR_SMOKE_MISSION") != ""
-		or OS.get_environment("VBR_SMOKE_BRANCH") != ""
-	)
-
-
 func _ready() -> void:
 	mission_five_intro_pending = CampaignState.current_mission == 5
 	await super._ready()

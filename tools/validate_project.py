@@ -119,11 +119,11 @@ def check_progression() -> None:
 
 def check_project_metadata() -> None:
     project_text = read("project.godot")
-    if 'config/version="2.0.2"' not in project_text:
-        fail("project.godot version is not 2.0.2")
+    if 'config/version="2.0.3"' not in project_text:
+        fail("project.godot version is not 2.0.3")
     export_text = read("export_presets.cfg")
-    if 'application/product_version="2.0.2.0"' not in export_text:
-        fail("Windows export version is not 2.0.2.0")
+    if 'application/product_version="2.0.3.0"' not in export_text:
+        fail("Windows export version is not 2.0.3.0")
     scene = read("scenes/BattlePrototype.tscn")
     if 'res://scripts/campaign_battle_v20.gd' not in scene:
         fail("BattlePrototype is not registered to campaign_battle_v20.gd")
@@ -135,8 +135,8 @@ def check_project_metadata() -> None:
         "data/maps/mission_07.json",
         "data/balance/official_atac_balance_by_level.txt",
         "scenes/PerformanceSmoke.tscn",
-        "CHANGELOG_2.0.2.txt",
-        "README_2.0.2.md",
+        "CHANGELOG_2.0.3.txt",
+        "README_2.0.3.md",
     ]:
         if not (ROOT / required).is_file():
             fail(f"missing required file: {required}")
@@ -262,11 +262,15 @@ def check_runtime_smoke_safety() -> None:
     )
     if mission_two_gate not in campaign_battle:
         fail("Mission II intro must not block headless/smoke boot")
+    if "func _is_headless_or_smoke_runtime() -> bool:" not in campaign_battle:
+        fail("headless/smoke helper must be declared in the base campaign script")
+    if "func _is_headless_or_smoke_runtime() -> bool:" in read("scripts/campaign_battle_v18.gd"):
+        fail("headless/smoke helper must not be duplicated only in a late mission layer")
     workflow = read(".github/workflows/godot-ci.yml")
     for marker in [
         'VBR_SMOKE_MISSION=7 VBR_SMOKE_BRANCH="$branch"',
         'Mission7Smoke',
-        'name: Vanguard-Bandits-Remaster-2.0.2-Windows',
+        'name: Vanguard-Bandits-Remaster-2.0.3-Windows',
         'timeout 90s "$GODOT"',
         'PerformanceSmoke',
     ]:
