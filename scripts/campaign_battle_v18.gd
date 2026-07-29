@@ -49,6 +49,8 @@ func _ready() -> void:
 	action_in_progress = false
 	status_label.text = "Удержите оба входа в замок и уничтожьте армию Faulkner."
 	_begin_player_turn()
+	if _is_mission_boot_probe(5):
+		print("MISSION5_BOOT_PROBE_UNLOCKED units=%d party=%d" % [units.size(), player_party.size()])
 
 
 func _load_first_mission() -> void:

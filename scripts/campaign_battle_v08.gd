@@ -100,6 +100,21 @@ func _ready() -> void:
 		action_in_progress = true
 		phase = Phase.DIALOGUE
 		_clear_highlights()
+		# The shared dialogue guard already prevents UI waits, but explicitly
+		# finalize the chapter-IV boot probe here as well. This guarantees that the
+		# inherited ready chain returns and lets v20 apply runtime level scaling.
+		if _is_mission_boot_probe(4):
+			var boot_visual: Node3D = null
+			if eigol_unit != null:
+				boot_visual = eigol_unit.get_node_or_null("ATACVisual") as Node3D
+			if boot_visual != null:
+				boot_visual.visible = true
+				boot_visual.scale = boot_visual.get_meta("base_tactical_scale", Vector3.ONE * 0.76)
+			mission_four_intro_pending = false
+			action_in_progress = false
+			_begin_player_turn()
+			print("MISSION4_BOOT_PROBE_UNLOCKED units=%d party=%d" % [units.size(), player_party.size()])
+			return
 		await _play_mission_four_intro()
 		mission_four_intro_pending = false
 		action_in_progress = false
@@ -107,10 +122,7 @@ func _ready() -> void:
 
 
 func _is_mission_three_boot_probe() -> bool:
-	return (
-		OS.get_environment("VBR_SMOKE_MISSION") == "3"
-		and OS.get_environment("VBR_SMOKE_BRANCH").is_empty()
-	)
+	return _is_mission_boot_probe(3) and OS.get_environment("VBR_SMOKE_BRANCH").is_empty()
 
 func _build_v08_interface() -> void:
 	var attack_vbox: VBoxContainer = $HUD/AttackMenu/Margin/VBox

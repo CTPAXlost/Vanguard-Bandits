@@ -1491,6 +1491,13 @@ func _spawn_kamorge_event() -> void:
 
 
 func _show_dialogue(speaker_name: String, text: String, portrait_path: String) -> void:
+	# MissionBootSmoke validates scene initialization without a human pressing the
+	# dialogue button. Keep dedicated story/branch smokes fully interactive (they
+	# do not set VBR_SMOKE_MISSION), but make the normal mission boot matrix
+	# non-blocking for every current and future chapter from one shared location.
+	if not OS.get_environment("VBR_SMOKE_MISSION").is_empty():
+		dialogue_panel.visible = false
+		return
 	dialogue_panel.visible = true
 	dialogue_speaker.text = speaker_name
 	dialogue_text.text = text

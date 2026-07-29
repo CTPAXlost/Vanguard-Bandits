@@ -104,25 +104,40 @@ jobs:
 
       - name: Normal mission boot lifecycle I–VII
         shell: bash
-        timeout-minutes: 12
+        timeout-minutes: 14
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          failures=()
+          run_boot() {
+            local label="$1"
+            shift
+            echo "========== BOOT ${label} =========="
+            if "$@"; then
+              echo "BOOT_MATRIX_OK ${label}"
+            else
+              code=$?
+              echo "BOOT_MATRIX_FAILED ${label} exit=${code}" >&2
+              failures+=("${label}:${code}")
+            fi
+          }
           for mission in 1 2 3 4 5; do
-            echo "Boot mission ${mission}"
-            VBR_SMOKE_MISSION="$mission" timeout 90s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/MissionBootSmoke.tscn
+            run_boot "mission-${mission}" env VBR_SMOKE_MISSION="$mission"               timeout 60s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/MissionBootSmoke.tscn
           done
           for branch in south north; do
-            echo "Boot mission 6 branch ${branch}"
-            VBR_SMOKE_MISSION=6 VBR_SMOKE_BRANCH="$branch" timeout 90s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/MissionBootSmoke.tscn
-            echo "Boot mission 7 branch ${branch}"
-            VBR_SMOKE_MISSION=7 VBR_SMOKE_BRANCH="$branch" timeout 90s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/MissionBootSmoke.tscn
+            run_boot "mission-6-${branch}" env VBR_SMOKE_MISSION=6 VBR_SMOKE_BRANCH="$branch"               timeout 60s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/MissionBootSmoke.tscn
+            run_boot "mission-7-${branch}" env VBR_SMOKE_MISSION=7 VBR_SMOKE_BRANCH="$branch"               timeout 60s "$GODOT" --headless --path "$GITHUB_WORKSPACE" res://scenes/MissionBootSmoke.tscn
           done
+          if ((${#failures[@]} > 0)); then
+            printf 'BOOT_MATRIX_FAILURES %s\n' "${failures[*]}" >&2
+            exit 1
+          fi
+          echo "BOOT_MATRIX_ALL_OK cases=9"
 
       - name: Runtime smoke tests
         shell: bash
-        timeout-minutes: 25
+        timeout-minutes: 28
         run: |
-          set -euo pipefail
+          set -uo pipefail
           scenes=(
             AtacProgressionSmoke
             BattleStartupSmoke
@@ -138,10 +153,22 @@ jobs:
             PerformanceSmoke
             ArenaSmoke
           )
+          failures=()
           for scene in "${scenes[@]}"; do
-            echo "Running ${scene}"
-            timeout 90s "$GODOT" --headless --path "$GITHUB_WORKSPACE" "res://scenes/${scene}.tscn"
+            echo "========== RUN ${scene} =========="
+            if timeout 90s "$GODOT" --headless --path "$GITHUB_WORKSPACE" "res://scenes/${scene}.tscn"; then
+              echo "RUNTIME_MATRIX_OK ${scene}"
+            else
+              code=$?
+              echo "RUNTIME_MATRIX_FAILED ${scene} exit=${code}" >&2
+              failures+=("${scene}:${code}")
+            fi
           done
+          if ((${#failures[@]} > 0)); then
+            printf 'RUNTIME_MATRIX_FAILURES %s\n' "${failures[*]}" >&2
+            exit 1
+          fi
+          echo "RUNTIME_MATRIX_ALL_OK cases=${#scenes[@]}"
 
   windows-export:
     name: Windows export
@@ -270,7 +297,7 @@ jobs:
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: Vanguard-Bandits-Remaster-2.0.4-Windows
+          name: Vanguard-Bandits-Remaster-2.0.5-Windows
           path: build/windows/
           if-no-files-found: error
           compression-level: 0

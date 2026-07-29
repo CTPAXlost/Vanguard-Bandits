@@ -25,6 +25,15 @@ func _is_headless_or_smoke_runtime() -> bool:
 	)
 
 
+func _is_mission_boot_probe(expected_mission: int = -1) -> bool:
+	var requested: String = OS.get_environment("VBR_SMOKE_MISSION")
+	if requested.is_empty():
+		return false
+	if expected_mission < 0:
+		return true
+	return int(requested) == expected_mission
+
+
 func _ready() -> void:
 	mission_number = maxi(1, CampaignState.current_mission)
 	# Every inherited campaign layer must finish booting before mission-specific

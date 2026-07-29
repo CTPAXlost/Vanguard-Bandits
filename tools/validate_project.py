@@ -119,11 +119,11 @@ def check_progression() -> None:
 
 def check_project_metadata() -> None:
     project_text = read("project.godot")
-    if 'config/version="2.0.4"' not in project_text:
-        fail("project.godot version is not 2.0.4")
+    if 'config/version="2.0.5"' not in project_text:
+        fail("project.godot version is not 2.0.5")
     export_text = read("export_presets.cfg")
-    if 'application/product_version="2.0.4.0"' not in export_text:
-        fail("Windows export version is not 2.0.4.0")
+    if 'application/product_version="2.0.5.0"' not in export_text:
+        fail("Windows export version is not 2.0.5.0")
     scene = read("scenes/BattlePrototype.tscn")
     if 'res://scripts/campaign_battle_v20.gd' not in scene:
         fail("BattlePrototype is not registered to campaign_battle_v20.gd")
@@ -135,8 +135,8 @@ def check_project_metadata() -> None:
         "data/maps/mission_07.json",
         "data/balance/official_atac_balance_by_level.txt",
         "scenes/PerformanceSmoke.tscn",
-        "CHANGELOG_2.0.4.txt",
-        "README_2.0.4.md",
+        "CHANGELOG_2.0.5.txt",
+        "README_2.0.5.md",
     ]:
         if not (ROOT / required).is_file():
             fail(f"missing required file: {required}")
@@ -256,6 +256,7 @@ def check_runtime_smoke_safety() -> None:
     for slug in ["panther", "engineer", "waiban"]:
         if f'"{slug}"' not in visibility_smoke:
             fail(f"VisibilitySmoke missing {slug}")
+    battle_base = read("scripts/battle_prototype.gd")
     campaign_battle = read("scripts/campaign_battle.gd")
     mission_two_gate = (
         "if not _is_headless_or_smoke_runtime():\n\t\t\tawait _play_mission_two_intro()"
@@ -264,28 +265,64 @@ def check_runtime_smoke_safety() -> None:
         fail("Mission II intro must not block headless/smoke boot")
     if "func _is_headless_or_smoke_runtime() -> bool:" not in campaign_battle:
         fail("headless/smoke helper must be declared in the base campaign script")
+    if "func _is_mission_boot_probe(expected_mission: int = -1) -> bool:" not in campaign_battle:
+        fail("generic mission boot-probe helper is missing from the base campaign script")
     if "func _is_headless_or_smoke_runtime() -> bool:" in read("scripts/campaign_battle_v18.gd"):
         fail("headless/smoke helper must not be duplicated only in a late mission layer")
+    for marker in [
+        'if not OS.get_environment("VBR_SMOKE_MISSION").is_empty():',
+        "dialogue_panel.visible = false\n\t\treturn",
+    ]:
+        if marker not in battle_base:
+            fail(f"shared boot-probe dialogue guard is missing: {marker}")
     mission_three = read("scripts/campaign_battle_v08.gd")
     for marker in [
         "func _is_mission_three_boot_probe() -> bool:",
-        'OS.get_environment("VBR_SMOKE_MISSION") == "3"',
+        "return _is_mission_boot_probe(3)",
         'print("MISSION3_BOOT_PROBE_UNLOCKED units=%d party=%d"',
+        "if _is_mission_boot_probe(4):",
+        'print("MISSION4_BOOT_PROBE_UNLOCKED units=%d party=%d"',
     ]:
         if marker not in mission_three:
-            fail(f"Mission III boot-probe gate is missing: {marker}")
+            fail(f"Mission III/IV boot-probe gate is missing: {marker}")
+    mission_five = read("scripts/campaign_battle_v18.gd")
+    if 'print("MISSION5_BOOT_PROBE_UNLOCKED units=%d party=%d"' not in mission_five:
+        fail("Mission V boot-probe completion marker is missing")
+    boot_smoke = read("scripts/mission_boot_smoke.gd")
+    for marker in [
+        'expected_mission == 4 and bool(battle.get("mission_four_intro_pending"))',
+        'expected_mission == 5 and bool(battle.get("mission_five_intro_pending"))',
+        'bool(battle.get("action_in_progress")) or int(battle.get("phase")) == 4',
+        'range(10)',
+    ]:
+        if marker not in boot_smoke:
+            fail(f"MissionBootSmoke full lifecycle guard is missing: {marker}")
     # The dedicated branch smoke must remain independent of VBR_SMOKE_MISSION,
     # otherwise skipping the boot probe would accidentally stop testing 3A/3B.
     mission_three_smoke = read("scripts/mission3_smoke.gd")
     if 'for branch: String in ["stay_and_fight", "seek_southern_aid"]' not in mission_three_smoke:
         fail("Mission3Smoke must still execute both complete story branches")
+    mission_four_smoke = read("scripts/mission4_smoke.gd")
+    for marker in [
+        "CampaignState.prepare_mission_for_test(4)",
+        'battle.emit_signal("dialogue_advanced")',
+        'str(kamorge.get_meta("model_slug", "")) != "eigol"',
+        'bool(battle.get("runtime_test_balance_applied"))',
+        'MISSION4_BOOT_AND_MOVEMENT_OK',
+    ]:
+        if marker not in mission_four_smoke:
+            fail(f"Mission4Smoke is incomplete: {marker}")
     workflow = read(".github/workflows/godot-ci.yml")
     for marker in [
         'VBR_SMOKE_MISSION=7 VBR_SMOKE_BRANCH="$branch"',
         'Mission7Smoke',
-        'name: Vanguard-Bandits-Remaster-2.0.4-Windows',
+        'name: Vanguard-Bandits-Remaster-2.0.5-Windows',
         'timeout 90s "$GODOT"',
         'PerformanceSmoke',
+        'BOOT_MATRIX_ALL_OK cases=9',
+        'BOOT_MATRIX_FAILURES',
+        'RUNTIME_MATRIX_ALL_OK cases=${#scenes[@]}',
+        'RUNTIME_MATRIX_FAILURES',
     ]:
         if marker not in workflow:
             fail(f"workflow marker missing: {marker}")

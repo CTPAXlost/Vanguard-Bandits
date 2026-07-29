@@ -37,6 +37,10 @@ func _ready() -> void:
 			continue
 		if expected_mission == 6 and (party_value as Array).size() != 5:
 			continue
+		if expected_mission == 4 and bool(battle.get("mission_four_intro_pending")):
+			continue
+		if expected_mission == 5 and bool(battle.get("mission_five_intro_pending")):
+			continue
 		if expected_mission == 6 and bool(battle.get("mission_six_intro_pending")):
 			continue
 		if expected_mission == 6 and str(battle.get("kingdom_choice")) != forced_branch:
@@ -44,6 +48,11 @@ func _ready() -> void:
 		if expected_mission == 7 and not bool(battle.get("mission_seven_boot_finished")):
 			continue
 		if expected_mission == 7 and CampaignState.kingdom_alliance != forced_branch:
+			continue
+		# A mission is not considered booted while an inherited coroutine still
+		# owns the scene in dialogue/action state. This catches the class of bugs
+		# that previously escaped unit-count checks and then failed one chapter at a time.
+		if bool(battle.get("action_in_progress")) or int(battle.get("phase")) == 4:
 			continue
 		if expected_mission >= 2 and not bool(battle.get("runtime_test_balance_applied")):
 			continue
@@ -65,15 +74,20 @@ func _ready() -> void:
 
 	var units_value: Variant = battle.get("units")
 	var party_value: Variant = battle.get("player_party")
-	_fail("normal scene boot timed out; actual=%s initialized=%s units=%s party=%s intro_pending=%s choice=%s boot_started=%s boot_finalized=%s action=%s phase=%s" % [
+	_fail("normal scene boot timed out; actual=%s initialized=%s units=%s party=%s intro4=%s intro5=%s intro6=%s choice=%s boot6_started=%s boot6_finalized=%s boot7_started=%s boot7_finished=%s balance=%s action=%s phase=%s" % [
 		str(battle.get("mission_number")),
 		str(battle.get("battle_initialized")),
 		str((units_value as Array).size() if units_value is Array else -1),
 		str((party_value as Array).size() if party_value is Array else -1),
+		str(battle.get("mission_four_intro_pending")),
+		str(battle.get("mission_five_intro_pending")),
 		str(battle.get("mission_six_intro_pending")),
 		str(battle.get("kingdom_choice")),
 		str(battle.get("mission_six_boot_started")),
 		str(battle.get("mission_six_boot_finalized")),
+		str(battle.get("mission_seven_boot_started")),
+		str(battle.get("mission_seven_boot_finished")),
+		str(battle.get("runtime_test_balance_applied")),
 		str(battle.get("action_in_progress")),
 		str(battle.get("phase")),
 	])
@@ -94,7 +108,11 @@ func _clean_shutdown(battle: Node, exit_code: int) -> void:
 	# before quitting.  Immediate quit in 1.9.7 left RID/ObjectDB leak errors in
 	# every otherwise successful smoke log.
 	if battle != null and is_instance_valid(battle):
+		battle.set_process(false)
+		battle.set_physics_process(false)
 		battle.queue_free()
-	for _frame: int in range(3):
+	# Flush deferred finalizers, top-level Sprite3D instances and renderer RIDs.
+	# Three frames were not sufficient on GitHub's headless renderer.
+	for _frame: int in range(10):
 		await get_tree().process_frame
 	get_tree().quit(exit_code)

@@ -51,9 +51,21 @@ func _run() -> void:
 			% [str(found_sadira), str(found_franco), str(found_halak), str(found_faulkner), str(neutral_positions_ok), str(equal_scale_ok)]
 		)
 		return
-	if battle.get_node_or_null("DefenseCastleGateWest") != null or battle.get_node_or_null("DefenseCastleGateEast") != null:
-		_fail("gate decoration still blocks the completely open passages")
-		return
+	# Version 2.0.1 restored visible gate leaves, but they are swung fully outside
+	# the corridor and contain no collision bodies. Verify the visual gate exists
+	# instead of incorrectly requiring the whole gate root to be absent.
+	for gate_name: String in ["DefenseCastleGateWest", "DefenseCastleGateEast"]:
+		var gate_root: Node3D = battle.get_node_or_null(gate_name) as Node3D
+		if gate_root == null:
+			_fail("open visual gate is missing: %s" % gate_name)
+			return
+		for child_name: String in ["OpenLeafNorth", "OpenLeafSouth", "GateLintel"]:
+			if gate_root.get_node_or_null(child_name) == null:
+				_fail("open gate part is missing: %s/%s" % [gate_name, child_name])
+				return
+		if not gate_root.find_children("*", "CollisionObject3D", true, false).is_empty():
+			_fail("open gate contains a collision object: %s" % gate_name)
+			return
 	var blocked_value: Dictionary = battle.get("blocked_cells") as Dictionary
 	for gate_x: int in [10, 22]:
 		for corridor_x: int in range(gate_x - 1, gate_x + 2):
@@ -65,6 +77,7 @@ func _run() -> void:
 	print("MISSION5_NEUTRAL_GROUP_SMOKE_OK")
 	print("MISSION5_NEUTRAL_POSITION_SMOKE_OK")
 	print("MISSION5_GATE_SMOKE_OK")
+	print("MISSION5_OPEN_GATE_VISUAL_SMOKE_OK")
 	print("NORMALIZED_ATAC_SCALE_SMOKE_OK")
 
 	# Force the real timed trigger. Clear all intro/resolution gates explicitly,
@@ -121,6 +134,11 @@ func _run() -> void:
 		return
 	print("MISSION5_ZAKOV_WAVE_SMOKE_OK")
 	print("SHARKING_ARMOR_SMOKE_OK")
+	battle.set_process(false)
+	battle.set_physics_process(false)
+	battle.queue_free()
+	for _frame: int in range(10):
+		await get_tree().process_frame
 	get_tree().quit()
 
 
