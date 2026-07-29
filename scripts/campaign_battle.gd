@@ -23,7 +23,11 @@ func _ready() -> void:
 		action_in_progress = true
 		phase = Phase.DIALOGUE
 		_clear_highlights()
-		await _play_mission_two_intro()
+		# Mission II used to wait forever for the dialogue advance signal during
+		# headless MissionBootSmoke. Normal desktop play keeps the complete intro,
+		# while CI/smoke runs skip only the interactive wait and continue booting.
+		if not _is_headless_or_smoke_runtime():
+			await _play_mission_two_intro()
 		action_in_progress = false
 		_begin_player_turn()
 

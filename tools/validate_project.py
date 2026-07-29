@@ -119,11 +119,11 @@ def check_progression() -> None:
 
 def check_project_metadata() -> None:
     project_text = read("project.godot")
-    if 'config/version="2.0.1"' not in project_text:
-        fail("project.godot version is not 2.0.1")
+    if 'config/version="2.0.2"' not in project_text:
+        fail("project.godot version is not 2.0.2")
     export_text = read("export_presets.cfg")
-    if 'application/product_version="2.0.1.0"' not in export_text:
-        fail("Windows export version is not 2.0.1.0")
+    if 'application/product_version="2.0.2.0"' not in export_text:
+        fail("Windows export version is not 2.0.2.0")
     scene = read("scenes/BattlePrototype.tscn")
     if 'res://scripts/campaign_battle_v20.gd' not in scene:
         fail("BattlePrototype is not registered to campaign_battle_v20.gd")
@@ -135,8 +135,8 @@ def check_project_metadata() -> None:
         "data/maps/mission_07.json",
         "data/balance/official_atac_balance_by_level.txt",
         "scenes/PerformanceSmoke.tscn",
-        "CHANGELOG_2.0.1.txt",
-        "README_2.0.1.md",
+        "CHANGELOG_2.0.2.txt",
+        "README_2.0.2.md",
     ]:
         if not (ROOT / required).is_file():
             fail(f"missing required file: {required}")
@@ -256,11 +256,17 @@ def check_runtime_smoke_safety() -> None:
     for slug in ["panther", "engineer", "waiban"]:
         if f'"{slug}"' not in visibility_smoke:
             fail(f"VisibilitySmoke missing {slug}")
+    campaign_battle = read("scripts/campaign_battle.gd")
+    mission_two_gate = (
+        "if not _is_headless_or_smoke_runtime():\n\t\t\tawait _play_mission_two_intro()"
+    )
+    if mission_two_gate not in campaign_battle:
+        fail("Mission II intro must not block headless/smoke boot")
     workflow = read(".github/workflows/godot-ci.yml")
     for marker in [
         'VBR_SMOKE_MISSION=7 VBR_SMOKE_BRANCH="$branch"',
         'Mission7Smoke',
-        'name: Vanguard-Bandits-Remaster-2.0.1-Windows',
+        'name: Vanguard-Bandits-Remaster-2.0.2-Windows',
         'timeout 90s "$GODOT"',
         'PerformanceSmoke',
     ]:
