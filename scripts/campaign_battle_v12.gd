@@ -412,7 +412,8 @@ func _begin_tactical_attack_presentation(attacker: Node3D, target: Node3D, attac
 
 func _finish_tactical_attack_presentation(attacker: Node3D, target: Node3D, mode: String) -> void:
 	var color: Color = _attack_color(mode)
-	_spawn_impact_sparks(target.global_position + Vector3(0, 1.0, 0), color, 10 if mode in ["slash", "lunge"] else 18)
+	CombatFx.impact_burst(self, target.global_position + Vector3(0, 1.0, 0), color, 1.0 if mode in ["slash", "lunge"] else 1.25, 10 if mode in ["slash", "lunge"] else 18)
+	CombatFx.hit_flash(target.get_node_or_null("ATACVisual") as Node3D, color, 0.12)
 	var attacker_visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
 	var target_visual: Node3D = target.get_node_or_null("ATACVisual") as Node3D
 	var finish: Tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

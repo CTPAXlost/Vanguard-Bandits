@@ -3,14 +3,20 @@ extends RefCounted
 
 # Storyboard-driven field effects.  The source frames are processed with a
 # transparent background and are displayed as camera-facing luminous layers.
-# Only one Sprite3D and one short-lived light are allocated per attack.
+# Missing storyboard packs fall back to procedural CombatFx bursts so magic
+# and special attacks never play "empty".
+
+const CombatFx = preload("res://scripts/combat_fx.gd")
 
 static var TEXTURE_CACHE: Dictionary = {}
 
 
 static func play(parent: Node3D, mode: String, world_position: Vector3, size: float = 1.0, frame_time: float = 0.11) -> void:
 	var frames: Array = _frames(mode)
-	if frames.is_empty() or parent == null or not is_instance_valid(parent):
+	if parent == null or not is_instance_valid(parent):
+		return
+	if frames.is_empty():
+		await _procedural_fallback(parent, mode, world_position, size)
 		return
 	var root: Node3D = Node3D.new()
 	root.name = "CinematicVFX_%s" % mode
@@ -47,19 +53,43 @@ static func play(parent: Node3D, mode: String, world_position: Vector3, size: fl
 			return
 		sprite.texture = frames[index]
 		var ratio: float = float(index) / float(maxi(1, frames.size() - 1))
-		sprite.scale = Vector3.ONE * lerpf(0.78, 1.18, ratio)
+		sprite.scale = Vector3.ONE * lerpf(0.78, 1.22, ratio)
 		sprite.modulate.a = 0.78 if index == 0 else 1.0
-		light.light_energy = lerpf(1.1, 3.4, ratio)
-		root.rotation_degrees.y = ratio * 5.0
+		light.light_energy = lerpf(1.35, 4.2, ratio)
+		root.rotation_degrees.y = ratio * 8.0
 		await parent.get_tree().create_timer(frame_time).timeout
 
+	CombatFx.impact_burst(parent, world_position + Vector3(0, 0.7, 0), _mode_color(mode), 1.05 * size, 12)
 	var fade: Tween = parent.create_tween().set_parallel(true)
 	fade.tween_property(sprite, "modulate:a", 0.0, 0.18)
-	fade.tween_property(sprite, "scale", sprite.scale * 1.18, 0.18)
+	fade.tween_property(sprite, "scale", sprite.scale * 1.22, 0.18)
 	fade.tween_property(light, "light_energy", 0.0, 0.16)
 	await fade.finished
 	if is_instance_valid(root):
 		root.queue_free()
+
+
+static func _procedural_fallback(parent: Node3D, mode: String, world_position: Vector3, size: float) -> void:
+	var color: Color = _mode_color(mode)
+	match mode:
+		"ball_lightning", "ultrasound", "northern_lights":
+			await CombatFx.magic_orb(parent, world_position + Vector3(0, 1.4, 0), world_position + Vector3(0, 0.9, 0), color, 0.18 * size)
+		"bright_bomb", "rocket_shot", "area_rocket", "geno_flame", "evil_heart":
+			CombatFx.slash_ribbon(parent, world_position + Vector3(0, 0.9, 0), color, 1.2 * size)
+			CombatFx.impact_burst(parent, world_position + Vector3(0, 0.8, 0), color, 1.35 * size, 18)
+			await parent.get_tree().create_timer(0.22).timeout
+		"ice_rain", "frost", "ice_age":
+			for index: int in range(5):
+				CombatFx.impact_burst(parent, world_position + Vector3(randf_range(-0.35, 0.35), 0.4 + index * 0.12, randf_range(-0.35, 0.35)), color, 0.55 * size, 6)
+				await parent.get_tree().create_timer(0.05).timeout
+		"sticky_sandstorm", "quicksand", "desert_storm", "storm_vortex":
+			for index: int in range(6):
+				CombatFx.slash_ribbon(parent, world_position + Vector3(0, 0.35 + index * 0.08, 0), color, 0.75 + index * 0.08)
+				await parent.get_tree().create_timer(0.045).timeout
+			CombatFx.impact_burst(parent, world_position + Vector3(0, 0.7, 0), color, 1.2 * size, 14)
+		_:
+			CombatFx.impact_burst(parent, world_position + Vector3(0, 0.75, 0), color, 1.1 * size, 14)
+			await parent.get_tree().create_timer(0.18).timeout
 
 
 static func _frames(mode: String) -> Array:

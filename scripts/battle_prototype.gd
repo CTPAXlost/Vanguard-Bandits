@@ -1,6 +1,7 @@
 extends Node3D
 
 const AtacFactory = preload("res://scripts/atac_factory.gd")
+const CombatFx = preload("res://scripts/combat_fx.gd")
 const MAP_PATH := "res://data/maps/mission_01.json"
 const BALANCE_PATH := "res://data/balance/level_01_units.json"
 const TILE_SIZE := 1.0
@@ -538,13 +539,9 @@ func _spawn_unit(
 		push_error("ATAC visual factory returned null for slug: %s" % model_slug)
 		visual = Node3D.new()
 	visual.name = "ATACVisual"
-	if bool(visual.get_meta("real_skeleton", false)):
-		var skeletal_scale: float = float(visual.get_meta("recommended_tactical_scale", 0.82))
-		visual.scale = Vector3.ONE * skeletal_scale
-	else:
-		visual.scale = (
-			Vector3.ONE * (0.64 if model_slug in ["barazaph", "eigol"] else (0.61 if player_controlled else 0.58))
-		)
+	# Every tactical ATAC is height-normalized so allies and foes share one silhouette size.
+	var tactical_scale: float = float(visual.get_meta("recommended_tactical_scale", 0.72))
+	visual.scale = Vector3.ONE * clampf(tactical_scale, 0.55, 0.95)
 	visual.set_meta("base_tactical_scale", visual.scale)
 	visual.rotation_degrees.y = 180.0 if bool(visual.get_meta("multiview_2_5d", false)) else (180.0 if team == "ally" else 0.0)
 	unit.add_child(visual)
@@ -568,7 +565,7 @@ func _spawn_unit(
 
 	var bar := _create_hp_bar(unit)
 	bar.name = "HPBar"
-	bar.position = Vector3(0, 1.92, 0)
+	bar.position = Vector3(0, 2.05, 0)
 	unit.add_child(bar)
 	add_child(unit)
 	units.append(unit)
@@ -1143,115 +1140,18 @@ func _spawn_damage_label(world_position: Vector3, damage: int) -> void:
 
 
 func _spawn_slash_effect(world_position: Vector3) -> void:
-	var effect: Node3D = Node3D.new()
-	effect.position = world_position
-	_register_transient_fx(effect, 1.2)
-	for index: int in range(5):
-		var arc: MeshInstance3D = MeshInstance3D.new()
-		var torus: TorusMesh = TorusMesh.new()
-		torus.inner_radius = 0.38 + index * 0.075
-		torus.outer_radius = 0.43 + index * 0.075
-		torus.rings = 18
-		torus.ring_segments = 6
-		arc.mesh = torus
-		arc.rotation_degrees = Vector3(70, 12 + index * 8, 30 - index * 8)
-		arc.scale = Vector3(1.28, 0.34 + index * 0.025, 1.0)
-		arc.material_override = _effect_material(Color(0.52 + index * 0.06, 0.84 + index * 0.025, 1.0, 0.88 - index * 0.12))
-		effect.add_child(arc)
-	for spark_index: int in range(9):
-		var spark: MeshInstance3D = MeshInstance3D.new()
-		var spark_mesh: BoxMesh = BoxMesh.new()
-		spark_mesh.size = Vector3(0.025, 0.025, 0.20 + spark_index * 0.018)
-		spark.mesh = spark_mesh
-		spark.rotation_degrees = Vector3(0, spark_index * 40.0, -35.0 + spark_index * 8.0)
-		spark.position = Vector3((spark_index % 3 - 1) * 0.08, (spark_index / 3) * 0.06 - 0.05, 0)
-		spark.material_override = _effect_material(Color(1.0, 0.78, 0.26, 0.82))
-		effect.add_child(spark)
-	var light: OmniLight3D = OmniLight3D.new()
-	light.light_color = Color(0.52, 0.88, 1.0)
-	light.light_energy = 5.6
-	light.omni_range = 2.5
-	effect.add_child(light)
-	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	effect.scale = Vector3.ONE * 0.22
-	tween.tween_property(effect, "scale", Vector3.ONE * 1.42, 0.13)
-	tween.parallel().tween_property(effect, "rotation_degrees", Vector3(0, 62, 0), 0.13)
-	tween.tween_interval(0.035)
-	tween.tween_property(effect, "scale", Vector3.ONE * 0.06, 0.18)
-	tween.tween_callback(Callable(effect, "queue_free"))
+	CombatFx.slash_ribbon(self, world_position, Color(0.45, 0.88, 1.0), 1.05)
+	CombatFx.impact_burst(self, world_position, Color(0.70, 0.92, 1.0), 0.9, 12)
 
 
 func _spawn_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
-	var effect: Node3D = Node3D.new()
-	_register_transient_fx(effect, 1.2)
-	effect.position = world_position - direction * 0.42
-	effect.look_at(world_position + direction, Vector3.UP)
-	for index: int in range(6):
-		var streak: MeshInstance3D = MeshInstance3D.new()
-		var mesh: BoxMesh = BoxMesh.new()
-		mesh.size = Vector3(0.035 + index * 0.010, 0.035 + index * 0.010, 0.72 + index * 0.16)
-		streak.mesh = mesh
-		streak.position = Vector3((index - 2.5) * 0.055, sin(index * 1.7) * 0.07, -index * 0.065)
-		streak.material_override = _effect_material(Color(0.58 + index * 0.05, 0.88, 1.0, 0.90 - index * 0.11))
-		effect.add_child(streak)
-	var impact: MeshInstance3D = MeshInstance3D.new()
-	var impact_mesh: SphereMesh = SphereMesh.new()
-	impact_mesh.radius = 0.16
-	impact_mesh.height = 0.32
-	impact.mesh = impact_mesh
-	impact.position = Vector3(0, 0, -0.64)
-	impact.material_override = _effect_material(Color(1.0, 0.93, 0.52, 0.90))
-	effect.add_child(impact)
-	var light: OmniLight3D = OmniLight3D.new()
-	light.light_color = Color(0.44, 0.86, 1.0)
-	light.light_energy = 5.0
-	light.omni_range = 2.4
-	effect.add_child(light)
-	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	effect.scale = Vector3(0.16, 0.16, 0.16)
-	tween.tween_property(effect, "scale", Vector3(1.28, 1.28, 1.28), 0.11)
-	tween.tween_property(effect, "scale", Vector3(0.04, 0.04, 0.04), 0.17)
-	tween.tween_callback(Callable(effect, "queue_free"))
+	CombatFx.thrust_streak(self, world_position, direction, Color(0.55, 0.90, 1.0), 1.05)
+	CombatFx.impact_burst(self, world_position, Color(1.0, 0.92, 0.45), 0.95, 12)
 
 
 func _spawn_long_lunge_effect(world_position: Vector3, direction: Vector3) -> void:
-	var effect: Node3D = Node3D.new()
-	_register_transient_fx(effect, 1.2)
-	effect.position = world_position - direction * 0.72
-	effect.look_at(world_position + direction, Vector3.UP)
-	for index: int in range(9):
-		var trail: MeshInstance3D = MeshInstance3D.new()
-		var trail_mesh: BoxMesh = BoxMesh.new()
-		trail_mesh.size = Vector3(0.045 + index * 0.008, 0.045 + index * 0.008, 1.10 + index * 0.18)
-		trail.mesh = trail_mesh
-		trail.position = Vector3((index - 4.0) * 0.045, sin(index * 1.25) * 0.09, -index * 0.075)
-		trail.rotation_degrees.z = -8.0 + index * 2.0
-		trail.material_override = _effect_material(Color(0.36 + index * 0.045, 0.82 + index * 0.018, 1.0, 0.92 - index * 0.085))
-		effect.add_child(trail)
-	for ring_index: int in range(3):
-		var ring: MeshInstance3D = MeshInstance3D.new()
-		var torus: TorusMesh = TorusMesh.new()
-		torus.inner_radius = 0.18 + ring_index * 0.10
-		torus.outer_radius = 0.22 + ring_index * 0.10
-		torus.rings = 16
-		torus.ring_segments = 6
-		ring.mesh = torus
-		ring.position = Vector3(0, 0, -0.90 - ring_index * 0.14)
-		ring.rotation_degrees.x = 90
-		ring.material_override = _effect_material(Color(1.0, 0.72, 0.20, 0.86 - ring_index * 0.18))
-		effect.add_child(ring)
-	var light: OmniLight3D = OmniLight3D.new()
-	light.light_color = Color(0.95, 0.68, 0.20)
-	light.light_energy = 7.0
-	light.omni_range = 3.2
-	effect.add_child(light)
-	var tween: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	effect.scale = Vector3.ONE * 0.12
-	tween.tween_property(effect, "scale", Vector3.ONE * 1.52, 0.13)
-	tween.parallel().tween_property(effect, "position", effect.position + direction * 0.28, 0.13)
-	tween.tween_interval(0.04)
-	tween.tween_property(effect, "scale", Vector3.ONE * 0.035, 0.20)
-	tween.tween_callback(Callable(effect, "queue_free"))
+	CombatFx.thrust_streak(self, world_position, direction, Color(0.35, 0.82, 1.0), 1.45)
+	CombatFx.impact_burst(self, world_position, Color(0.98, 0.78, 0.28), 1.15, 16)
 
 
 func _spawn_guard_effect(world_position: Vector3) -> void:

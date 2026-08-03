@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://bkk45vg8tmxcc"
+path="res://.godot/imported/glaive.obj-6c5ef4524da88f4ad10cff9c7878c33c.mesh"
+
+[deps]
+
+files=["res://.godot/imported/glaive.obj-6c5ef4524da88f4ad10cff9c7878c33c.mesh"]
+
+source_file="res://assets/imported/models/glaive/glaive.obj"
+dest_files=["res://.godot/imported/glaive.obj-6c5ef4524da88f4ad10cff9c7878c33c.mesh", "res://.godot/imported/glaive.obj-6c5ef4524da88f4ad10cff9c7878c33c.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

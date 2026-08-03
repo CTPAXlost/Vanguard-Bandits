@@ -2,14 +2,17 @@ extends Node3D
 
 const AtacFactory = preload("res://scripts/atac_factory.gd")
 
-# Cover every tactical armour skin currently supported by MultiViewAtac. The
-# factory intentionally selects either a segmented Skeleton3D or a clean
-# full-body multi-view rig depending on which presentation looks better.
+# Cover every tactical armour skin currently supported by MultiViewAtac.
+# Tactical battles always use full-body multi-view sheets; segmented Skeleton3D
+# skins are validated separately through the explicit "skeletal" factory context.
 const SLUGS: Array[String] = [
 	"alba", "barbatos", "barazaph", "vedocorban", "cador", "solarus",
 	"sarbelas", "einlager", "eigol", "amphisia", "haurol", "toreadore",
 	"serata", "glaive", "sylpheed", "korbelan", "crimson", "rahabar",
 	"altagrave", "snow_soldier", "ratatosk", "panther", "engineer", "waiban",
+]
+const SKELETAL_SMOKE_SLUGS: Array[String] = [
+	"barbatos", "cador", "glaive", "sylpheed", "korbelan",
 ]
 const CAMERA_POSITIONS: Array[Vector3] = [
 	Vector3(0, 2.5, 6.0),
@@ -24,8 +27,8 @@ func _ready() -> void:
 	var camera: Camera3D = Camera3D.new()
 	camera.current = true
 	add_child(camera)
-	var skeletal_count: int = 0
 	var multiview_count: int = 0
+	var scale_samples: Array[float] = []
 
 	for slug: String in SLUGS:
 		var rig: Node3D = AtacFactory.create_atac(slug, "tactical")
@@ -36,20 +39,18 @@ func _ready() -> void:
 		add_child(rig)
 		await get_tree().process_frame
 
-		var is_skeletal: bool = bool(rig.get_meta("real_skeleton", false))
-		var is_multiview: bool = bool(rig.get_meta("multiview_2_5d", false))
-		if is_skeletal:
-			skeletal_count += 1
-			if not _validate_skeletal_rig(rig, slug):
-				return
-		elif is_multiview:
-			multiview_count += 1
-			var multiview_ok: bool = await _validate_multiview_rig(rig, slug)
-			if not multiview_ok:
-				return
-		else:
-			_fail("TACTICAL_VISIBILITY_UNKNOWN_RIG_%s" % slug)
+		if not bool(rig.get_meta("multiview_2_5d", false)):
+			_fail("TACTICAL_VISIBILITY_EXPECTED_MULTIVIEW_%s" % slug)
 			return
+		multiview_count += 1
+		var multiview_ok: bool = await _validate_multiview_rig(rig, slug)
+		if not multiview_ok:
+			return
+		var recommended: float = float(rig.get_meta("recommended_tactical_scale", 0.0))
+		if recommended < 0.55 or recommended > 0.95:
+			_fail("TACTICAL_HEIGHT_NORMALIZATION_FAILED_%s scale=%.3f" % [slug, recommended])
+			return
+		scale_samples.append(recommended)
 
 		for camera_position: Vector3 in CAMERA_POSITIONS:
 			camera.position = camera_position
@@ -70,14 +71,39 @@ func _ready() -> void:
 		rig.queue_free()
 		await get_tree().process_frame
 
-	if skeletal_count <= 0 or multiview_count <= 0:
-		_fail("TACTICAL_VISIBILITY_RENDERER_COVERAGE_FAILED skeletal=%d multiview=%d" % [skeletal_count, multiview_count])
+	if multiview_count != SLUGS.size():
+		_fail("TACTICAL_VISIBILITY_RENDERER_COVERAGE_FAILED multiview=%d" % multiview_count)
 		return
+	if scale_samples.size() >= 2:
+		var minimum: float = scale_samples[0]
+		var maximum: float = scale_samples[0]
+		for sample: float in scale_samples:
+			minimum = minf(minimum, sample)
+			maximum = maxf(maximum, sample)
+		if maximum - minimum > 0.28:
+			_fail("TACTICAL_HEIGHT_SPREAD_TOO_LARGE min=%.3f max=%.3f" % [minimum, maximum])
+			return
+
+	var skeletal_count: int = 0
+	for slug: String in SKELETAL_SMOKE_SLUGS:
+		var skeletal: Node3D = AtacFactory.create_atac(slug, "skeletal")
+		if skeletal == null:
+			_fail("SKELETAL_FACTORY_NULL_%s" % slug)
+			return
+		add_child(skeletal)
+		await get_tree().process_frame
+		if not _validate_skeletal_rig(skeletal, slug):
+			return
+		skeletal_count += 1
+		skeletal.queue_free()
+		await get_tree().process_frame
+
 	print("TACTICAL_VISIBILITY_SMOKE_OK slugs=%d" % SLUGS.size())
 	print("SKELETAL_ATAC_SMOKE_OK count=%d" % skeletal_count)
 	print("MULTIVIEW_ATAC_SMOKE_OK count=%d" % multiview_count)
 	print("ORIGINAL_SKIN_RIG_SMOKE_OK")
 	print("BASIC_ATTACK_ANIMATION_SMOKE_OK")
+	print("TACTICAL_HEIGHT_NORMALIZATION_OK")
 	get_tree().quit()
 
 

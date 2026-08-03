@@ -38,9 +38,9 @@ func _run() -> void:
 			neutral_positions_ok = neutral_positions_ok and unit.get_meta("cell") == Vector2i(9, 14)
 		found_faulkner = found_faulkner or label.begins_with("Faulkner")
 		var visual: Node3D = unit.get_node_or_null("ATACVisual") as Node3D
-		if visual != null and bool(visual.get_meta("real_skeleton", false)):
+		if visual != null:
 			var scale_y: float = visual.scale.y
-			if scale_y < 0.55 or scale_y > 1.15:
+			if scale_y < 0.55 or scale_y > 0.95:
 				equal_scale_ok = false
 	if mission_number_value != 5 or player_party_value.size() < 7:
 		_fail("mission or player party is incomplete")

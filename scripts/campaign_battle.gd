@@ -1,5 +1,6 @@
 extends "res://scripts/battle_prototype.gd"
 
+const CombatFx = preload("res://scripts/combat_fx.gd")
 const MISSION_ONE_PATH: String = "res://data/maps/mission_01.json"
 const MISSION_TWO_PATH: String = "res://data/maps/mission_02.json"
 const CADOR_PORTRAIT: String = "res://assets/ui/portraits/cador.png"
@@ -494,7 +495,7 @@ func _show_cador_cameo() -> void:
 	cador.position = _cell_to_world(cell)
 	var visual: Node3D = AtacFactory.create_atac("cador", "tactical")
 	visual.name = "ATACVisual"
-	visual.scale = Vector3.ONE * 0.84
+	visual.scale = Vector3.ONE * float(visual.get_meta("recommended_tactical_scale", 0.72))
 	cador.add_child(visual)
 	add_child(cador)
 	cador.scale = Vector3.ZERO
@@ -576,7 +577,7 @@ func _animate_long_lunge(attacker: Node3D, target: Node3D) -> void:
 
 
 func _spawn_afterimages(unit: Node3D, tint: Color) -> void:
-	var original := unit.get_node_or_null("ATACVisual/ModelRoot/AtacSprite") as Sprite3D
+	var original: Sprite3D = CombatFx.find_atac_sprite(unit)
 	var texture: Texture2D = null
 	var pixel_size: float = 0.0021
 	if original != null and original.texture != null:
@@ -591,7 +592,11 @@ func _spawn_afterimages(unit: Node3D, tint: Color) -> void:
 				texture = ResourceLoader.load(source_path, "Texture2D", ResourceLoader.CACHE_MODE_REUSE) as Texture2D
 	if texture == null:
 		return
-	for index: int in range(2):
+	var visual_scale: float = 0.72
+	var atac_visual: Node3D = unit.get_node_or_null("ATACVisual") as Node3D
+	if atac_visual != null:
+		visual_scale = atac_visual.scale.x
+	for index: int in range(3):
 		var ghost := Sprite3D.new()
 		ghost.texture = texture
 		ghost.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -601,14 +606,14 @@ func _spawn_afterimages(unit: Node3D, tint: Color) -> void:
 		ghost.shaded = false
 		ghost.double_sided = true
 		ghost.pixel_size = pixel_size
-		ghost.position = unit.global_position + Vector3(0, 1.08, 0)
-		ghost.scale = Vector3.ONE * float(unit.get_node("ATACVisual").scale.x)
-		ghost.modulate = Color(tint.r, tint.g, tint.b, maxf(0.05, tint.a - index * 0.07))
-		ghost.no_depth_test = false
+		ghost.position = unit.global_position + Vector3(0, 0.84, 0)
+		ghost.scale = Vector3.ONE * visual_scale
+		ghost.modulate = Color(tint.r, tint.g, tint.b, maxf(0.08, tint.a - index * 0.06))
+		ghost.no_depth_test = true
 		_register_transient_fx(ghost, 1.0)
 		var tween := create_tween()
-		tween.tween_property(ghost, "position", ghost.position + Vector3(0, 0.12 + index * 0.05, 0), 0.28)
-		tween.parallel().tween_property(ghost, "modulate:a", 0.0, 0.28)
+		tween.tween_property(ghost, "position", ghost.position + Vector3((index - 1) * 0.08, 0.10 + index * 0.05, 0), 0.30)
+		tween.parallel().tween_property(ghost, "modulate:a", 0.0, 0.30)
 		tween.tween_callback(Callable(ghost, "queue_free"))
 
 

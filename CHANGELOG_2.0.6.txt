@@ -1,0 +1,31 @@
+VANGUARD BANDITS REMASTER 2.0.6 — FULL-BODY ATAC + COLOURFUL 2D COMBAT FX
+
+Goal
+Keep the remastered PS1 silhouettes, stop floating/cut skeletal parts on the tactical
+map, unify ATAC height, and make melee / magic attacks feel punchy without a 3D arena.
+
+Changes
+1. Tactical rendering
+- AtacFactory.create_atac(..., "tactical") always builds MultiViewAtac full-body sheets.
+- Segmented Skeleton3D skins remain available via render_context "skeletal" for tooling/smoke.
+- No 3D duel/arena presentation for normal campaign combat.
+
+2. Height normalization
+- MultiViewAtac measures the opaque content of the front sheet and scales every ATAC
+  toward a shared tactical height (~1.68 world units).
+- battle_prototype applies recommended_tactical_scale for all units (allies and enemies).
+
+3. Combat animation
+- Richer set_combat_pose for slash / lunge / strong_slash / magic / hit reactions.
+- New CombatFx helper: slash ribbons, thrust streaks, impact bursts, magic orbs, hit flash.
+- Basic attacks and strong slash now drive pose curves plus colourful FX on the tactical map.
+- CinematicVfx falls back to procedural CombatFx when a storyboard pack is missing.
+
+4. Compatibility
+- Afterimages correctly find CameraFacingRoot/ModelRoot/AtacSprite.
+- Visibility smoke expects full-body tactical ATAC and still validates skeletal packs separately.
+- Mission 5 smoke checks normalized scale for every ATAC visual.
+
+Version
+- project.godot: 2.0.6
+- Windows file/product version: 2.0.6.0

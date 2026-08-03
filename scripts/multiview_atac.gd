@@ -4,6 +4,9 @@ extends Node3D
 const VIEW_KEYS: Array[String] = ["front", "side", "back", "three_quarter"]
 const VIEW_UPDATE_INTERVAL: float = 0.18
 const SAFE_VISIBILITY_AABB: AABB = AABB(Vector3(-2.2, -1.2, -1.0), Vector3(4.4, 4.8, 2.0))
+# Shared tactical height so every ATAC reads as the same class of machine on the map.
+const TARGET_TACTICAL_HEIGHT: float = 1.68
+const BASE_PIXEL_SIZE: float = 0.00210
 
 static var SHARED_TEXTURES: Dictionary = {}
 static var SHARED_SHADOW_MESH: CylinderMesh
@@ -50,10 +53,12 @@ var current_view: String = ""
 var current_mirror: bool = false
 var view_update_elapsed: float = 0.0
 var arena_view_locked: bool = false
-var base_sprite_position: Vector3 = Vector3(0, 1.08, 0)
+var base_sprite_position: Vector3 = Vector3(0, 0.84, 0)
 var sync_elapsed: float = 0.0
 var last_owner_position: Vector3 = Vector3(INF, INF, INF)
 var last_camera_position: Vector3 = Vector3(INF, INF, INF)
+var pose_kind: String = "idle"
+var pose_progress: float = 0.0
 
 
 func configure(model_slug: String) -> void:
@@ -61,8 +66,9 @@ func configure(model_slug: String) -> void:
 	name = "%s_MultiViewRig" % slug.capitalize()
 	set_meta("atac_slug", slug)
 	set_meta("multiview_2_5d", true)
-	set_meta("reference_revision", "campaign_v15")
+	set_meta("reference_revision", "campaign_v206")
 	set_meta("visibility_rig", "top_level_camera_facing")
+	set_meta("full_body_tactical", true)
 
 	# The camera-facing root is top-level on purpose. It follows the unit position,
 	# but does not inherit the tactical unit's Y rotation. This removes the old
@@ -87,7 +93,7 @@ func configure(model_slug: String) -> void:
 	model_root.add_child(right_arm_pivot)
 
 	outline_sprite = _new_character_sprite("AtacOutline")
-	outline_sprite.pixel_size = _pixel_size() * 1.026
+	outline_sprite.pixel_size = BASE_PIXEL_SIZE * 1.026
 	outline_sprite.position = base_sprite_position + Vector3(0, 0, -0.018)
 	outline_sprite.modulate = Color(0.015, 0.02, 0.035, 0.66)
 	outline_sprite.render_priority = 1
@@ -100,7 +106,7 @@ func configure(model_slug: String) -> void:
 	# Kept explicit for validation and readability; the helper already applies it.
 	sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	sprite.shaded = false
-	sprite.pixel_size = _pixel_size()
+	sprite.pixel_size = BASE_PIXEL_SIZE
 	sprite.position = base_sprite_position
 	sprite.render_priority = 2
 	model_root.add_child(sprite)
@@ -108,6 +114,7 @@ func configure(model_slug: String) -> void:
 	# Load only the currently needed view. Every repeated ATAC reuses the same
 	# imported texture resource instead of holding a private copy in memory.
 	_set_view("front", true)
+	_refresh_height_normalization()
 
 	weapon_pivot = Node3D.new()
 	weapon_pivot.name = "WeaponPivot"
@@ -174,21 +181,33 @@ func _new_pivot(pivot_name: String) -> Node3D:
 
 
 func _pixel_size() -> float:
-	# Compact, consistent tactical scale. Larger centaur / commander silhouettes
-	# are intentionally reduced so their transparent sheets do not cover neighbours.
-	if slug == "cador":
-		return 0.00202
-	if slug in ["solarus", "sarbelas", "einlager", "eigol"]:
-		return 0.00212
-	if slug in ["amphisia", "haurol"]:
-		return 0.00208
-	if slug == "toreadore":
-		return 0.00188
-	if slug in ["barbatos", "barazaph", "vedocorban"]:
-		return 0.00218
-	if slug in ["crimson", "rahabar", "altagrave", "snow_soldier", "ratatosk", "panther", "engineer", "waiban"]:
-		return 0.00205
-	return 0.00216
+	# One base pixel size; final on-map height is normalized via recommended_tactical_scale.
+	return BASE_PIXEL_SIZE
+
+
+func _refresh_height_normalization() -> void:
+	var texture: Texture2D = sprite.texture if sprite != null else null
+	var content_height: float = 940.0
+	if texture != null:
+		content_height = float(maxi(1, texture.get_height()))
+		var image: Image = texture.get_image()
+		if image != null and not image.is_empty():
+			var used: Rect2i = image.get_used_rect()
+			if used.size.y > 8:
+				content_height = float(used.size.y)
+	var world_height: float = content_height * BASE_PIXEL_SIZE
+	var recommended: float = TARGET_TACTICAL_HEIGHT / maxf(world_height, 0.1)
+	# Keep ATAC readable but never so large they swallow neighbouring tiles.
+	recommended = clampf(recommended, 0.58, 0.92)
+	set_meta("recommended_tactical_scale", recommended)
+	set_meta("source_front_path", "res://assets/atac_views/%s/front.png" % slug)
+	set_meta("skin_pixel_size", BASE_PIXEL_SIZE)
+	# Anchor the sprite so feet sit near the ground regardless of sheet padding.
+	base_sprite_position = Vector3(0, TARGET_TACTICAL_HEIGHT * 0.50, 0)
+	if sprite != null:
+		sprite.position = base_sprite_position
+	if outline_sprite != null:
+		outline_sprite.position = base_sprite_position + Vector3(0, 0, -0.018)
 
 
 func _build_weapons() -> void:
@@ -366,6 +385,8 @@ func set_walk_pose(phase_value: float, intensity: float = 1.0) -> void:
 
 
 func reset_pose() -> void:
+	pose_kind = "idle"
+	pose_progress = 0.0
 	model_root.position = Vector3.ZERO
 	model_root.rotation_degrees = Vector3.ZERO
 	model_root.scale = Vector3.ONE
@@ -375,6 +396,8 @@ func reset_pose() -> void:
 	outline_sprite.rotation_degrees = Vector3.ZERO
 	sprite.scale = Vector3.ONE
 	outline_sprite.scale = Vector3.ONE
+	sprite.modulate = Color.WHITE
+	outline_sprite.modulate = Color(0.015, 0.02, 0.035, 0.66)
 	left_leg_pivot.rotation_degrees = Vector3.ZERO
 	right_leg_pivot.rotation_degrees = Vector3.ZERO
 	left_arm_pivot.rotation_degrees = Vector3.ZERO
@@ -384,44 +407,68 @@ func reset_pose() -> void:
 
 
 func set_combat_pose(kind: String, progress: float) -> void:
-	# Readable anticipation, impact and recovery for the multiview artwork.
-	var p: float = clampf(progress, 0.0, 1.0)
-	var anticipation: float = sin(minf(p * 2.0, 1.0) * PI * 0.5) if p < 0.5 else 1.0
-	var recovery: float = 1.0 - smoothstep(0.58, 1.0, p)
-	var power: float = anticipation * recovery
+	# Readable anticipation → strike → recovery for full-body PS1 sheets.
+	pose_kind = kind
+	pose_progress = clampf(progress, 0.0, 1.0)
+	var p: float = pose_progress
+	var strike: float = smoothstep(0.28, 0.72, p)
+	var recover: float = 1.0 - smoothstep(0.68, 1.0, p)
+	var punch: float = sin(clampf((p - 0.28) / 0.44, 0.0, 1.0) * PI)
 	match kind:
 		"slash":
-			model_root.rotation_degrees.z = lerpf(-14.0, 19.0, p) * power
-			sprite.rotation_degrees.z = lerpf(8.0, -13.0, p) * power
-			weapon_pivot.rotation_degrees.z = lerpf(-92.0, 78.0, p)
+			model_root.rotation_degrees.z = lerpf(-18.0, 24.0, strike) * recover
+			model_root.rotation_degrees.x = -6.0 * punch
+			sprite.rotation_degrees.z = lerpf(12.0, -18.0, strike) * recover
+			sprite.position = base_sprite_position + Vector3(lerpf(-0.06, 0.10, strike), punch * 0.04, 0)
+			weapon_pivot.rotation_degrees.z = lerpf(-110.0, 95.0, strike)
+			right_arm_pivot.rotation_degrees.z = lerpf(-35.0, 48.0, strike)
+			model_root.scale = Vector3(1.0 + punch * 0.08, 1.0 - punch * 0.05, 1.0)
 		"lunge", "long_lunge", "slide":
-			model_root.rotation_degrees.x = -13.0 * power
-			model_root.rotation_degrees.z = -4.0 * power
-			model_root.scale = Vector3(1.0 + 0.065 * power, 1.0 - 0.05 * power, 1.0)
-			weapon_pivot.rotation_degrees.z = -96.0 + 16.0 * p
+			var reach: float = 1.15 if kind == "long_lunge" or kind == "slide" else 1.0
+			model_root.rotation_degrees.x = lerpf(8.0, -18.0 * reach, strike) * recover
+			model_root.rotation_degrees.z = -5.0 * punch
+			model_root.position.z = -0.05 * punch * reach
+			model_root.scale = Vector3(1.0 + 0.09 * punch * reach, 1.0 - 0.07 * punch, 1.0)
+			weapon_pivot.rotation_degrees.z = lerpf(-40.0, -118.0, strike)
+			right_arm_pivot.rotation_degrees.x = lerpf(10.0, -55.0, strike)
+			sprite.position = base_sprite_position + Vector3(0, punch * 0.05, 0)
 		"strong_slash":
-			model_root.rotation_degrees.z = lerpf(-24.0, 28.0, p) * power
-			model_root.scale = Vector3(1.0 + 0.09 * power, 1.0 - 0.075 * power, 1.0)
-			weapon_pivot.rotation_degrees.z = lerpf(-128.0, 112.0, p)
+			model_root.rotation_degrees.z = lerpf(-28.0, 34.0, strike) * recover
+			model_root.rotation_degrees.x = -10.0 * punch
+			model_root.scale = Vector3(1.0 + 0.12 * punch, 1.0 - 0.09 * punch, 1.0)
+			sprite.rotation_degrees.z = lerpf(16.0, -22.0, strike) * recover
+			weapon_pivot.rotation_degrees.z = lerpf(-140.0, 125.0, strike)
+			right_arm_pivot.rotation_degrees.z = lerpf(-55.0, 70.0, strike)
+			sprite.modulate = Color(1.0, lerpf(1.0, 0.82, punch), lerpf(1.0, 0.72, punch), 1.0)
 		"shoulder_bash":
-			model_root.rotation_degrees.x = -20.0 * power
-			model_root.scale = Vector3(1.14, 0.90, 1.0).lerp(Vector3.ONE, smoothstep(0.55, 1.0, p))
-		"tornado":
-			model_root.rotation_degrees.y = p * 720.0
-			model_root.scale = Vector3.ONE * (1.0 + sin(p * PI) * 0.10)
-		"earthquake":
-			model_root.position.y = -sin(p * PI) * 0.14
-			model_root.scale = Vector3(1.08, 0.88, 1.08).lerp(Vector3.ONE, p)
-		"desert_whirl", "desert_storm", "sticky_sandstorm":
+			model_root.rotation_degrees.x = lerpf(6.0, -24.0, strike) * recover
+			model_root.scale = Vector3(1.16, 0.88, 1.0).lerp(Vector3.ONE, 1.0 - recover)
+			sprite.position = base_sprite_position + Vector3(0.04 * punch, punch * 0.03, 0)
+		"tornado", "desert_whirl", "desert_storm", "sticky_sandstorm":
 			model_root.rotation_degrees.y = p * 900.0
-			model_root.position.y = sin(p * PI) * 0.14
-			model_root.scale = Vector3.ONE * (1.0 + sin(p * PI) * 0.13)
-		"ball_lightning", "bright_bomb", "spear_throw", "ice_rain", "ultrasound", "quicksand", "healing_ban":
-			model_root.rotation_degrees.z = -sin(p * PI) * 7.0
-			model_root.position.y = sin(p * PI) * 0.08
-			weapon_pivot.rotation_degrees.z = -55.0 * sin(p * PI)
+			model_root.position.y = sin(p * PI) * 0.16
+			model_root.scale = Vector3.ONE * (1.0 + sin(p * PI) * 0.14)
+			sprite.modulate = Color(1.05, 0.95, 0.75, 1.0).lerp(Color.WHITE, 1.0 - punch)
+		"earthquake":
+			model_root.position.y = -sin(p * PI) * 0.16
+			model_root.scale = Vector3(1.12, 0.84, 1.12).lerp(Vector3.ONE, p)
+		"ball_lightning", "bright_bomb", "spear_throw", "ice_rain", "ultrasound", "quicksand", "healing_ban", "fire_rain":
+			model_root.rotation_degrees.z = -sin(p * PI) * 9.0
+			model_root.position.y = sin(p * PI) * 0.11
+			weapon_pivot.rotation_degrees.z = -70.0 * sin(p * PI)
+			right_arm_pivot.rotation_degrees.z = -25.0 * sin(p * PI)
+			sprite.modulate = Color(0.85 + 0.2 * punch, 0.9 + 0.1 * punch, 1.15, 1.0)
+		"hit":
+			model_root.rotation_degrees.z = 18.0 * sin(smoothstep(0.05, 0.85, p) * PI)
+			model_root.position.x = 0.08 * sin(p * PI)
+			model_root.scale = Vector3(1.0 + punch * 0.04, 1.0 - punch * 0.08, 1.0)
+			sprite.modulate = Color(1.0, 0.55, 0.45, 1.0).lerp(Color.WHITE, smoothstep(0.45, 1.0, p))
 		_:
-			model_root.rotation_degrees.z = sin(p * PI) * 5.0
+			model_root.rotation_degrees.z = sin(p * PI) * 7.0
+			model_root.scale = Vector3(1.0 + punch * 0.04, 1.0 - punch * 0.03, 1.0)
+	outline_sprite.position = sprite.position + Vector3(0, 0, -0.018)
+	outline_sprite.rotation_degrees = sprite.rotation_degrees
+	outline_sprite.scale = sprite.scale
 
 
 func flash(color: Color, duration: float = 0.14) -> void:

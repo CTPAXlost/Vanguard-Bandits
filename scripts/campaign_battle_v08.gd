@@ -3,6 +3,7 @@ extends "res://scripts/campaign_battle.gd"
 const CombatCatalog = preload("res://scripts/combat_catalog.gd")
 const BattleArenaDirectorScript = preload("res://scripts/battle_arena_director.gd")
 const CinematicVfx = preload("res://scripts/cinematic_vfx.gd")
+const CombatFx = preload("res://scripts/combat_fx.gd")
 const MISSION_THREE_PATH: String = "res://data/maps/mission_03.json"
 const MISSION_FOUR_PATH: String = "res://data/maps/mission_04.json"
 const STORY_SCENE_PATH: String = "res://scenes/StoryChapter.tscn"
@@ -1577,34 +1578,25 @@ func _animate_strong_slash(attacker: Node3D, target: Node3D) -> void:
 	status_label.text = "%s использует «Сильный порез»" % str(attacker.get_meta("label"))
 	_face_target(attacker, target)
 	var visual: Node3D = attacker.get_node_or_null("ATACVisual") as Node3D
-	var arm: Node3D = attacker.get_node_or_null("ATACVisual/ModelRoot/RightArmPivot") as Node3D
-	var weapon: Node3D = attacker.get_node_or_null("ATACVisual/ModelRoot/RightArmPivot/WeaponPivot") as Node3D
 	var start_position: Vector3 = attacker.position
 	var direction: Vector3 = (target.position - attacker.position).normalized()
-	var windup: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	if arm != null:
-		windup.tween_property(arm, "rotation_degrees", Vector3(-40, -25, -110), 0.28)
-	if weapon != null:
-		windup.parallel().tween_property(weapon, "rotation_degrees", Vector3(0, 0, -65), 0.28)
-	if visual != null:
-		windup.parallel().tween_property(visual, "rotation_degrees:z", -9.0, 0.28)
-	await windup.finished
-	var strike: Tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
-	strike.tween_property(attacker, "position", start_position + direction * 0.34, 0.13)
-	if arm != null:
-		strike.parallel().tween_property(arm, "rotation_degrees", Vector3(28, 15, 92), 0.13)
-	strike.tween_callback(Callable(self, "_spawn_heavy_arc").bind(target.global_position + Vector3(0, 1.05, 0), Color(1.0, 0.34, 0.18)))
-	await strike.finished
-	_camera_shake(0.25, 0.12)
-	var recover: Tween = create_tween()
-	recover.tween_property(attacker, "position", start_position, 0.25)
-	if arm != null:
-		recover.parallel().tween_property(arm, "rotation_degrees", Vector3.ZERO, 0.25)
-	if weapon != null:
-		recover.parallel().tween_property(weapon, "rotation_degrees", Vector3.ZERO, 0.25)
-	if visual != null:
-		recover.parallel().tween_property(visual, "rotation_degrees:z", 0.0, 0.25)
-	await recover.finished
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "strong_slash"), 0.0, 0.32, 0.20)
+	tween.parallel().tween_property(attacker, "position", start_position - direction * 0.12, 0.20)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "strong_slash"), 0.32, 0.78, 0.12)
+	tween.parallel().tween_property(attacker, "position", start_position + direction * 0.38, 0.12)
+	tween.tween_callback(func() -> void:
+		CombatFx.slash_ribbon(self, target.global_position + Vector3(0, 1.05, 0), Color(1.0, 0.34, 0.18), 1.45)
+		CombatFx.impact_burst(self, target.global_position + Vector3(0, 1.0, 0), Color(1.0, 0.55, 0.18), 1.35, 18)
+		_spawn_heavy_arc(target.global_position + Vector3(0, 1.05, 0), Color(1.0, 0.34, 0.18))
+		CombatFx.hit_flash(target.get_node_or_null("ATACVisual") as Node3D, Color(1.0, 0.4, 0.25), 0.14)
+	)
+	tween.tween_interval(0.05)
+	tween.tween_method(Callable(self, "_apply_visual_pose").bind(visual, "strong_slash"), 0.78, 1.0, 0.24)
+	tween.parallel().tween_property(attacker, "position", start_position, 0.24)
+	tween.tween_callback(Callable(self, "_reset_visual_pose").bind(visual))
+	await tween.finished
+	_camera_shake(0.28, 0.14)
 
 
 func _animate_shoulder_bash(attacker: Node3D, target: Node3D) -> void:
