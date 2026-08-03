@@ -26,6 +26,9 @@ Changes
 - Visibility smoke expects full-body tactical ATAC and still validates skeletal packs separately.
 - Mission 5 smoke checks normalized scale for every ATAC visual.
 
+5. CI fix
+- tools/validate_project.py updated from 2.0.5 markers to 2.0.6 and the new tactical factory rules.
+
 Version
 - project.godot: 2.0.6
 - Windows file/product version: 2.0.6.0

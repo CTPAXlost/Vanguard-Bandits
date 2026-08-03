@@ -119,11 +119,11 @@ def check_progression() -> None:
 
 def check_project_metadata() -> None:
     project_text = read("project.godot")
-    if 'config/version="2.0.5"' not in project_text:
-        fail("project.godot version is not 2.0.5")
+    if 'config/version="2.0.6"' not in project_text:
+        fail("project.godot version is not 2.0.6")
     export_text = read("export_presets.cfg")
-    if 'application/product_version="2.0.5.0"' not in export_text:
-        fail("Windows export version is not 2.0.5.0")
+    if 'application/product_version="2.0.6.0"' not in export_text:
+        fail("Windows export version is not 2.0.6.0")
     scene = read("scenes/BattlePrototype.tscn")
     if 'res://scripts/campaign_battle_v20.gd' not in scene:
         fail("BattlePrototype is not registered to campaign_battle_v20.gd")
@@ -135,8 +135,9 @@ def check_project_metadata() -> None:
         "data/maps/mission_07.json",
         "data/balance/official_atac_balance_by_level.txt",
         "scenes/PerformanceSmoke.tscn",
-        "CHANGELOG_2.0.5.txt",
-        "README_2.0.5.md",
+        "CHANGELOG_2.0.6.txt",
+        "README_2.0.6.md",
+        "scripts/combat_fx.gd",
     ]:
         if not (ROOT / required).is_file():
             fail(f"missing required file: {required}")
@@ -210,15 +211,23 @@ def check_visual_assets() -> None:
                 fail(f"missing or empty ATAC view: {slug}/{view}.png")
     factory = read("scripts/atac_factory.gd")
     multiview = read("scripts/multiview_atac.gd")
+    if 'if render_context == "tactical":' not in factory or "return _create_multiview(normalized)" not in factory:
+        fail("tactical ATAC factory must always use full-body MultiViewAtac")
     for slug in ["alba", "amphisia", "haurol", "toreadore", "vedocorban", "panther", "engineer", "waiban", "solarus", "sarbelas"]:
-        if f'"{slug}"' not in factory or f'"{slug}"' not in multiview:
+        if f'"{slug}"' not in multiview:
             fail(f"full-body ATAC is not registered: {slug}")
     if 'if slug in ["ratatosk", "rahabar"]' not in multiview:
         fail("Ratatosk/Rahabar forward-axis correction is missing")
-    factory = read("scripts/atac_factory.gd")
     for slug in ["solarus", "sarbelas"]:
-        if f'"{slug}"' not in factory:
+        if f'"{slug}"' not in multiview:
             fail(f"new full-body model is not registered: {slug}")
+    if "TARGET_TACTICAL_HEIGHT" not in multiview or "_refresh_height_normalization" not in multiview:
+        fail("tactical ATAC height normalization is missing")
+    if not (ROOT / "scripts" / "combat_fx.gd").is_file():
+        fail("missing combat FX helper: scripts/combat_fx.gd")
+    cinematic = read("scripts/cinematic_vfx.gd")
+    if "_procedural_fallback" not in cinematic:
+        fail("CinematicVfx procedural fallback is missing")
 
     storyboard_modes = [
         "geno_flame", "evil_heart", "rocket_shot", "area_rocket",
@@ -316,7 +325,7 @@ def check_runtime_smoke_safety() -> None:
     for marker in [
         'VBR_SMOKE_MISSION=7 VBR_SMOKE_BRANCH="$branch"',
         'Mission7Smoke',
-        'name: Vanguard-Bandits-Remaster-2.0.5-Windows',
+        'name: Vanguard-Bandits-Remaster-2.0.6-Windows',
         'timeout 90s "$GODOT"',
         'PerformanceSmoke',
         'BOOT_MATRIX_ALL_OK cases=9',
@@ -383,9 +392,19 @@ def check_optimization_and_controls() -> None:
     for marker in [
         "VIEW_UPDATE_INTERVAL: float = 0.18", "SHARED_SHADOW_MESH",
         "sync_elapsed >= 0.12", 'if slug in ["ratatosk", "rahabar"]',
+        "TARGET_TACTICAL_HEIGHT", "recommended_tactical_scale",
     ]:
         if marker not in multiview:
             fail(f"multiview optimization marker missing: {marker}")
+    visibility_smoke = read("scripts/visibility_smoke.gd")
+    for marker in [
+        'AtacFactory.create_atac(slug, "tactical")',
+        'AtacFactory.create_atac(slug, "skeletal")',
+        "TACTICAL_HEIGHT_NORMALIZATION_OK",
+        'TACTICAL_VISIBILITY_EXPECTED_MULTIVIEW_',
+    ]:
+        if marker not in visibility_smoke:
+            fail(f"visibility smoke marker missing: {marker}")
     performance_smoke = read("scripts/performance_smoke.gd")
     if 'PERFORMANCE_SMOKE_OK' not in performance_smoke or 'range(130)' not in performance_smoke:
         fail("PerformanceSmoke is incomplete")
