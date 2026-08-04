@@ -3,7 +3,6 @@ extends "res://scripts/campaign_battle.gd"
 const CombatCatalog = preload("res://scripts/combat_catalog.gd")
 const BattleArenaDirectorScript = preload("res://scripts/battle_arena_director.gd")
 const CinematicVfx = preload("res://scripts/cinematic_vfx.gd")
-const CombatFx = preload("res://scripts/combat_fx.gd")
 const MISSION_THREE_PATH: String = "res://data/maps/mission_03.json"
 const MISSION_FOUR_PATH: String = "res://data/maps/mission_04.json"
 const STORY_SCENE_PATH: String = "res://scenes/StoryChapter.tscn"

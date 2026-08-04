@@ -191,7 +191,7 @@ func _refresh_height_normalization() -> void:
 	if texture != null:
 		content_height = float(maxi(1, texture.get_height()))
 		var image: Image = texture.get_image()
-		if image != null and not image.is_empty():
+		if image != null and image.get_width() > 0 and image.get_height() > 0:
 			var used: Rect2i = image.get_used_rect()
 			if used.size.y > 8:
 				content_height = float(used.size.y)

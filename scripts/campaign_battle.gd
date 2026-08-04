@@ -1,6 +1,5 @@
 extends "res://scripts/battle_prototype.gd"
 
-const CombatFx = preload("res://scripts/combat_fx.gd")
 const MISSION_ONE_PATH: String = "res://data/maps/mission_01.json"
 const MISSION_TWO_PATH: String = "res://data/maps/mission_02.json"
 const CADOR_PORTRAIT: String = "res://assets/ui/portraits/cador.png"
